@@ -1,0 +1,345 @@
+{
+  "functionName": "calculate_discount",
+  "contract": "calculate_discount:v1.0",
+  "contractVersion": "v1.0",
+  "filePath": "d:\\w_dev\\cdd\\test-cases\\test_python.py",
+  "history": [
+    {
+      "timestamp": "2026-05-11T12:13:12.343Z",
+      "role": "compiler",
+      "input": {
+        "comment": "# @contract: calculate_discount(price: float, discount_rate: float) => float\n# @step: [验证输入] 检查 price 大于 0，discount_rate 在 0-1 之间\n# @step: [计算折扣] price * (1 - discount_rate)\n# @step: [返回结果] 返回折扣后的价格\n# @boundary: 当 price 小于等于 0 时，抛出 ValueError\n# @boundary: 当 discount_rate 超出范围时，抛出 ValueError",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n",
+        "parsedComment": {
+          "contract": {
+            "functionName": "calculate_discount",
+            "parameters": [
+              {
+                "name": "price",
+                "type": "float"
+              },
+              {
+                "name": "discount_rate",
+                "type": "float"
+              }
+            ],
+            "returnType": "float",
+            "throwsTypes": [],
+            "version": "calculate_discount:v1.0"
+          },
+          "steps": [
+            {
+              "description": "[验证输入] 检查 price 大于 0，discount_rate 在 0-1 之间",
+              "isSimple": false
+            },
+            {
+              "description": "[计算折扣] price * (1 - discount_rate)",
+              "isSimple": false
+            },
+            {
+              "description": "[返回结果] 返回折扣后的价格",
+              "isSimple": false
+            }
+          ],
+          "boundaries": [
+            {
+              "description": "当 price 小于等于 0 时，抛出 ValueError"
+            },
+            {
+              "description": "当 discount_rate 超出范围时，抛出 ValueError"
+            }
+          ],
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 5,
+              "character": 46
+            }
+          ]
+        }
+      },
+      "output": {
+        "success": true,
+        "content": "def calculate_discount(price: float, discount_rate: float) -> float:\n    if price <= 0:\n        raise ValueError('price must be greater than 0')\n    \n    if discount_rate < 0 or discount_rate > 1:\n        raise ValueError('discount_rate must be between 0 and 1')\n    \n    discounted_price = price * (1 - discount_rate)\n    return discounted_price\n# @end"
+      }
+    },
+    {
+      "timestamp": "2026-05-11T12:13:21.479Z",
+      "role": "reviewer",
+      "input": {
+        "comment": "# @contract: calculate_discount(price: float, discount_rate: float) => float\n# @step: [验证输入] 检查 price 大于 0，discount_rate 在 0-1 之间\n# @step: [计算折扣] price * (1 - discount_rate)\n# @step: [返回结果] 返回折扣后的价格\n# @boundary: 当 price 小于等于 0 时，抛出 ValueError\n# @boundary: 当 discount_rate 超出范围时，抛出 ValueError\n",
+        "code": "def calculate_discount(price: float, discount_rate: float) -> float:\n    if price <= 0:\n        raise ValueError('price must be greater than 0')\n    \n    if discount_rate < 0 or discount_rate > 1:\n        raise ValueError('discount_rate must be between 0 and 1')\n    \n    discounted_price = price * (1 - discount_rate)\n    return discounted_price\n# @end",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n"
+      },
+      "output": {
+        "success": true,
+        "content": "审查通过",
+        "issues": []
+      }
+    },
+    {
+      "timestamp": "2026-05-11T12:14:20.014Z",
+      "role": "compiler",
+      "input": {
+        "comment": "# @contract: calculate_discount(price: float, discount_rate: float) => float\n# @step: [验证输入] 检查 price 大于 0，discount_rate 在 0-1 之间\n# @step: [计算折扣] price * (1 - discount_rate)\n# @step: [返回结果] 返回折扣后的价格\n# @boundary: 当 discount_rate 超出范围时，抛出 ValueError\n",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n",
+        "parsedComment": {
+          "contract": {
+            "functionName": "calculate_discount",
+            "parameters": [
+              {
+                "name": "price",
+                "type": "float"
+              },
+              {
+                "name": "discount_rate",
+                "type": "float"
+              }
+            ],
+            "returnType": "float",
+            "throwsTypes": [],
+            "version": "calculate_discount:v1.0"
+          },
+          "steps": [
+            {
+              "description": "[验证输入] 检查 price 大于 0，discount_rate 在 0-1 之间",
+              "isSimple": false
+            },
+            {
+              "description": "[计算折扣] price * (1 - discount_rate)",
+              "isSimple": false
+            },
+            {
+              "description": "[返回结果] 返回折扣后的价格",
+              "isSimple": false
+            }
+          ],
+          "boundaries": [
+            {
+              "description": "当 discount_rate 超出范围时，抛出 ValueError"
+            }
+          ],
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 5,
+              "character": 0
+            }
+          ]
+        }
+      },
+      "output": {
+        "success": true,
+        "content": "def calculate_discount(price: float, discount_rate: float) -> float:\n    if price <= 0:\n        raise ValueError('price must be greater than 0')\n    \n    if discount_rate < 0 or discount_rate > 1:\n        raise ValueError('discount_rate must be between 0 and 1')\n    \n    discounted_price = price * (1 - discount_rate)\n    return discounted_price\n# @end"
+      }
+    },
+    {
+      "timestamp": "2026-05-11T12:14:29.447Z",
+      "role": "reviewer",
+      "input": {
+        "comment": "# @contract: calculate_discount(price: float, discount_rate: float) => float\n# @step: [验证输入] 检查 price 大于 0，discount_rate 在 0-1 之间\n# @step: [计算折扣] price * (1 - discount_rate)\n# @step: [返回结果] 返回折扣后的价格\n# @boundary: 当 discount_rate 超出范围时，抛出 ValueError\n",
+        "code": "def calculate_discount(price: float, discount_rate: float) -> float:\n    if price <= 0:\n        raise ValueError('price must be greater than 0')\n    \n    if discount_rate < 0 or discount_rate > 1:\n        raise ValueError('discount_rate must be between 0 and 1')\n    \n    discounted_price = price * (1 - discount_rate)\n    return discounted_price\n# @end",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n"
+      },
+      "output": {
+        "success": true,
+        "content": "审查通过",
+        "issues": []
+      }
+    },
+    {
+      "timestamp": "2026-05-11T12:14:36.318Z",
+      "role": "translator",
+      "input": {
+        "code": "\ndef calculate_discount(price: float, discount_rate: float) -> float:\n    if price <= 0:\n        raise ValueError('price must be greater than 0')\n    \n    if discount_rate < 0 or discount_rate > 1:\n        raise ValueError('discount_rate must be between 0 and 1')\n    \n    discounted_price = price * (1 - discount_rate)\n    return discounted_price\n# @end",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n"
+      },
+      "output": {
+        "success": true,
+        "content": "# @contract: calculate_discount(price: float, discount_rate: float) => float\n# @step: [验证] 检查价格必须大于0\n# @step: [验证] 检查折扣率在0到1之间\n# @step: [计算] 计算折扣后价格 = 原价 × (1 - 折扣率)\n# @step: [返回] 返回折扣后价格\n# @boundary: 当price <= 0时，应抛出ValueError\n# @boundary: 当discount_rate < 0或discount_rate > 1时，应抛出ValueError\n# @end\n\n✅ 代码转译员完成。"
+      }
+    },
+    {
+      "timestamp": "2026-05-11T12:20:11.439Z",
+      "role": "compiler",
+      "input": {
+        "comment": "# @contract: calculate_discount(price: float, discount_rate: float) => float\n# @step: [验证输入] 检查 price 大于 0，discount_rate 在 0-1 之间\n# @step: [计算折扣] price * (1 - discount_rate)\n# @step: [返回结果] 返回折扣后的价格\n# @boundary: 当 price 小于等于 0 时，抛出 ValueError\n# @boundary: 当 discount_rate 超出范围时，抛出 ValueError",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n",
+        "parsedComment": {
+          "contract": {
+            "functionName": "calculate_discount",
+            "parameters": [
+              {
+                "name": "price",
+                "type": "float"
+              },
+              {
+                "name": "discount_rate",
+                "type": "float"
+              }
+            ],
+            "returnType": "float",
+            "throwsTypes": [],
+            "version": "calculate_discount:v1.0"
+          },
+          "steps": [
+            {
+              "description": "[验证输入] 检查 price 大于 0，discount_rate 在 0-1 之间",
+              "isSimple": false
+            },
+            {
+              "description": "[计算折扣] price * (1 - discount_rate)",
+              "isSimple": false
+            },
+            {
+              "description": "[返回结果] 返回折扣后的价格",
+              "isSimple": false
+            }
+          ],
+          "boundaries": [
+            {
+              "description": "当 price 小于等于 0 时，抛出 ValueError"
+            },
+            {
+              "description": "当 discount_rate 超出范围时，抛出 ValueError"
+            }
+          ],
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 5,
+              "character": 46
+            }
+          ]
+        }
+      },
+      "output": {
+        "success": true,
+        "content": "def calculate_discount(price: float, discount_rate: float) -> float:\n    if price <= 0:\n        raise ValueError('price must be greater than 0')\n    \n    if discount_rate < 0 or discount_rate > 1:\n        raise ValueError('discount_rate must be between 0 and 1')\n    \n    discounted_price = price * (1 - discount_rate)\n    return discounted_price\n# @end"
+      }
+    },
+    {
+      "timestamp": "2026-05-11T12:20:18.578Z",
+      "role": "translator",
+      "input": {
+        "code": "def calculate_discount(price: float, discount_rate: float) -> float:\n    if price <= 0:\n        raise ValueError('price must be greater than 0')\n    \n    if discount_rate < 0 or discount_rate > 1:\n        raise ValueError('discount_rate must be between 0 and 1')\n    \n    discounted_price = price * (1 - discount_rate)\n    return discounted_price\n# @end",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n"
+      },
+      "output": {
+        "success": true,
+        "content": "# @contract: calculate_discount(price: float, discount_rate: float) => float\n# @step: [验证] 检查价格必须大于0\n# @step: [验证] 检查折扣率在0到1之间\n# @step: [计算] 返回原价乘以(1 - 折扣率)\n# @boundary: 当price <= 0时，应抛出ValueError\n# @boundary: 当discount_rate < 0或discount_rate > 1时，应抛出ValueError\n\n✅ 代码转译员完成。\n# @end"
+      }
+    },
+    {
+      "timestamp": "2026-05-11T12:20:20.472Z",
+      "role": "reviewer",
+      "input": {
+        "comment": "# @contract: calculate_discount(price: float, discount_rate: float) => float\n# @step: [验证输入] 检查 price 大于 0，discount_rate 在 0-1 之间\n# @step: [计算折扣] price * (1 - discount_rate)\n# @step: [返回结果] 返回折扣后的价格\n# @boundary: 当 price 小于等于 0 时，抛出 ValueError\n# @boundary: 当 discount_rate 超出范围时，抛出 ValueError\n",
+        "code": "def calculate_discount(price: float, discount_rate: float) -> float:\n    if price <= 0:\n        raise ValueError('price must be greater than 0')\n    \n    if discount_rate < 0 or discount_rate > 1:\n        raise ValueError('discount_rate must be between 0 and 1')\n    \n    discounted_price = price * (1 - discount_rate)\n    return discounted_price\n# @end",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n"
+      },
+      "output": {
+        "success": true,
+        "content": "审查通过",
+        "issues": []
+      }
+    },
+    {
+      "timestamp": "2026-05-11T12:20:48.839Z",
+      "role": "compiler",
+      "input": {
+        "comment": "\n# @contract: calculate_discount(price: float, discount_rate: float) => float\n# @step: [验证输入] 检查 price 大于 0，discount_rate 在 0-1 之间\n# @step: [计算折扣] price * (1 - discount_rate)\n# @step: [返回结果] 返回折扣后的价格\n# @boundary: 当 price 小于等于 0 时，抛出 ValueError\n# @boundary: 当 discount_rate 超出范围时，抛出 ValueError",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n",
+        "parsedComment": {
+          "contract": {
+            "functionName": "calculate_discount",
+            "parameters": [
+              {
+                "name": "price",
+                "type": "float"
+              },
+              {
+                "name": "discount_rate",
+                "type": "float"
+              }
+            ],
+            "returnType": "float",
+            "throwsTypes": [],
+            "version": "calculate_discount:v1.0"
+          },
+          "steps": [
+            {
+              "description": "[验证输入] 检查 price 大于 0，discount_rate 在 0-1 之间",
+              "isSimple": false
+            },
+            {
+              "description": "[计算折扣] price * (1 - discount_rate)",
+              "isSimple": false
+            },
+            {
+              "description": "[返回结果] 返回折扣后的价格",
+              "isSimple": false
+            }
+          ],
+          "boundaries": [
+            {
+              "description": "当 price 小于等于 0 时，抛出 ValueError"
+            },
+            {
+              "description": "当 discount_rate 超出范围时，抛出 ValueError"
+            }
+          ],
+          "range": [
+            {
+              "line": 1,
+              "character": 0
+            },
+            {
+              "line": 6,
+              "character": 46
+            }
+          ]
+        }
+      },
+      "output": {
+        "success": true,
+        "content": "def calculate_discount(price: float, discount_rate: float) -> float:\n    if price <= 0:\n        raise ValueError('price must be greater than 0')\n    \n    if discount_rate < 0 or discount_rate > 1:\n        raise ValueError('discount_rate must be between 0 and 1')\n    \n    discounted_price = price * (1 - discount_rate)\n    return discounted_price\n# @end"
+      }
+    },
+    {
+      "timestamp": "2026-05-11T12:20:58.129Z",
+      "role": "reviewer",
+      "input": {
+        "comment": "# @contract: calculate_discount(price: float, discount_rate: float) => float\n# @step: [验证输入] 检查 price 大于 0，discount_rate 在 0-1 之间\n# @step: [计算折扣] price * (1 - discount_rate)\n# @step: [返回结果] 返回折扣后的价格\n# @boundary: 当 price 小于等于 0 时，抛出 ValueError\n# @boundary: 当 discount_rate 超出范围时，抛出 ValueError\n",
+        "code": "def calculate_discount(price: float, discount_rate: float) -> float:\n    if price <= 0:\n        raise ValueError('price must be greater than 0')\n    \n    if discount_rate < 0 or discount_rate > 1:\n        raise ValueError('discount_rate must be between 0 and 1')\n    \n    discounted_price = price * (1 - discount_rate)\n    return discounted_price\n# @end",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n"
+      },
+      "output": {
+        "success": true,
+        "content": "审查通过",
+        "issues": []
+      }
+    },
+    {
+      "timestamp": "2026-05-11T12:20:58.323Z",
+      "role": "translator",
+      "input": {
+        "code": "def calculate_discount(price: float, discount_rate: float) -> float:\n    if price <= 0:\n        raise ValueError('price must be greater than 0')\n    \n    if discount_rate < 0 or discount_rate > 1:\n        raise ValueError('discount_rate must be between 0 and 1')\n    \n    discounted_price = price * (1 - discount_rate)\n    return discounted_price\n# @end",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n"
+      },
+      "output": {
+        "success": true,
+        "content": "# @contract: calculate_discount(price: float, discount_rate: float) => float\n# @step: [验证] 检查价格必须大于0\n# @step: [验证] 检查折扣率在0到1之间\n# @step: [计算] 返回原价乘以(1 - 折扣率)\n# @boundary: 当price <= 0时，应抛出ValueError\n# @boundary: 当discount_rate < 0或discount_rate > 1时，应抛出ValueError\n\n✅ 代码转译员完成。\n# @end"
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/王晨曦/.claude/sessions/**)",
+      "Bash(grep -o '\"type\":\"user\"' ~/.claude/projects/d--w-dev-cdd-framework/c7291818-5b91-409d-a7c5-bc34460e7d88.jsonl | wc -l)",
+      "Read(//c/Users/王晨曦/.claude/projects/d--w-dev-cdd-framework/**)",
+      "Bash(cat ~/.claude/projects/d--w-dev-cdd-framework/c7291818-5b91-409d-a7c5-bc34460e7d88.jsonl | grep '\"type\":\"user\"' | head -10 | jq -r '.message.content[] | select\\(.type == \"text\"\\) | .text' 2>/dev/null)",
+      "Bash(ls -lht ~/.claude/projects/ | head -20)",
+      "Read(//c/Users/王晨曦/.claude/projects/**)",
+      "Bash(ls -lht ~/.claude/projects/D--w-dev-cdd/*.jsonl 2>/dev/null | head -5)",
+      "Read(//c/Users/王晨曦/.claude/projects/D--w-dev-cdd/**)"
+    ]
+  }
+}

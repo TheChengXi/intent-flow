@@ -1,0 +1,126 @@
+{
+  "name": "cdd-framework",
+  "displayName": "CDD Framework",
+  "description": "Comment-Driven Development Framework - 注释驱动开发框架",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "files": [
+    "out",
+    "parsers",
+    "node_modules"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "cdd.compile",
+        "title": "CDD: 编译注释为代码"
+      },
+      {
+        "command": "cdd.review",
+        "title": "CDD: 审查代码"
+      },
+      {
+        "command": "cdd.translate",
+        "title": "CDD: 转译代码为注释"
+      },
+      {
+        "command": "cdd.analyze",
+        "title": "CDD: 分析变更影响"
+      },
+      {
+        "command": "cdd.init",
+        "title": "CDD: 初始化项目结构"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "cdd.compile",
+          "group": "cdd@1",
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == javascript || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+        },
+        {
+          "command": "cdd.review",
+          "group": "cdd@2",
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == javascript || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+        },
+        {
+          "command": "cdd.translate",
+          "group": "cdd@3",
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == javascript || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "cdd.compile",
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == javascript || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+        },
+        {
+          "command": "cdd.review",
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == javascript || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+        },
+        {
+          "command": "cdd.translate",
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == javascript || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+        },
+        {
+          "command": "cdd.analyze"
+        },
+        {
+          "command": "cdd.init"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "CDD",
+      "properties": {
+        "cdd.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Claude API Key"
+        },
+        "cdd.apiBaseUrl": {
+          "type": "string",
+          "default": "https://api.anthropic.com",
+          "description": "API Base URL（使用中转时填写中转地址）"
+        },
+        "cdd.modelId": {
+          "type": "string",
+          "default": "claude-sonnet-4-20250514",
+          "description": "模型 ID（例如：claude-sonnet-4-20250514, claude-haiku-4-5-20251001）"
+        },
+        "cdd.targetLanguage": {
+          "type": "string",
+          "default": "",
+          "description": "目标语言（可选，默认从文件扩展名推断。例如：TypeScript, Python, C++, ArkTS）"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "generate-prompts": "ts-node scripts/generatePrompts.ts",
+    "precompile": "npm run generate-prompts",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^18.x",
+    "@types/vscode": "^1.80.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.1",
+    "openai": "^6.37.0",
+    "tree-sitter-wasms": "^0.1.13",
+    "web-tree-sitter": "^0.26.8"
+  }
+}

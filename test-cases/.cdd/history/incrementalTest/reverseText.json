@@ -1,0 +1,73 @@
+{
+  "functionName": "reverseText",
+  "contract": "reverseText:v1.0",
+  "contractVersion": "v1.0",
+  "filePath": "d:\\w_dev\\cdd\\test-cases\\incrementalTest.ts",
+  "history": [
+    {
+      "timestamp": "2026-05-11T12:50:26.369Z",
+      "role": "compiler",
+      "input": {
+        "comment": "// @contract: reverseText(text: string) => string\n// @step: [反转] 将字符串反转\n// @step: [返回] 返回反转后的字符串\n// @boundary: 当 text 为空时，返回空字符串\n",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n",
+        "parsedComment": {
+          "contract": {
+            "functionName": "reverseText",
+            "parameters": [
+              {
+                "name": "text",
+                "type": "string"
+              }
+            ],
+            "returnType": "string",
+            "throwsTypes": [],
+            "version": "reverseText:v1.0"
+          },
+          "steps": [
+            {
+              "description": "[反转] 将字符串反转",
+              "isSimple": false
+            },
+            {
+              "description": "[返回] 返回反转后的字符串",
+              "isSimple": false
+            }
+          ],
+          "boundaries": [
+            {
+              "description": "当 text 为空时，返回空字符串"
+            }
+          ],
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 4,
+              "character": 0
+            }
+          ]
+        }
+      },
+      "output": {
+        "success": true,
+        "content": "function reverseText(text: string): string {\n  if (text === '') {\n    return '';\n  }\n  \n  const reversed = text.split('').reverse().join('');\n  return reversed;\n}\n// @end"
+      }
+    },
+    {
+      "timestamp": "2026-05-11T12:50:32.103Z",
+      "role": "reviewer",
+      "input": {
+        "comment": "// @contract: reverseText(text: string) => string\n// @step: [反转] 将字符串反转\n// @step: [返回] 返回反转后的字符串\n// @boundary: 当 text 为空时，返回空字符串\n",
+        "code": "function reverseText(text: string): string {\n  if (text === '') {\n    return '';\n  }\n  \n  const reversed = text.split('').reverse().join('');\n  return reversed;\n}\n// @end",
+        "compileSpec": "# COMPILE_SPEC.md\n\n## 通用编码规范\n\n### 基本规则\n1. 使用目标语言的严格模式（如有）\n2. 所有函数参数必须有类型标注（如果语言支持）\n3. 所有函数必须有返回类型标注（如果语言支持）\n4. 使用现代变量声明方式（const/let/final 等，避免 var）\n5. 遵循语言的标准函数定义方式\n\n### 命名规范\n- 函数名：遵循目标语言惯例（camelCase 或 snake_case）\n- 变量名：遵循目标语言惯例\n- 类型名：遵循目标语言惯例（PascalCase 或其他）\n- 常量：遵循目标语言惯例（UPPER_SNAKE_CASE 或其他）\n\n### 代码风格\n- 使用目标语言的标准缩进（2 或 4 空格）\n- 遵循目标语言的语句结束符规范\n- 遵循目标语言的字符串引号惯例\n- 遵循目标语言的集合尾随逗号规范\n\n### 错误处理\n- 使用目标语言的标准异常机制（throw/raise/panic 等）\n- 使用自定义错误类型（如果语言支持）\n- 边界条件必须有明确的错误处理\n\n### 示例（TypeScript）\n```typescript\nfunction calculateTotal(items: Item[], taxRate: number): number {\n  if (items.length === 0) {\n    return 0;\n  }\n  \n  if (taxRate < 0 || taxRate > 1) {\n    throw new ValidationError('taxRate must be between 0 and 1');\n  }\n  \n  let subtotal = 0;\n  for (const item of items) {\n    subtotal += item.price * item.quantity;\n  }\n  \n  const tax = subtotal * taxRate;\n  return subtotal + tax;\n}\n```\n\n### 示例（Python）\n```python\ndef calculate_total(items: list[Item], tax_rate: float) -> float:\n    if len(items) == 0:\n        return 0.0\n    \n    if tax_rate < 0 or tax_rate > 1:\n        raise ValidationError('tax_rate must be between 0 and 1')\n    \n    subtotal = 0.0\n    for item in items:\n        subtotal += item.price * item.quantity\n    \n    tax = subtotal * tax_rate\n    return subtotal + tax\n```\n\n"
+      },
+      "output": {
+        "success": true,
+        "content": "审查通过",
+        "issues": []
+      }
+    }
+  ]
+}
