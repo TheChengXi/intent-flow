@@ -7,13 +7,8 @@ import { COMPILER_PROMPT, REVIEWER_PROMPT, TRANSLATOR_PROMPT, PLANNER_PROMPT } f
 // API 请求参数
 export interface ClaudeAPIRequest {
   role: 'compiler' | 'reviewer' | 'translator' | 'code-translator' | 'planner';
-  context: {
-    comment?: string;
-    code?: string;
-    compileSpec?: string;
-    businessRules?: string;
-  };
-  prompt: string;
+  userMessage: string;  // 完整的用户消息，由各 VM 自行构建
+  compileSpec?: string; // 编译规范（仅 compiler 和 reviewer 使用）
 }
 
 // @entity: ClaudeAPIResponse
@@ -34,8 +29,8 @@ export class ClaudeAPIService {
   // @contract: callAPI(request: ClaudeAPIRequest, apiKey: string, baseURL?: string, modelId?: string, provider?: APIProvider) => Promise<ClaudeAPIResponse>
   // @step: [验证输入] 检查 apiKey 是否为空
   // @step: [检测提供商] 根据 baseURL 或 provider 参数判断使用哪个 API 格式
-  // @step: [构建系统提示] 根据 role 构建不同的 system prompt
-  // @step: [构建用户消息] 将 context 和 prompt 组合为用户消息
+  // @step: [构建系统提示] 根据 role 和 compileSpec 构建不同的 system prompt
+  // @step: [获取用户消息] 直接使用 request.userMessage
   // @step: [调用对应 API] 根据提供商调用 Anthropic 或 OpenAI 格式的 API
   // @step: [重试逻辑] 失败后等待 2 秒重试 1 次（BR-006）
   // @step: [解析响应] 提取 content 和 usage 信息
@@ -50,8 +45,8 @@ export class ClaudeAPIService {
     // 自动检测提供商
     const detectedProvider = provider || this.detectProvider(baseURL);
 
-    const systemPrompt = this.buildSystemPrompt(request.role);
-    const userMessage = this.buildUserMessage(request);
+    const systemPrompt = this.buildSystemPrompt(request.role, request.compileSpec);
+    const userMessage = request.userMessage;
 
     let lastError: any;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -91,31 +86,7 @@ export class ClaudeAPIService {
   }
   // @end
 
-  // @contract: buildUserMessage(request: ClaudeAPIRequest) => string
-  // @step: [拼接注释] 如果有 comment，添加到消息中
-  // @step: [拼接代码] 如果有 code，添加到消息中
-  // @step: [拼接规范] 如果有 compileSpec，添加到消息中
-  // @step: [拼接规则] 如果有 businessRules，添加到消息中
-  // @step: [拼接任务] 添加 prompt 到消息中
-  // @step: [返回] 返回完整的用户消息
-  private buildUserMessage(request: ClaudeAPIRequest): string {
-    let userMessage = '';
-    if (request.context.comment) {
-      userMessage += `## 注释\n${request.context.comment}\n\n`;
-    }
-    if (request.context.code) {
-      userMessage += `## 代码\n${request.context.code}\n\n`;
-    }
-    if (request.context.compileSpec) {
-      userMessage += `## 编译规范\n${request.context.compileSpec}\n\n`;
-    }
-    if (request.context.businessRules) {
-      userMessage += `## 业务规则\n${request.context.businessRules}\n\n`;
-    }
-    userMessage += `## 任务\n${request.prompt}`;
-    return userMessage;
-  }
-  // @end
+  
 
   // @contract: callAnthropic(userMessage: string, systemPrompt: string, apiKey: string, baseURL?: string, modelId?: string) => Promise<ClaudeAPIResponse>
   // @step: [配置客户端] 创建 Anthropic 客户端
@@ -238,29 +209,44 @@ export class ClaudeAPIService {
   }
   // @end
 
-  // @contract: buildSystemPrompt(role: string) => string
+  // @contract: buildSystemPrompt(role: string, compileSpec?: string) => string
   // @step: [选择模板] 根据 role 返回对应的系统提示词
   // @step: [编译器] 返回范式定义的编译器提示词 + 工程补充规则
   // @step: [审查员] 返回范式定义的审查员提示词
   // @step: [转译员] 返回范式定义的转译员提示词 + 工程补充规则
+  // @step: [追加规范] 如果 role 是 compiler 或 reviewer 且 compileSpec 存在，追加到系统提示词
   // @boundary: 当 role 未知时，返回通用提示词
-  private buildSystemPrompt(role: string): string {
+  private buildSystemPrompt(role: string, compileSpec?: string): string {
+    let prompt = '';
+
     switch (role) {
       case 'compiler':
         // 范式版本 + 工程补充
-        return COMPILER_PROMPT + '\n\n重要：只输出纯代码，不要包含任何注释（包括原始的 @contract、@step、@boundary 注释），不要添加代码块标记（```），不要解释。直接输出可执行的代码。';
+        prompt = COMPILER_PROMPT + '\n\n重要：只输出纯代码，不要包含任何注释（包括原始的 @contract、@step、@boundary 注释），不要添加代码块标记（```），不要解释。直接输出可执行的代码。';
+        break;
       case 'reviewer':
-        return REVIEWER_PROMPT;
+        prompt = REVIEWER_PROMPT;
+        break;
       case 'translator':
         // 范式版本 + 工程补充（格式规范）
-        return TRANSLATOR_PROMPT + '\n\n重要格式规范：\n1. 必须严格按照 CDD v2.4.1 格式输出\n2. @contract 格式：functionName(param1: Type1, param2: Type2) => ReturnType\n3. @step 格式：[意图] 描述\n4. @boundary 格式：当<条件>时，应<动作>\n5. 每个注释独占一行，以 // 或 # 开头\n6. 不要输出文档注释格式（/** */）\n7. 不要解释代码，只提取意图\n\n示例输出：\n// @contract: add(a: number, b: number) => number\n// @step: [验证] 检查参数类型\n// @step: [计算] 返回 a + b\n// @boundary: 当参数不是数字时，抛出 TypeError';
+        prompt = TRANSLATOR_PROMPT + '\n\n重要格式规范：\n1. 必须严格按照 CDD v2.4.1 格式输出\n2. @contract 格式：functionName(param1: Type1, param2: Type2) => ReturnType\n3. @step 格式：[意图] 描述\n4. @boundary 格式：当<条件>时，应<动作>\n5. 每个注释独占一行，以 // 或 # 开头\n6. 不要输出文档注释格式（/** */）\n7. 不要解释代码，只提取意图\n\n示例输出：\n// @contract: add(a: number, b: number) => number\n// @step: [验证] 检查参数类型\n// @step: [计算] 返回 a + b\n// @boundary: 当参数不是数字时，抛出 TypeError';
+        break;
       case 'code-translator':
-        return '你是代码转译员。将代码的变更同步为注释更新，检测契约冲突。';
+        prompt = '你是代码转译员。将代码的变更同步为注释更新，检测契约冲突。';
+        break;
       case 'planner':
-        return PLANNER_PROMPT;
+        prompt = PLANNER_PROMPT;
+        break;
       default:
-        return '你是 CDD 助手。协助用户完成 Comment-Driven Development 相关任务。';
+        prompt = '你是 CDD 助手。协助用户完成 Comment-Driven Development 相关任务。';
     }
+
+    // 只有 compiler 和 reviewer 才追加 compileSpec
+    if ((role === 'compiler' || role === 'reviewer') && compileSpec && compileSpec.trim() !== '') {
+      prompt += '\n\n## 项目编译规范\n' + compileSpec;
+    }
+
+    return prompt;
   }
   // @end
 }

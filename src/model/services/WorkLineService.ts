@@ -476,4 +476,147 @@ export class WorkLineService {
       return null;
     }
   }
+
+  // @contract: extractTypeReferences(contractLine: string) => string[]
+  // @step: [提取参数类型] 从参数列表中提取类型（param: Type）
+  // @step: [提取返回类型] 从返回值中提取类型（=> Type）
+  // @step: [展开泛型] 从泛型中提取内部类型（Promise<User> => User）
+  // @step: [过滤内置类型] 过滤掉基础类型和标准库类型
+  // @step: [去重] 使用 Set 去除重复的类型名
+  // @step: [返回] 返回类型名数组
+  // @boundary: 当 contractLine 格式不正确时，返回空数组
+  static extractTypeReferences(contractLine: string): string[] {
+    const types = new Set<string>();
+
+    // 内置类型列表
+    const builtinTypes = new Set([
+      // 基础类型
+      'string', 'number', 'boolean', 'null', 'undefined', 'void', 'any', 'unknown', 'never', 'symbol', 'bigint',
+      // 标准库类型
+      'Promise', 'Array', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Date', 'Error', 'RegExp',
+      'Partial', 'Required', 'Readonly', 'Record', 'Pick', 'Omit', 'Exclude', 'Extract',
+      // 前端类型（假设 React 已导入）
+      'JSX', 'React', 'ReactNode', 'ReactElement', 'FC', 'Component'
+    ]);
+
+    // 提取所有类型引用的正则（匹配 : Type 或 => Type）
+    const typeRegex = /:\s*([A-Z][a-zA-Z0-9_<>,\s\[\]|&]*)|=>\s*([A-Z][a-zA-Z0-9_<>,\s\[\]|&]*)/g;
+
+    let match;
+    while ((match = typeRegex.exec(contractLine)) !== null) {
+      const typeStr = match[1] || match[2];
+      if (typeStr) {
+        // 提取所有类型名（包括泛型内部的类型）
+        const typeNames = this.extractTypeNamesFromTypeString(typeStr.trim());
+        typeNames.forEach(typeName => {
+          if (!builtinTypes.has(typeName)) {
+            types.add(typeName);
+          }
+        });
+      }
+    }
+
+    return Array.from(types);
+  }
+  // @end
+
+  // @contract: extractTypeNamesFromTypeString(typeStr: string) => string[]
+  // @step: [移除空格] 移除所有空格
+  // @step: [提取类型名] 使用正则提取所有大写开头的类型名
+  // @step: [过滤关键字] 过滤掉 Promise, Array 等泛型容器
+  // @step: [返回] 返回类型名数组
+  private static extractTypeNamesFromTypeString(typeStr: string): string[] {
+    const types: string[] = [];
+
+    // 移除空格
+    const cleaned = typeStr.replace(/\s+/g, '');
+
+    // 提取所有大写开头的标识符（类型名）
+    const typeNameRegex = /[A-Z][a-zA-Z0-9_]*/g;
+    let match;
+    while ((match = typeNameRegex.exec(cleaned)) !== null) {
+      types.push(match[0]);
+    }
+
+    return types;
+  }
+  // @end
+
+  // @contract: searchTypeDefinitionInFile(typeName: string, filePath: string) => Promise<string | null>
+  // @step: [读取文件] 读取指定文件内容
+  // @step: [搜索类型定义] 搜索 interface/type/class/enum TypeName
+  // @step: [提取定义块] 提取完整的类型定义代码
+  // @step: [返回] 返回类型定义文本或 null
+  // @boundary: 当文件不存在时，返回 null
+  // @boundary: 当类型未找到时，返回 null
+  static async searchTypeDefinitionInFile(typeName: string, filePath: string): Promise<string | null> {
+    const fs = require('fs').promises;
+
+    try {
+      console.log(`[WorkLineService] 搜索类型定义: ${typeName} 在文件: ${filePath}`);
+      const content = await fs.readFile(filePath, 'utf-8');
+      console.log(`[WorkLineService] 文件内容长度: ${content.length}`);
+
+      // 搜索类型定义（interface, type, class, enum）
+      const typeDefRegex = new RegExp(`^\\s*(export\\s+)?(interface|type|class|enum)\\s+${typeName}\\b`, 'm');
+      const match = typeDefRegex.exec(content);
+
+      if (!match) {
+        console.log(`[WorkLineService] 未找到类型定义: ${typeName}`);
+        return null;
+      }
+
+      console.log(`[WorkLineService] 找到类型定义: ${typeName} at index ${match.index}`);
+
+      // 找到定义的起始位置
+      const startIndex = match.index;
+      const lines = content.split('\n');
+      let currentIndex = 0;
+      let startLine = 0;
+
+      // 找到起始行
+      for (let i = 0; i < lines.length; i++) {
+        if (currentIndex + lines[i].length >= startIndex) {
+          startLine = i;
+          break;
+        }
+        currentIndex += lines[i].length + 1; // +1 for newline
+      }
+
+      // 提取完整的类型定义
+      let definition = '';
+      let braceCount = 0;
+      let inDefinition = false;
+
+      for (let i = startLine; i < lines.length; i++) {
+        const line = lines[i];
+        definition += line + '\n';
+
+        // 计算大括号数量
+        for (const char of line) {
+          if (char === '{') {
+            braceCount++;
+            inDefinition = true;
+          } else if (char === '}') {
+            braceCount--;
+          }
+        }
+
+        // 如果是 type 别名（没有大括号），遇到分号或换行结束
+        if (!inDefinition && line.includes('=') && (line.trim().endsWith(';') || line.trim().endsWith(','))) {
+          break;
+        }
+
+        // 如果大括号匹配完成，结束
+        if (inDefinition && braceCount === 0) {
+          break;
+        }
+      }
+
+      return definition.trim();
+    } catch (error) {
+      return null;
+    }
+  }
+  // @end
 }

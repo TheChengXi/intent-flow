@@ -30,14 +30,12 @@ class ReviewerVM extends BaseRole_1.BaseRole {
             const dimensions = this.buildReviewDimensions();
             const commentText = this.formatComment(context.comment);
             console.log('[ReviewerVM] 构建 API 请求...');
+            // 构建用户消息
+            const userMessage = this.buildUserMessage(commentText, context.code, context.compileSpec);
             const request = {
                 role: 'reviewer',
-                context: {
-                    comment: commentText,
-                    code: context.code,
-                    compileSpec: context.compileSpec
-                },
-                prompt: `审查代码是否符合注释。检查以下维度：\n${dimensions.map((d, i) => `${i + 1}. ${d}`).join('\n')}\n\n输出格式：\n- 每个维度的状态（PASS/WARN/FAIL）\n- 不一致项列表（如有）`
+                userMessage: userMessage,
+                compileSpec: context.compileSpec
             };
             console.log('[ReviewerVM] 调用 API...');
             const response = await this.apiService.callAPI(request, context.apiKey, context.apiBaseUrl, context.modelId);
@@ -250,6 +248,18 @@ class ReviewerVM extends BaseRole_1.BaseRole {
         }
         const hasMajor = inconsistencies.some(i => i.type === 'CONTRACT_MISMATCH' || i.type === 'STEP_MISSING');
         return hasMajor ? 'MAJOR_VIOLATION' : 'MINOR_DEVIATION';
+    }
+    // @end
+    // @contract: buildUserMessage(commentText: string, code: string, compileSpec: string) => string
+    // @step: [构建参数] 按函数调用风格构建参数列表
+    // @step: [添加必需参数] 添加 comment、code、compileSpec
+    // @step: [返回] 返回完整的用户消息
+    buildUserMessage(commentText, code, compileSpec) {
+        let message = '';
+        message += `comment:\n${commentText}\n\n`;
+        message += `code:\n${code}\n\n`;
+        message += `compileSpec:\n${compileSpec}\n\n`;
+        return message.trim();
     }
 }
 exports.ReviewerVM = ReviewerVM;

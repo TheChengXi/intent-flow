@@ -1,0 +1,67 @@
+{
+  "functionName": "renderUserProfile",
+  "contract": "renderUserProfile:v1.0",
+  "contractVersion": "v1.0",
+  "filePath": "d:\\w_dev\\cdd\\test-cases\\src\\view\\UserProfile.tsx",
+  "history": [
+    {
+      "timestamp": "2026-05-13T10:16:51.372Z",
+      "role": "compiler",
+      "input": {
+        "comment": "// @contract: renderUserProfile(user: User) => JSX.Element\n// @step: [验证用户] 检查 user 对象是否有效\n// @step: [渲染头像] 渲染用户头像组件\n// @step: [渲染信息] 渲染用户名、邮箱等信息\n// @step: [返回] 返回完整的 JSX 元素\n// @boundary: 当 user 为 null 时，返回空状态组件",
+        "compileSpec": "",
+        "parsedComment": {
+          "contract": {
+            "functionName": "renderUserProfile",
+            "parameters": [
+              {
+                "name": "user",
+                "type": "User"
+              }
+            ],
+            "returnType": "JSX.Element",
+            "throwsTypes": [],
+            "version": "renderUserProfile:v1.0"
+          },
+          "steps": [
+            {
+              "description": "[验证用户] 检查 user 对象是否有效",
+              "isSimple": false
+            },
+            {
+              "description": "[渲染头像] 渲染用户头像组件",
+              "isSimple": false
+            },
+            {
+              "description": "[渲染信息] 渲染用户名、邮箱等信息",
+              "isSimple": false
+            },
+            {
+              "description": "[返回] 返回完整的 JSX 元素",
+              "isSimple": false
+            }
+          ],
+          "boundaries": [
+            {
+              "description": "当 user 为 null 时，返回空状态组件"
+            }
+          ],
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 5,
+              "character": 34
+            }
+          ]
+        }
+      },
+      "output": {
+        "success": true,
+        "content": "function renderUserProfile(user: User): JSX.Element {\n  if (!user) {\n    return <div className=\"empty-state\">No user data available</div>;\n  }\n\n  return (\n    <div className=\"user-profile\">\n      <div className=\"avatar-section\">\n        {user.avatar && <img src={user.avatar} alt={user.name} className=\"avatar\" />}\n        {!user.avatar && <div className=\"avatar-placeholder\">No Avatar</div>}\n      </div>\n      <div className=\"info-section\">\n        <h2 className=\"user-name\">{user.name}</h2>\n        <p className=\"user-email\">{user.email}</p>\n      </div>\n    </div>\n  );\n}\n// @end"
+      }
+    }
+  ]
+}

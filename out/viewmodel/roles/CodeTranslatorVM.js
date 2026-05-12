@@ -16,13 +16,11 @@ class CodeTranslatorVM extends BaseRole_1.BaseRole {
     async execute(context) {
         try {
             const oldContractStr = `${context.oldComment.contract.functionName}(${context.oldComment.contract.parameters.map(p => `${p.name}: ${p.type}`).join(', ')}) => ${context.oldComment.contract.returnType}`;
+            // 构建用户消息
+            const userMessage = this.buildUserMessage(context.code, oldContractStr);
             const request = {
                 role: 'code-translator',
-                context: {
-                    code: context.code,
-                    comment: oldContractStr
-                },
-                prompt: '根据代码更新生成新的 CDD 注释。如果函数签名、返回类型或异常类型发生变化，请明确标注"契约冲突"。'
+                userMessage: userMessage
             };
             const response = await this.apiService.callAPI(request, context.apiKey);
             if (response.content.includes('契约冲突')) {
@@ -53,6 +51,17 @@ class CodeTranslatorVM extends BaseRole_1.BaseRole {
     // @boundary: 当两个契约相同时，返回 false
     detectContractConflict(oldContract, newContract) {
         return oldContract !== newContract;
+    }
+    // @end
+    // @contract: buildUserMessage(code: string, oldContract: string) => string
+    // @step: [构建参数] 按函数调用风格构建参数列表
+    // @step: [添加必需参数] 添加 code 和 oldContract
+    // @step: [返回] 返回完整的用户消息
+    buildUserMessage(code, oldContract) {
+        let message = '';
+        message += `code:\n${code}\n\n`;
+        message += `oldContract: ${oldContract}\n\n`;
+        return message.trim();
     }
 }
 exports.CodeTranslatorVM = CodeTranslatorVM;

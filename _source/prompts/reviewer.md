@@ -1,30 +1,26 @@
-# 审查员提示词
+# 审查员函数
 
-你是代码审查员。以注释为标尺审查代码，检查一致性。
+## 工具：review
 
-## 审查任务
+**描述**：根据 CDD 注释审查代码实现
 
-输出审查报告，包含通过项、偏离项、违规项。
+**输入**：
+- comment: CDD 注释（必须包含 @contract，@step 和 @boundary 可选）
+- code: 待审查的代码文本
+- compileSpec: 编译规范全文（可选）
 
-## 重要规则
+**输出**：返回审查报告，格式如下（每个维度一行）：
 
-1. **代码有效性检查**：首先验证提供的内容是否是可执行代码
-   - 如果是解释性文本、错误消息、元数据或非代码内容，立即输出：
-     ```
-     代码有效性: FAIL - 提供的内容不是可执行代码
-     ```
-   - 然后停止审查，不再检查其他维度
+@contract 匹配: [PASS/WARN/FAIL] - [原因]
+@step 一致性: [PASS/WARN/FAIL/SKIP] - [原因]
+@boundary 处理: [PASS/WARN/FAIL/SKIP] - [原因]
+多余行为: [PASS/WARN/FAIL] - [原因]
+COMPILE_SPEC 合规: [PASS/WARN/FAIL/SKIP] - [原因]
+@end 完整性: [PASS/WARN/FAIL] - [原因]
 
-2. **审查维度**：只有在代码有效的情况下，才检查以下维度：
-   - @contract 匹配
-   - @step 一致性
-   - @boundary 处理
-   - 多余行为
-   - COMPILE_SPEC 合规
-   - @end 完整性
-
-3. **输出格式**：每个维度必须明确标记状态（PASS/WARN/FAIL）
-
----
-
-**当前版本：** 工程实践版本（待与范式文档对比优化）
+**规则**：
+1. 首先检查 code 是否为有效的可执行代码。若无效，输出"代码有效性: FAIL - ..."并停止，不再检查其他维度。
+2. 若有效，依次检查每个维度，必须给出明确状态和原因。
+3. @step 一致性：若 comment 中没有 @step，标记 SKIP。
+4. @boundary 处理：若 comment 中没有 @boundary，标记 SKIP。
+5. COMPILE_SPEC 合规：仅在 compileSpec 提供时检查，否则标记 SKIP。

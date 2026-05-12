@@ -6,10 +6,13 @@ import * as AnalyzeCommand from './viewmodel/commands/AnalyzeCommand';
 import * as InitCommand from './viewmodel/commands/InitCommand';
 
 // @contract: activate(context: vscode.ExtensionContext) => void
-// @step: [注册命令] 注册所有 Command（compile, review, translate, analyze, init）
-// @step: [注册菜单] 注册右键菜单和命令面板
-// @step: [初始化服务] 初始化 ClaudeAPIService、FileRepository 等单例
-// @boundary: 当激活失败时，记录错误日志但不阻塞 VSCode
+// @step: [初始化] 输出激活日志
+// @step: [注册] 注册 5 个命令处理器（compile、review、translate、analyze、init）
+// @step: [订阅] 将所有命令注册器推入上下文订阅列表以确保资源清理
+// @boundary: 当 context 为 undefined 时，应抛出 TypeError
+// @boundary: 当命令注册失败时，应捕获异常并输出错误日志
+// @boundary: 当订阅列表已满时，应检查内存泄漏风险
+
 export function activate(context: vscode.ExtensionContext) {
   console.log('CDD Validator 已激活');
 

@@ -135,6 +135,14 @@ class HistoryRepository {
         const history = await this.getHistory(workspaceRoot, filePath, functionName);
         return history ? history.contract : null;
     }
+    static async getAllCompilerRecords(workspaceRoot, filePath, functionName) {
+        const history = await this.getHistory(workspaceRoot, filePath, functionName);
+        if (!history) {
+            return [];
+        }
+        return history.history.filter(r => r.role === 'compiler');
+    }
 }
 exports.HistoryRepository = HistoryRepository;
+// @end
 //# sourceMappingURL=HistoryRepository.js.map

@@ -44,31 +44,31 @@
         {
           "command": "cdd.compile",
           "group": "cdd@1",
-          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == javascript || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
         },
         {
           "command": "cdd.review",
           "group": "cdd@2",
-          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == javascript || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
         },
         {
           "command": "cdd.translate",
           "group": "cdd@3",
-          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == javascript || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
         }
       ],
       "commandPalette": [
         {
           "command": "cdd.compile",
-          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == javascript || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
         },
         {
           "command": "cdd.review",
-          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == javascript || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
         },
         {
           "command": "cdd.translate",
-          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == javascript || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
         },
         {
           "command": "cdd.analyze"

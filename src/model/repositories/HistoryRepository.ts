@@ -124,4 +124,14 @@ export class HistoryRepository {
     const history = await this.getHistory(workspaceRoot, filePath, functionName);
     return history ? history.contract : null;
   }
+
+  static async getAllCompilerRecords(workspaceRoot: string, filePath: string, functionName: string): Promise<WorkLineHistoryRecord[]> {
+    const history = await this.getHistory(workspaceRoot, filePath, functionName);
+    if (!history) {
+      return [];
+    }
+
+    return history.history.filter(r => r.role === 'compiler');
+  }
 }
+// @end

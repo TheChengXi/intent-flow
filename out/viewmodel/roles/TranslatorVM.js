@@ -28,23 +28,11 @@ class TranslatorVM extends BaseRole_1.BaseRole {
             }
             const language = this.detectLanguage(context.filePath, context.languageId);
             const commentPrefix = this.getCommentPrefix(language);
+            // 构建用户消息
+            const userMessage = this.buildUserMessage(context.code, language, commentPrefix);
             const request = {
                 role: 'translator',
-                context: {
-                    code: context.code,
-                    compileSpec: context.compileSpec
-                },
-                prompt: `将以下 ${language} 代码逆向生成 CDD 格式注释（@contract、@step、@boundary）。
-
-重要规则：
-1. 使用 ${language} 的注释语法：${commentPrefix}
-2. 注释格式示例：
-   ${commentPrefix} @contract: functionName(param: type) => returnType
-   ${commentPrefix} @step: [意图] 描述
-   ${commentPrefix} @boundary: 当条件时，应动作
-3. 只输出注释，不要包含代码
-4. 如果代码逻辑混乱无法理解，请明确说明"代码逻辑混乱"
-5. 注释末尾添加 ${commentPrefix} @end`
+                userMessage: userMessage
             };
             const response = await this.apiService.callAPI(request, context.apiKey, context.apiBaseUrl, context.modelId);
             let comments = response.content.trim();
@@ -181,6 +169,16 @@ class TranslatorVM extends BaseRole_1.BaseRole {
             }
         }
         return validLines.join('\n');
+    }
+    // @contract: buildUserMessage(code: string, language: string, commentPrefix: string) => string
+    // @step: [构建参数] 按函数调用风格构建参数列表
+    // @step: [添加必需参数] 添加 code 和 targetLanguage
+    // @step: [返回] 返回完整的用户消息
+    buildUserMessage(code, language, commentPrefix) {
+        let message = '';
+        message += `code:\n${code}\n\n`;
+        message += `targetLanguage: ${language}\n\n`;
+        return message.trim();
     }
 }
 exports.TranslatorVM = TranslatorVM;

@@ -5,6 +5,7 @@ import * as DependencyTracker from '../../model/services/DependencyTracker';
 import { ValidationError } from '../../model/entities/Errors';
 import { ContractDependency } from '../../model/entities/CompileRecord';
 import { StepDiff } from '../../model/services/StepDiffDetector';
+import { CallGraphService } from '../../model/services/CallGraphService';
 
 // @entity: CompileContext
 // 编译上下文
@@ -66,7 +67,6 @@ export class CompilerVM extends BaseRole {
       const language = this.detectLanguage(context.filePath, context.targetLanguage);
       const commentText = this.formatComment(context.comment);
 
-      const hasCompileSpec = context.compileSpec && context.compileSpec.trim() !== '';
       const hasReferencedContracts = context.referencedContracts && context.referencedContracts.length > 0;
       const hasReviewFeedback = context.reviewFeedback && context.reviewFeedback.trim() !== '';
       const isIncremental = context.isIncremental && context.stepDiff;
@@ -74,7 +74,29 @@ export class CompilerVM extends BaseRole {
       // 构建引用契约的文本
       let referencedContractsText = '';
       if (hasReferencedContracts) {
-        referencedContractsText = '\n\n## 引用的函数契约\n' + context.referencedContracts!.join('\n\n');
+        // 分离类型定义和函数契约
+        const typeDefinitions: string[] = [];
+        const functionContracts: string[] = [];
+
+        for (const contract of context.referencedContracts!) {
+          // 判断是类型定义还是函数契约
+          if (contract.match(/^\s*(export\s+)?(interface|type|class|enum)\s+/m)) {
+            typeDefinitions.push(contract);
+          } else {
+            functionContracts.push(contract);
+          }
+        }
+
+        // 按字母序排序，保证提示词稳定性，最大化缓存命中率
+        if (typeDefinitions.length > 0) {
+          const sortedTypes = [...typeDefinitions].sort();
+          referencedContractsText += '\n\n## 项目中已存在的类型定义\n以下类型已在项目中定义，请直接使用，不要重复创建：\n\n' + sortedTypes.join('\n\n');
+        }
+
+        if (functionContracts.length > 0) {
+          const sortedContracts = [...functionContracts].sort();
+          referencedContractsText += '\n\n## 引用的函数契约\n' + sortedContracts.join('\n\n');
+        }
       }
 
       // 构建审查反馈文本
@@ -117,27 +139,19 @@ export class CompilerVM extends BaseRole {
         incrementalText += '\n请基于上次代码进行增量修改，保留未变化步骤的实现，只修改新增和删除步骤相关的部分。';
       }
 
+      // 构建用户消息（函数调用风格）
+      const userMessage = this.buildUserMessage(
+        commentText,
+        language,
+        referencedContractsText,
+        reviewFeedbackText,
+        incrementalText
+      );
+
       const request: ClaudeAPIRequest = {
         role: 'compiler',
-        context: {
-          comment: commentText + referencedContractsText + reviewFeedbackText + incrementalText,
-          compileSpec: context.compileSpec
-        },
-        prompt: `你是 ${language} 编译器。根据 @contract 中的类型签名生成严格类型化的代码。
-
-重要规则：
-1. 函数参数必须包含完整的类型标注（如 a: number）
-2. 返回值必须包含类型标注${hasReferencedContracts ? `
-3. 当调用其他函数时，参考"引用的函数契约"部分，确保调用方式正确` : ''}${hasReviewFeedback ? `
-${hasReferencedContracts ? '4' : '3'}. 上次审查发现问题，请根据"上次审查反馈"修正代码` : ''}${isIncremental ? `
-${hasReviewFeedback ? (hasReferencedContracts ? '5' : '4') : (hasReferencedContracts ? '4' : '3')}. 这是增量编译模式，请基于上次代码进行增量修改，保留未变化步骤的实现` : ''}${hasCompileSpec ? `
-${isIncremental ? (hasReviewFeedback ? (hasReferencedContracts ? '6' : '5') : (hasReferencedContracts ? '5' : '4')) : (hasReviewFeedback ? (hasReferencedContracts ? '5' : '4') : (hasReferencedContracts ? '4' : '3'))}. 严格遵循 COMPILE_SPEC 中的 ${language} 编码规范
-${isIncremental ? (hasReviewFeedback ? (hasReferencedContracts ? '7' : '6') : (hasReferencedContracts ? '6' : '5')) : (hasReviewFeedback ? (hasReferencedContracts ? '6' : '5') : (hasReferencedContracts ? '5' : '4'))}. 只输出纯代码，不要包含任何注释（包括原始的 @contract、@step、@boundary 注释）
-${isIncremental ? (hasReviewFeedback ? (hasReferencedContracts ? '8' : '7') : (hasReferencedContracts ? '7' : '6')) : (hasReviewFeedback ? (hasReferencedContracts ? '7' : '6') : (hasReferencedContracts ? '6' : '5'))}. 不要添加代码块标记（\`\`\`）
-${isIncremental ? (hasReviewFeedback ? (hasReferencedContracts ? '9' : '8') : (hasReferencedContracts ? '8' : '7')) : (hasReviewFeedback ? (hasReferencedContracts ? '8' : '7') : (hasReferencedContracts ? '7' : '6'))}. 不要解释，直接输出可执行的代码` : `
-${isIncremental ? (hasReviewFeedback ? (hasReferencedContracts ? '6' : '5') : (hasReferencedContracts ? '5' : '4')) : (hasReviewFeedback ? (hasReferencedContracts ? '5' : '4') : (hasReferencedContracts ? '4' : '3'))}. 只输出纯代码，不要包含任何注释（包括原始的 @contract、@step、@boundary 注释）
-${isIncremental ? (hasReviewFeedback ? (hasReferencedContracts ? '7' : '6') : (hasReferencedContracts ? '6' : '5')) : (hasReviewFeedback ? (hasReferencedContracts ? '6' : '5') : (hasReferencedContracts ? '5' : '4'))}. 不要添加代码块标记（\`\`\`）
-${isIncremental ? (hasReviewFeedback ? (hasReferencedContracts ? '8' : '7') : (hasReferencedContracts ? '7' : '6')) : (hasReviewFeedback ? (hasReferencedContracts ? '7' : '6') : (hasReferencedContracts ? '6' : '5'))}. 不要解释，直接输出可执行的代码`}`
+        userMessage: userMessage,
+        compileSpec: context.compileSpec
       };
 
       const response = await this.apiService.callAPI(request, context.apiKey, context.apiBaseUrl, context.modelId);
@@ -182,12 +196,33 @@ ${isIncremental ? (hasReviewFeedback ? (hasReferencedContracts ? '8' : '7') : (h
       // 统一添加符合当前语言规范的 @end 标记
       code += `\n${commentPrefix} @end`;
 
-      const dependencies = this.extractDependencies(code);
+      const dependencies = await this.extractDependencies(code, context.filePath, targetLang);
       DependencyTracker.recordDependency(context.comment.contract.functionName, dependencies);
+
+      // 问题 4 修复：验证依赖是否存在契约
+      const missingContracts: string[] = [];
+      const referencedContractNames = new Set(
+        (context.referencedContracts || []).map(contract => {
+          const match = contract.match(/@contract:\s*(\w+)\s*\(/);
+          return match ? match[1] : '';
+        }).filter(name => name !== '')
+      );
+
+      for (const dep of dependencies) {
+        if (!referencedContractNames.has(dep.contractName)) {
+          missingContracts.push(dep.contractName);
+        }
+      }
+
+      let message = `编译完成：${context.comment.contract.functionName}${isIncremental ? '（增量模式）' : ''}`;
+      if (missingContracts.length > 0) {
+        message += `\n⚠️ 警告：发现未知依赖函数（未提供契约）：${missingContracts.join(', ')}`;
+        console.warn('[CompilerVM] 发现未知依赖:', missingContracts);
+      }
 
       return {
         success: true,
-        message: `编译完成：${context.comment.contract.functionName}${isIncremental ? '（增量模式）' : ''}`,
+        message: message,
         artifacts: code
       };
     } catch (error: any) {
@@ -234,20 +269,79 @@ ${isIncremental ? (hasReviewFeedback ? (hasReferencedContracts ? '8' : '7') : (h
   }
   // @end
 
-  // @contract: extractDependencies(code: string) => ContractDependency[]
-  // @step: [正则匹配] 使用正则提取所有函数调用（函数名后跟括号）
+  // @contract: extractDependencies(code: string, filePath?: string, language?: string) => Promise<ContractDependency[]>
+  // @step: [尝试 Tree-sitter] 如果提供了 filePath 和 language，尝试使用 CallGraphService
+  // @step: [正则匹配] 使用正则提取所有函数调用（函数名后跟括号）作为兜底方案
   // @step: [去重] 使用 Set 去除重复的函数名
+  // @step: [过滤标准库] 过滤掉标准库函数和内置函数
   // @step: [构建依赖] 为每个函数名构建 ContractDependency 对象，版本默认 v1.0
   // @step: [返回] 返回依赖数组
-  private extractDependencies(code: string): ContractDependency[] {
-    const functionCallRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g;
+  private async extractDependencies(code: string, filePath?: string, language?: string): Promise<ContractDependency[]> {
     const dependencies: ContractDependency[] = [];
     const seen = new Set<string>();
 
+    // 标准库函数列表（问题 4 修复）
+    const STDLIB_FUNCTIONS = new Set([
+      // JavaScript/TypeScript
+      'console', 'Math', 'Date', 'Array', 'Object', 'String', 'Number', 'Boolean',
+      'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval', 'Promise', 'JSON',
+      'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURI', 'decodeURI',
+      'encodeURIComponent', 'decodeURIComponent', 'eval', 'Map', 'Set', 'WeakMap', 'WeakSet',
+      'Symbol', 'Proxy', 'Reflect', 'Error', 'TypeError', 'ReferenceError', 'SyntaxError',
+      'RegExp', 'Function', 'ArrayBuffer', 'DataView', 'Int8Array', 'Uint8Array',
+      // Python
+      'print', 'len', 'range', 'enumerate', 'zip', 'map', 'filter', 'reduce',
+      'sorted', 'reversed', 'sum', 'min', 'max', 'abs', 'round', 'pow',
+      'open', 'input', 'type', 'isinstance', 'hasattr', 'getattr', 'setattr',
+      'dir', 'help', 'id', 'hash', 'hex', 'oct', 'bin', 'chr', 'ord',
+      // C/C++
+      'printf', 'scanf', 'malloc', 'free', 'sizeof', 'strlen', 'strcpy', 'strcmp',
+      'memcpy', 'memset', 'fopen', 'fclose', 'fread', 'fwrite', 'fprintf', 'fscanf',
+      // Go
+      'make', 'len', 'cap', 'append', 'copy', 'delete', 'panic', 'recover',
+      'close', 'new', 'println', 'printf'
+    ]);
+
+    // 尝试使用 CallGraphService（更精确）
+    if (filePath && language) {
+      try {
+        // 临时写入代码到文件以供 CallGraphService 分析
+        const fs = require('fs/promises');
+        const tempFile = filePath + '.tmp';
+        await fs.writeFile(tempFile, code, 'utf-8');
+
+        const graph = await CallGraphService.buildFileCallGraph(tempFile, language);
+
+        // 清理临时文件
+        await fs.unlink(tempFile);
+
+        // 收集所有函数调用
+        for (const [funcName, node] of graph.nodes) {
+          for (const callee of node.callees) {
+            if (!seen.has(callee) && !STDLIB_FUNCTIONS.has(callee)) {
+              seen.add(callee);
+              dependencies.push({
+                contractName: callee,
+                version: 'v1.0'
+              });
+            }
+          }
+        }
+
+        if (dependencies.length > 0) {
+          return dependencies;
+        }
+      } catch (error) {
+        console.warn('CallGraphService failed, falling back to regex:', error);
+      }
+    }
+
+    // 兜底方案：使用正则匹配
+    const functionCallRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g;
     let match;
     while ((match = functionCallRegex.exec(code)) !== null) {
       const funcName = match[1];
-      if (!seen.has(funcName)) {
+      if (!seen.has(funcName) && !STDLIB_FUNCTIONS.has(funcName)) {
         seen.add(funcName);
         dependencies.push({
           contractName: funcName,
@@ -317,6 +411,45 @@ ${isIncremental ? (hasReviewFeedback ? (hasReferencedContracts ? '8' : '7') : (h
       'ArkTS': '//'
     };
     return prefixMap[language] || '//';
+  }
+  // @end
+
+  // @contract: buildUserMessage(commentText: string, language: string, referencedContracts?: string, reviewFeedback?: string, incrementalText?: string) => string
+  // @step: [构建参数] 按函数调用风格构建参数列表
+  // @step: [添加必需参数] 添加 comment 和 targetLanguage
+  // @step: [添加可选参数] 如果存在，添加 referencedContracts、context
+  // @step: [返回] 返回完整的用户消息
+  private buildUserMessage(
+    commentText: string,
+    language: string,
+    referencedContracts?: string,
+    reviewFeedback?: string,
+    incrementalText?: string
+  ): string {
+    let message = '';
+
+    // 必需参数
+    message += `comment:\n${commentText}\n\n`;
+    message += `targetLanguage: ${language}\n\n`;
+
+    // 可选参数：referencedContracts
+    if (referencedContracts && referencedContracts.trim() !== '') {
+      message += `referencedContracts:\n${referencedContracts}\n\n`;
+    }
+
+    // 可选参数：context（包含 reviewFeedback 和 incrementalText）
+    if (reviewFeedback || incrementalText) {
+      message += `context:\n`;
+      if (reviewFeedback) {
+        message += reviewFeedback + '\n';
+      }
+      if (incrementalText) {
+        message += incrementalText + '\n';
+      }
+      message += '\n';
+    }
+
+    return message.trim();
   }
   // @end
 }

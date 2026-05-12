@@ -1,6 +1,6 @@
 import { BaseRole, RoleResult } from './BaseRole';
 import { CDDComment } from '../../model/entities/CDDComment';
-import { ClaudeAPIService } from '../../model/services/ClaudeAPIService';
+import { ClaudeAPIService, ClaudeAPIRequest } from '../../model/services/ClaudeAPIService';
 
 // @entity: CodeTranslateContext
 // 代码转译上下文
@@ -26,13 +26,12 @@ export class CodeTranslatorVM extends BaseRole {
     try {
       const oldContractStr = `${context.oldComment.contract.functionName}(${context.oldComment.contract.parameters.map(p => `${p.name}: ${p.type}`).join(', ')}) => ${context.oldComment.contract.returnType}`;
 
-      const request = {
+      // 构建用户消息
+      const userMessage = this.buildUserMessage(context.code, oldContractStr);
+
+      const request: ClaudeAPIRequest = {
         role: 'code-translator' as const,
-        context: {
-          code: context.code,
-          comment: oldContractStr
-        },
-        prompt: '根据代码更新生成新的 CDD 注释。如果函数签名、返回类型或异常类型发生变化，请明确标注"契约冲突"。'
+        userMessage: userMessage
       };
 
       const response = await this.apiService.callAPI(request, context.apiKey);
@@ -66,6 +65,20 @@ export class CodeTranslatorVM extends BaseRole {
   // @boundary: 当两个契约相同时，返回 false
   private detectContractConflict(oldContract: string, newContract: string): boolean {
     return oldContract !== newContract;
+  }
+  // @end
+
+  // @contract: buildUserMessage(code: string, oldContract: string) => string
+  // @step: [构建参数] 按函数调用风格构建参数列表
+  // @step: [添加必需参数] 添加 code 和 oldContract
+  // @step: [返回] 返回完整的用户消息
+  private buildUserMessage(code: string, oldContract: string): string {
+    let message = '';
+
+    message += `code:\n${code}\n\n`;
+    message += `oldContract: ${oldContract}\n\n`;
+
+    return message.trim();
   }
   // @end
 }
