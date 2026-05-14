@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TranslatorVM = void 0;
 const BaseRole_1 = require("./BaseRole");
+const ClaudeAPIService_1 = require("../../model/services/ClaudeAPIService");
 const Errors_1 = require("../../model/entities/Errors");
 class TranslatorVM extends BaseRole_1.BaseRole {
     constructor(apiService) {
@@ -210,6 +211,96 @@ class TranslatorVM extends BaseRole_1.BaseRole {
             message += contextText;
         }
         return message.trim();
+    }
+    // @end
+    // @contract: translateRequirement(requirement: string, context?: { existingFiles?: string[], existingModules?: string[], projectIntent?: string }) => Promise<string>
+    // @step: [读取配置] 读取 API 配置
+    // @step: [读取提示词] 读取 requirement-translator.md 提示词模板
+    // @step: [构建提示] 将需求和上下文填入提示词
+    // @step: [调用 API] 调用 Claude API 生成注释
+    // @step: [返回注释] 返回生成的 CDD 注释
+    // @boundary: 当 API 调用失败时，抛出错误
+    // @boundary: 当提示词文件不存在时，使用默认提示词
+    static async translateRequirement(requirement, context) {
+        const vscode = require('vscode');
+        // 读取配置
+        const config = vscode.workspace.getConfiguration('cdd');
+        const apiKey = config.get('apiKey') || '';
+        const apiBaseUrl = config.get('apiBaseUrl') || 'https://api.anthropic.com';
+        const modelId = config.get('modelId') || 'claude-sonnet-4-20250514';
+        if (!apiKey) {
+            throw new Error('API Key not configured. Please set cdd.apiKey in settings.');
+        }
+        // 读取提示词模板
+        const promptTemplate = await this.loadRequirementPromptTemplate();
+        // 构建提示
+        const prompt = this.buildRequirementPrompt(promptTemplate, requirement, context);
+        // 调用 API
+        const apiService = new ClaudeAPIService_1.ClaudeAPIService();
+        const response = await apiService.callAPI({
+            role: 'translator',
+            userMessage: prompt
+        }, apiKey, apiBaseUrl, modelId);
+        return response.content.trim();
+    }
+    // @contract: loadRequirementPromptTemplate() => Promise<string>
+    // @step: [读取文件] 读取 _source/prompts/requirement-translator.md
+    // @step: [返回内容] 返回文件内容
+    // @boundary: 当文件不存在时，返回默认提示词
+    static async loadRequirementPromptTemplate() {
+        const fs = require('fs').promises;
+        const path = require('path');
+        const vscode = require('vscode');
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            return this.getDefaultRequirementPrompt();
+        }
+        const promptPath = path.join(workspaceFolders[0].uri.fsPath, '_source', 'prompts', 'requirement-translator.md');
+        try {
+            const content = await fs.readFile(promptPath, 'utf-8');
+            return content;
+        }
+        catch (error) {
+            console.warn('[TranslatorVM] Failed to load requirement prompt template, using default');
+            return this.getDefaultRequirementPrompt();
+        }
+    }
+    // @contract: buildRequirementPrompt(template: string, requirement: string, context?: any) => string
+    // @step: [格式化上下文] 将上下文格式化为可读字符串
+    // @step: [替换变量] 将模板中的变量替换为实际值
+    // @step: [返回] 返回构建好的提示
+    static buildRequirementPrompt(template, requirement, context) {
+        let contextText = '';
+        if (context) {
+            if (context.projectIntent) {
+                contextText += `Project Intent: ${context.projectIntent}\n\n`;
+            }
+            if (context.existingModules && context.existingModules.length > 0) {
+                contextText += `Existing Modules: ${context.existingModules.join(', ')}\n\n`;
+            }
+            if (context.existingFiles && context.existingFiles.length > 0) {
+                contextText += `Existing Files: ${context.existingFiles.join(', ')}\n\n`;
+            }
+        }
+        let prompt = template;
+        prompt = prompt.replace('{{requirement}}', requirement);
+        prompt = prompt.replace('{{context}}', contextText || 'No additional context');
+        return prompt;
+    }
+    // @contract: getDefaultRequirementPrompt() => string
+    // @step: [返回] 返回默认的需求转译提示词
+    static getDefaultRequirementPrompt() {
+        return `Translate the following requirement to CDD comments.
+
+Requirement: {{requirement}}
+
+Context:
+{{context}}
+
+Output format:
+// @contract: functionName(param: Type) => ReturnType
+// @step: [intent] description
+// @boundary: when..., should...`;
     }
 }
 exports.TranslatorVM = TranslatorVM;

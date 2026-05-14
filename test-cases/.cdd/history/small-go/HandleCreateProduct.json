@@ -1,0 +1,128 @@
+{
+  "functionName": "HandleCreateProduct",
+  "contract": "HandleCreateProduct:v1.0",
+  "contractVersion": "v1.0",
+  "filePath": "d:\\w_dev\\CCD-framework\\test-cases\\small-go.go",
+  "history": [
+    {
+      "timestamp": "2026-05-14T13:07:27.067Z",
+      "role": "translator",
+      "input": {
+        "code": "func HandleCreateProduct(w http.ResponseWriter, r *http.Request) {\n\tif r.Method != http.MethodPost {\n\t\trespondWithError(w, \"Method not allowed\", http.StatusMethodNotAllowed)\n\t\treturn\n\t}\n\n\tvar req CreateProductRequest\n\tdecoder := json.NewDecoder(r.Body)\n\tif err := decoder.Decode(&req); err != nil {\n\t\trespondWithError(w, \"Invalid JSON format\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tif strings.TrimSpace(req.Name) == \"\" {\n\t\trespondWithError(w, \"Product name is required\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tif req.Price <= 0 {\n\t\trespondWithError(w, \"Price must be greater than 0\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tif req.Stock < 0 {\n\t\trespondWithError(w, \"Stock cannot be negative\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tif strings.TrimSpace(req.Category) == \"\" {\n\t\trespondWithError(w, \"Category is required\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tproduct := Product{\n\t\tID:        generateID(),\n\t\tName:      strings.TrimSpace(req.Name),\n\t\tPrice:     req.Price,\n\t\tStock:     req.Stock,\n\t\tCategory:  strings.TrimSpace(req.Category),\n\t\tCreatedAt: time.Now(),\n\t}\n\n\tw.Header().Set(\"Content-Type\", \"application/json\")\n\tw.WriteHeader(http.StatusCreated)\n\tjson.NewEncoder(w).Encode(product)\n}\n\nfunc respondWithError(w http.ResponseWriter, message string, code int) {\n\tw.Header().Set(\"Content-Type\", \"application/json\")\n\tw.WriteHeader(code)\n\tjson.NewEncoder(w).Encode(ErrorResponse{\n\t\tError: message,\n\t\tCode:  code,\n\t})\n}\n\nfunc generateID() string {\n\treturn \"prod_\" + time.Now().Format(\"20060102150405\")\n}",
+        "compileSpec": ""
+      },
+      "output": {
+        "success": true,
+        "content": "// @contract: HandleCreateProduct(w: http.ResponseWriter, r: *http.Request) => void\n// @step: [验证] 检查请求方法是否为 POST\n// @step: [解析] 从请求体解析 JSON 格式的产品创建请求\n// @step: [校验] 验证产品名称非空\n// @step: [校验] 验证价格大于 0\n// @step: [校验] 验证库存非负数\n// @step: [校验] 验证分类非空\n// @step: [创建] 生成产品 ID 并构建产品对象\n// @step: [响应] 返回 201 状态码和产品信息\n// @boundary: 当请求方法不是 POST 时，返回 405 Method Not Allowed\n// @boundary: 当 JSON 格式无效时，返回 400 Bad Request\n// @boundary: 当产品名称为空时，返回 400 Bad Request\n// @boundary: 当价格小于等于 0 时，返回 400 Bad Request\n// @boundary: 当库存为负数时，返回 400 Bad Request\n// @boundary: 当分类为空时，返回 400 Bad Request\n// @end"
+      }
+    },
+    {
+      "timestamp": "2026-05-14T13:07:38.448Z",
+      "role": "compiler",
+      "input": {
+        "comment": "// @contract: HandleCreateProduct(w: http.ResponseWriter, r: *http.Request) => void\n// @step: [验证] 检查请求方法是否为 POST\n// @step: [解析] 从请求体解析 JSON 格式的产品创建请求\n// @step: [校验] 验证产品名称非空\n// @step: [校验] 验证价格大于 0\n// @step: [校验] 验证库存非负数\n// @step: [校验] 验证分类非空\n// @step: [创建] 生成产品 ID 并构建产品对象\n// @step: [响应] 返回 201 状态码和产品信息\n// @boundary: 当请求方法不是 POST 时，返回 405 Method Not Allowed\n// @boundary: 当 JSON 格式无效时，返回 400 Bad Request\n// @boundary: 当产品名称为空时，返回 400 Bad Request\n// @boundary: 当价格小于等于 0 时，返回 400 Bad Request\n// @boundary: 当库存为负数时，返回 400 Bad Request\n// @boundary: 当分类为空时，返回 400 Bad Request",
+        "compileSpec": "",
+        "parsedComment": {
+          "contract": {
+            "functionName": "HandleCreateProduct",
+            "parameters": [
+              {
+                "name": "w",
+                "type": "http.ResponseWriter"
+              },
+              {
+                "name": "r",
+                "type": "*http.Request"
+              }
+            ],
+            "returnType": "void",
+            "throwsTypes": [],
+            "version": "HandleCreateProduct:v1.0"
+          },
+          "steps": [
+            {
+              "description": "[验证] 检查请求方法是否为 POST",
+              "isSimple": false
+            },
+            {
+              "description": "[解析] 从请求体解析 JSON 格式的产品创建请求",
+              "isSimple": false
+            },
+            {
+              "description": "[校验] 验证产品名称非空",
+              "isSimple": false
+            },
+            {
+              "description": "[校验] 验证价格大于 0",
+              "isSimple": false
+            },
+            {
+              "description": "[校验] 验证库存非负数",
+              "isSimple": false
+            },
+            {
+              "description": "[校验] 验证分类非空",
+              "isSimple": false
+            },
+            {
+              "description": "[创建] 生成产品 ID 并构建产品对象",
+              "isSimple": false
+            },
+            {
+              "description": "[响应] 返回 201 状态码和产品信息",
+              "isSimple": false
+            }
+          ],
+          "boundaries": [
+            {
+              "description": "当请求方法不是 POST 时，返回 405 Method Not Allowed"
+            },
+            {
+              "description": "当 JSON 格式无效时，返回 400 Bad Request"
+            },
+            {
+              "description": "当产品名称为空时，返回 400 Bad Request"
+            },
+            {
+              "description": "当价格小于等于 0 时，返回 400 Bad Request"
+            },
+            {
+              "description": "当库存为负数时，返回 400 Bad Request"
+            },
+            {
+              "description": "当分类为空时，返回 400 Bad Request"
+            }
+          ],
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 14,
+              "character": 36
+            }
+          ]
+        }
+      },
+      "output": {
+        "success": true,
+        "content": "func HandleCreateProduct(w http.ResponseWriter, r *http.Request) {\n\tif r.Method != http.MethodPost {\n\t\thttp.Error(w, \"Method Not Allowed\", http.StatusMethodNotAllowed)\n\t\treturn\n\t}\n\n\tvar req struct {\n\t\tName     string  `json:\"name\"`\n\t\tPrice    float64 `json:\"price\"`\n\t\tStock    int     `json:\"stock\"`\n\t\tCategory string  `json:\"category\"`\n\t}\n\n\tif err := json.NewDecoder(r.Body).Decode(&req); err != nil {\n\t\thttp.Error(w, \"Bad Request\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tif strings.TrimSpace(req.Name) == \"\" {\n\t\thttp.Error(w, \"Bad Request\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tif req.Price <= 0 {\n\t\thttp.Error(w, \"Bad Request\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tif req.Stock < 0 {\n\t\thttp.Error(w, \"Bad Request\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tif strings.TrimSpace(req.Category) == \"\" {\n\t\thttp.Error(w, \"Bad Request\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tproduct := struct {\n\t\tID        string    `json:\"id\"`\n\t\tName      string    `json:\"name\"`\n\t\tPrice     float64   `json:\"price\"`\n\t\tStock     int       `json:\"stock\"`\n\t\tCategory  string    `json:\"category\"`\n\t\tCreatedAt time.Time `json:\"created_at\"`\n\t}{\n\t\tID:        generateProductID(),\n\t\tName:      req.Name,\n\t\tPrice:     req.Price,\n\t\tStock:     req.Stock,\n\t\tCategory:  req.Category,\n\t\tCreatedAt: time.Now(),\n\t}\n\n\tw.Header().Set(\"Content-Type\", \"application/json\")\n\tw.WriteHeader(http.StatusCreated)\n\tjson.NewEncoder(w).Encode(product)\n}\n\nfunc generateProductID() string {\n\treturn \"prod_\" + strings.ReplaceAll(time.Now().Format(time.RFC3339Nano), \".\", \"\")\n}\n// @end"
+      }
+    },
+    {
+      "timestamp": "2026-05-14T13:07:44.168Z",
+      "role": "reviewer",
+      "input": {
+        "comment": "// @contract: HandleCreateProduct(w: http.ResponseWriter, r: *http.Request) => void\n// @step: [验证] 检查请求方法是否为 POST\n// @step: [解析] 从请求体解析 JSON 格式的产品创建请求\n// @step: [校验] 验证产品名称非空\n// @step: [校验] 验证价格大于 0\n// @step: [校验] 验证库存非负数\n// @step: [校验] 验证分类非空\n// @step: [创建] 生成产品 ID 并构建产品对象\n// @step: [响应] 返回 201 状态码和产品信息\n// @boundary: 当请求方法不是 POST 时，返回 405 Method Not Allowed\n// @boundary: 当 JSON 格式无效时，返回 400 Bad Request\n// @boundary: 当产品名称为空时，返回 400 Bad Request\n// @boundary: 当价格小于等于 0 时，返回 400 Bad Request\n// @boundary: 当库存为负数时，返回 400 Bad Request\n// @boundary: 当分类为空时，返回 400 Bad Request\n",
+        "code": "func HandleCreateProduct(w http.ResponseWriter, r *http.Request) {\n\tif r.Method != http.MethodPost {\n\t\thttp.Error(w, \"Method Not Allowed\", http.StatusMethodNotAllowed)\n\t\treturn\n\t}\n\n\tvar req struct {\n\t\tName     string  `json:\"name\"`\n\t\tPrice    float64 `json:\"price\"`\n\t\tStock    int     `json:\"stock\"`\n\t\tCategory string  `json:\"category\"`\n\t}\n\n\tif err := json.NewDecoder(r.Body).Decode(&req); err != nil {\n\t\thttp.Error(w, \"Bad Request\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tif strings.TrimSpace(req.Name) == \"\" {\n\t\thttp.Error(w, \"Bad Request\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tif req.Price <= 0 {\n\t\thttp.Error(w, \"Bad Request\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tif req.Stock < 0 {\n\t\thttp.Error(w, \"Bad Request\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tif strings.TrimSpace(req.Category) == \"\" {\n\t\thttp.Error(w, \"Bad Request\", http.StatusBadRequest)\n\t\treturn\n\t}\n\n\tproduct := struct {\n\t\tID        string    `json:\"id\"`\n\t\tName      string    `json:\"name\"`\n\t\tPrice     float64   `json:\"price\"`\n\t\tStock     int       `json:\"stock\"`\n\t\tCategory  string    `json:\"category\"`\n\t\tCreatedAt time.Time `json:\"created_at\"`\n\t}{\n\t\tID:        generateProductID(),\n\t\tName:      req.Name,\n\t\tPrice:     req.Price,\n\t\tStock:     req.Stock,\n\t\tCategory:  req.Category,\n\t\tCreatedAt: time.Now(),\n\t}\n\n\tw.Header().Set(\"Content-Type\", \"application/json\")\n\tw.WriteHeader(http.StatusCreated)\n\tjson.NewEncoder(w).Encode(product)\n}\n\nfunc generateProductID() string {\n\treturn \"prod_\" + strings.ReplaceAll(time.Now().Format(time.RFC3339Nano), \".\", \"\")\n}\n// @end",
+        "compileSpec": ""
+      },
+      "output": {
+        "success": true,
+        "content": "审查通过",
+        "issues": []
+      }
+    }
+  ]
+}

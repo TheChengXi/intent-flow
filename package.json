@@ -17,6 +17,24 @@
     "node_modules"
   ],
   "contributes": {
+    "chatParticipants": [
+      {
+        "id": "cdd",
+        "name": "cdd-assistant",
+        "description": "Comment-Driven Development assistant",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "plan",
+            "description": "Analyze change impact and generate implementation plan"
+          },
+          {
+            "name": "translate",
+            "description": "Translate natural language requirements to CDD comments"
+          }
+        ]
+      }
+    ],
     "commands": [
       {
         "command": "cdd.compile",
@@ -37,6 +55,14 @@
       {
         "command": "cdd.init",
         "title": "CDD: 初始化项目结构"
+      },
+      {
+        "command": "cdd.insertComment",
+        "title": "CDD: Insert Comment"
+      },
+      {
+        "command": "cdd.insertCode",
+        "title": "CDD: Insert Code"
       }
     ],
     "menus": {

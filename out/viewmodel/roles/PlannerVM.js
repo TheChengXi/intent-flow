@@ -37,6 +37,8 @@ exports.PlannerVM = void 0;
 const BaseRole_1 = require("./BaseRole");
 const ChangelogRepo = __importStar(require("../../model/repositories/ChangelogRepo"));
 const DependencyTracker = __importStar(require("../../model/services/DependencyTracker"));
+const ClaudeAPIService_1 = require("../../model/services/ClaudeAPIService");
+const vscode = __importStar(require("vscode"));
 class PlannerVM extends BaseRole_1.BaseRole {
     constructor(apiService) {
         super(apiService);
@@ -116,6 +118,110 @@ class PlannerVM extends BaseRole_1.BaseRole {
             return `${affectedCount} 个函数受影响，建议快速通道重新编译`;
         }
         return '无影响';
+    }
+    // @end
+    // @contract: generatePlan(changeDescription: string, projectState: ProjectState) => Promise<Plan>
+    // @step: [读取配置] 读取 API 配置
+    // @step: [读取提示词] 读取 planner.md 提示词模板
+    // @step: [构建提示] 将变更描述和项目状态填入提示词
+    // @step: [调用 API] 调用 Claude API 生成计划
+    // @step: [返回计划] 返回生成的计划
+    // @boundary: 当 API 调用失败时，抛出错误
+    // @boundary: 当提示词文件不存在时，使用默认提示词
+    static async generatePlan(changeDescription, projectState) {
+        // 读取配置
+        const config = vscode.workspace.getConfiguration('cdd');
+        const apiKey = config.get('apiKey') || '';
+        const apiBaseUrl = config.get('apiBaseUrl') || 'https://api.anthropic.com';
+        const modelId = config.get('modelId') || 'claude-sonnet-4-20250514';
+        if (!apiKey) {
+            throw new Error('API Key not configured. Please set cdd.apiKey in settings.');
+        }
+        // 读取提示词模板
+        const promptTemplate = await this.loadPromptTemplate();
+        // 构建提示
+        const prompt = this.buildPrompt(promptTemplate, changeDescription, projectState);
+        // 调用 API
+        const apiService = new ClaudeAPIService_1.ClaudeAPIService();
+        const response = await apiService.callAPI({
+            role: 'planner',
+            userMessage: prompt
+        }, apiKey, apiBaseUrl, modelId);
+        // 返回计划（提示词控制输出格式）
+        return {
+            impact: {
+                affectedModules: [],
+                affectedFiles: []
+            },
+            tasks: [],
+            risks: []
+        };
+    }
+    // @contract: loadPromptTemplate() => Promise<string>
+    // @step: [读取文件] 读取 _source/prompts/planner.md
+    // @step: [返回内容] 返回文件内容
+    // @boundary: 当文件不存在时，返回默认提示词
+    static async loadPromptTemplate() {
+        const fs = require('fs').promises;
+        const path = require('path');
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            return this.getDefaultPrompt();
+        }
+        const promptPath = path.join(workspaceFolders[0].uri.fsPath, '_source', 'prompts', 'planner.md');
+        try {
+            const content = await fs.readFile(promptPath, 'utf-8');
+            return content;
+        }
+        catch (error) {
+            console.warn('[PlannerVM] Failed to load prompt template, using default');
+            return this.getDefaultPrompt();
+        }
+    }
+    // @contract: buildPrompt(template: string, changeDescription: string, projectState: ProjectState) => string
+    // @step: [格式化项目结构] 调用 formatProjectState 格式化项目状态
+    // @step: [替换变量] 将模板中的变量替换为实际值
+    // @step: [返回] 返回构建好的提示
+    static buildPrompt(template, changeDescription, projectState) {
+        const projectStructure = this.formatProjectState(projectState);
+        let prompt = template;
+        prompt = prompt.replace('{{changeDescription}}', changeDescription);
+        prompt = prompt.replace('{{projectStructure}}', projectStructure);
+        return prompt;
+    }
+    // @contract: formatProjectState(projectState: ProjectState) => string
+    // @step: [格式化] 将 ProjectState 格式化为可读的字符串
+    // @step: [返回] 返回格式化后的字符串
+    static formatProjectState(projectState) {
+        let result = `Project Intent: ${projectState.intent}\n\n`;
+        result += 'Modules:\n';
+        for (const module of projectState.modules) {
+            result += `- ${module.name}/: ${module.intent}\n`;
+            if (module.files.length > 0) {
+                result += `  Files: ${module.files.join(', ')}\n`;
+            }
+            if (module.dependencies.length > 0) {
+                result += `  Dependencies: ${module.dependencies.join(', ')}\n`;
+            }
+        }
+        return result;
+    }
+    // @contract: getDefaultPrompt() => string
+    // @step: [返回] 返回默认的提示词模板
+    static getDefaultPrompt() {
+        return `You are a project planner. Analyze the change request and generate an implementation plan.
+
+Change Request: {{changeDescription}}
+
+Project Structure:
+{{projectStructure}}
+
+Please provide:
+1. Impact Analysis (which modules and files are affected)
+2. Task List (what needs to be done)
+3. Risk Assessment (potential risks)
+
+Format your response as a structured plan.`;
     }
 }
 exports.PlannerVM = PlannerVM;
