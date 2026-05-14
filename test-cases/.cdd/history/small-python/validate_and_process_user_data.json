@@ -1,0 +1,196 @@
+{
+  "functionName": "validate_and_process_user_data",
+  "contract": "validate_and_process_user_data:v1.0",
+  "contractVersion": "v1.0",
+  "filePath": "d:\\w_dev\\CCD-framework\\test-cases\\small-python.py",
+  "history": [
+    {
+      "timestamp": "2026-05-14T12:06:28.813Z",
+      "role": "compiler",
+      "input": {
+        "comment": "# @contract: validate_and_process_user_data(user_data: Dict[str, any], required_fields: List[str]) => Dict[str, any]\n# @step: [验证] 检查用户数据不为空\n# @step: [验证] 检查所有必需字段是否存在\n# @step: [验证] 若存在email字段，验证其格式\n# @step: [验证] 若存在age字段，验证其类型和范围\n# @step: [处理] 遍历数据，对字符串值进行strip操作\n# @step: [标记] 添加处理时间戳和验证标志\n# @boundary: 当user_data为空时，抛出ValidationError\n# @boundary: 当必需字段缺失时，抛出ValidationError\n# @boundary: 当email格式不符合正则表达式时，抛出ValidationError\n# @boundary: 当age不是整数或超出0-150范围时，抛出ValidationError",
+        "compileSpec": "",
+        "parsedComment": {
+          "contract": {
+            "functionName": "validate_and_process_user_data",
+            "parameters": [
+              {
+                "name": "user_data",
+                "type": "Dict[str, any]"
+              },
+              {
+                "name": "required_fields",
+                "type": "List[str]"
+              }
+            ],
+            "returnType": "Dict[str, any]",
+            "throwsTypes": [],
+            "version": "validate_and_process_user_data:v1.0"
+          },
+          "steps": [
+            {
+              "description": "[验证] 检查用户数据不为空",
+              "isSimple": false
+            },
+            {
+              "description": "[验证] 检查所有必需字段是否存在",
+              "isSimple": false
+            },
+            {
+              "description": "[验证] 若存在email字段，验证其格式",
+              "isSimple": false
+            },
+            {
+              "description": "[验证] 若存在age字段，验证其类型和范围",
+              "isSimple": false
+            },
+            {
+              "description": "[处理] 遍历数据，对字符串值进行strip操作",
+              "isSimple": false
+            },
+            {
+              "description": "[标记] 添加处理时间戳和验证标志",
+              "isSimple": false
+            }
+          ],
+          "boundaries": [
+            {
+              "description": "当user_data为空时，抛出ValidationError"
+            },
+            {
+              "description": "当必需字段缺失时，抛出ValidationError"
+            },
+            {
+              "description": "当email格式不符合正则表达式时，抛出ValidationError"
+            },
+            {
+              "description": "当age不是整数或超出0-150范围时，抛出ValidationError"
+            }
+          ],
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 10,
+              "character": 48
+            }
+          ]
+        }
+      },
+      "output": {
+        "success": true,
+        "content": "import re\nfrom datetime import datetime\nfrom typing import Dict, List, Any\n\nclass ValidationError(Exception):\n    pass\n\ndef validate_and_process_user_data(user_data: Dict[str, Any], required_fields: List[str]) -> Dict[str, Any]:\n    if not user_data:\n        raise ValidationError(\"user_data cannot be empty\")\n    \n    for field in required_fields:\n        if field not in user_data:\n            raise ValidationError(f\"Required field '{field}' is missing\")\n    \n    if \"email\" in user_data:\n        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'\n        if not re.match(email_pattern, user_data[\"email\"]):\n            raise ValidationError(f\"Invalid email format: {user_data['email']}\")\n    \n    if \"age\" in user_data:\n        if not isinstance(user_data[\"age\"], int):\n            raise ValidationError(f\"age must be an integer, got {type(user_data['age']).__name__}\")\n        if user_data[\"age\"] < 0 or user_data[\"age\"] > 150:\n            raise ValidationError(f\"age must be between 0 and 150, got {user_data['age']}\")\n    \n    processed_data = {}\n    for key, value in user_data.items():\n        if isinstance(value, str):\n            processed_data[key] = value.strip()\n        else:\n            processed_data[key] = value\n    \n    processed_data[\"_processed_at\"] = datetime.now().isoformat()\n    processed_data[\"_validated\"] = True\n    \n    return processed_data\n# @end"
+      }
+    },
+    {
+      "timestamp": "2026-05-14T12:06:34.014Z",
+      "role": "reviewer",
+      "input": {
+        "comment": "# @contract: validate_and_process_user_data(user_data: Dict[str, any], required_fields: List[str]) => Dict[str, any]\n# @step: [验证] 检查用户数据不为空\n# @step: [验证] 检查所有必需字段是否存在\n# @step: [验证] 若存在email字段，验证其格式\n# @step: [验证] 若存在age字段，验证其类型和范围\n# @step: [处理] 遍历数据，对字符串值进行strip操作\n# @step: [标记] 添加处理时间戳和验证标志\n# @boundary: 当user_data为空时，抛出ValidationError\n# @boundary: 当必需字段缺失时，抛出ValidationError\n# @boundary: 当email格式不符合正则表达式时，抛出ValidationError\n# @boundary: 当age不是整数或超出0-150范围时，抛出ValidationError\n",
+        "code": "import re\nfrom datetime import datetime\nfrom typing import Dict, List, Any\n\nclass ValidationError(Exception):\n    pass\n\ndef validate_and_process_user_data(user_data: Dict[str, Any], required_fields: List[str]) -> Dict[str, Any]:\n    if not user_data:\n        raise ValidationError(\"user_data cannot be empty\")\n    \n    for field in required_fields:\n        if field not in user_data:\n            raise ValidationError(f\"Required field '{field}' is missing\")\n    \n    if \"email\" in user_data:\n        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'\n        if not re.match(email_pattern, user_data[\"email\"]):\n            raise ValidationError(f\"Invalid email format: {user_data['email']}\")\n    \n    if \"age\" in user_data:\n        if not isinstance(user_data[\"age\"], int):\n            raise ValidationError(f\"age must be an integer, got {type(user_data['age']).__name__}\")\n        if user_data[\"age\"] < 0 or user_data[\"age\"] > 150:\n            raise ValidationError(f\"age must be between 0 and 150, got {user_data['age']}\")\n    \n    processed_data = {}\n    for key, value in user_data.items():\n        if isinstance(value, str):\n            processed_data[key] = value.strip()\n        else:\n            processed_data[key] = value\n    \n    processed_data[\"_processed_at\"] = datetime.now().isoformat()\n    processed_data[\"_validated\"] = True\n    \n    return processed_data\n# @end",
+        "compileSpec": ""
+      },
+      "output": {
+        "success": true,
+        "content": "审查通过",
+        "issues": []
+      }
+    },
+    {
+      "timestamp": "2026-05-14T12:14:38.056Z",
+      "role": "compiler",
+      "input": {
+        "comment": "# @contract: validate_and_process_user_data(user_data: Dict[str, any], required_fields: List[str]) => Dict[str, any]\n# @step: [验证] 检查用户数据不为空\n# @step: [验证] 检查所有必需字段是否存在\n# @step: [验证] 若存在email字段，验证其格式\n# @step: [验证] 若存在age字段，验证其类型和范围\n# @step: [处理] 遍历数据，对字符串值进行strip操作\n# @step: [标记] 添加处理时间戳和验证标志\n# @boundary: 当user_data为空时，抛出ValidationError\n# @boundary: 当必需字段缺失时，抛出ValidationError\n# @boundary: 当email格式不符合正则表达式时，抛出ValidationError\n# @boundary: 当age不是整数或超出0-150范围时，抛出ValidationError",
+        "compileSpec": "",
+        "parsedComment": {
+          "contract": {
+            "functionName": "validate_and_process_user_data",
+            "parameters": [
+              {
+                "name": "user_data",
+                "type": "Dict[str, any]"
+              },
+              {
+                "name": "required_fields",
+                "type": "List[str]"
+              }
+            ],
+            "returnType": "Dict[str, any]",
+            "throwsTypes": [],
+            "version": "validate_and_process_user_data:v1.0"
+          },
+          "steps": [
+            {
+              "description": "[验证] 检查用户数据不为空",
+              "isSimple": false
+            },
+            {
+              "description": "[验证] 检查所有必需字段是否存在",
+              "isSimple": false
+            },
+            {
+              "description": "[验证] 若存在email字段，验证其格式",
+              "isSimple": false
+            },
+            {
+              "description": "[验证] 若存在age字段，验证其类型和范围",
+              "isSimple": false
+            },
+            {
+              "description": "[处理] 遍历数据，对字符串值进行strip操作",
+              "isSimple": false
+            },
+            {
+              "description": "[标记] 添加处理时间戳和验证标志",
+              "isSimple": false
+            }
+          ],
+          "boundaries": [
+            {
+              "description": "当user_data为空时，抛出ValidationError"
+            },
+            {
+              "description": "当必需字段缺失时，抛出ValidationError"
+            },
+            {
+              "description": "当email格式不符合正则表达式时，抛出ValidationError"
+            },
+            {
+              "description": "当age不是整数或超出0-150范围时，抛出ValidationError"
+            }
+          ],
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 10,
+              "character": 48
+            }
+          ]
+        }
+      },
+      "output": {
+        "success": true,
+        "content": "class ValidationError(Exception):\n    pass\n\ndef validate_and_process_user_data(user_data: Dict[str, Any], required_fields: List[str]) -> Dict[str, Any]:\n    if not user_data:\n        raise ValidationError(\"user_data cannot be empty\")\n    \n    for field in required_fields:\n        if field not in user_data:\n            raise ValidationError(f\"Required field '{field}' is missing\")\n    \n    if \"email\" in user_data:\n        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'\n        if not re.match(email_pattern, user_data[\"email\"]):\n            raise ValidationError(f\"Invalid email format: {user_data['email']}\")\n    \n    if \"age\" in user_data:\n        if not isinstance(user_data[\"age\"], int):\n            raise ValidationError(f\"age must be an integer, got {type(user_data['age']).__name__}\")\n        if user_data[\"age\"] < 0 or user_data[\"age\"] > 150:\n            raise ValidationError(f\"age must be between 0 and 150, got {user_data['age']}\")\n    \n    processed_data = {}\n    for key, value in user_data.items():\n        if isinstance(value, str):\n            processed_data[key] = value.strip()\n        else:\n            processed_data[key] = value\n    \n    processed_data[\"_processed_at\"] = datetime.now().isoformat()\n    processed_data[\"_validated\"] = True\n    \n    return processed_data\n# @end"
+      }
+    },
+    {
+      "timestamp": "2026-05-14T12:14:41.811Z",
+      "role": "reviewer",
+      "input": {
+        "comment": "# @contract: validate_and_process_user_data(user_data: Dict[str, any], required_fields: List[str]) => Dict[str, any]\n# @step: [验证] 检查用户数据不为空\n# @step: [验证] 检查所有必需字段是否存在\n# @step: [验证] 若存在email字段，验证其格式\n# @step: [验证] 若存在age字段，验证其类型和范围\n# @step: [处理] 遍历数据，对字符串值进行strip操作\n# @step: [标记] 添加处理时间戳和验证标志\n# @boundary: 当user_data为空时，抛出ValidationError\n# @boundary: 当必需字段缺失时，抛出ValidationError\n# @boundary: 当email格式不符合正则表达式时，抛出ValidationError\n# @boundary: 当age不是整数或超出0-150范围时，抛出ValidationError\n",
+        "code": "class ValidationError(Exception):\n    pass\n\ndef validate_and_process_user_data(user_data: Dict[str, Any], required_fields: List[str]) -> Dict[str, Any]:\n    if not user_data:\n        raise ValidationError(\"user_data cannot be empty\")\n    \n    for field in required_fields:\n        if field not in user_data:\n            raise ValidationError(f\"Required field '{field}' is missing\")\n    \n    if \"email\" in user_data:\n        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'\n        if not re.match(email_pattern, user_data[\"email\"]):\n            raise ValidationError(f\"Invalid email format: {user_data['email']}\")\n    \n    if \"age\" in user_data:\n        if not isinstance(user_data[\"age\"], int):\n            raise ValidationError(f\"age must be an integer, got {type(user_data['age']).__name__}\")\n        if user_data[\"age\"] < 0 or user_data[\"age\"] > 150:\n            raise ValidationError(f\"age must be between 0 and 150, got {user_data['age']}\")\n    \n    processed_data = {}\n    for key, value in user_data.items():\n        if isinstance(value, str):\n            processed_data[key] = value.strip()\n        else:\n            processed_data[key] = value\n    \n    processed_data[\"_processed_at\"] = datetime.now().isoformat()\n    processed_data[\"_validated\"] = True\n    \n    return processed_data\n# @end",
+        "compileSpec": ""
+      },
+      "output": {
+        "success": true,
+        "content": "审查通过",
+        "issues": []
+      }
+    }
+  ]
+}

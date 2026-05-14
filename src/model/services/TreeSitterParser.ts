@@ -165,6 +165,140 @@ export class TreeSitterParser {
     return null;
   }
 
+  // @contract: extractFunctionSignature(node: any, language: string) => { name: string; parameters: Array<{name: string; type: string}>; returnType: string } | null
+  // @step: [提取函数名] 从节点中提取函数名
+  // @step: [提取参数] 根据语言类型，查找参数列表节点
+  // @step: [提取返回类型] 根据语言类型，查找返回类型节点
+  // @step: [返回] 返回结构化的函数签名
+  // @boundary: 当无法提取签名时，返回 null
+  static extractFunctionSignature(node: any, language: string): { name: string; parameters: Array<{name: string; type: string}>; returnType: string } | null {
+    const functionName = this.extractFunctionName(node);
+    if (!functionName) {
+      return null;
+    }
+
+    const parameters: Array<{name: string; type: string}> = [];
+    let returnType = 'void';
+
+    // 根据不同语言提取参数和返回类型
+    switch (language.toLowerCase()) {
+      case 'typescript':
+      case 'javascript':
+        return this.extractTypeScriptSignature(node, functionName);
+      case 'python':
+        return this.extractPythonSignature(node, functionName);
+      case 'go':
+        return this.extractGoSignature(node, functionName);
+      case 'cpp':
+      case 'c':
+        return this.extractCppSignature(node, functionName);
+      default:
+        return { name: functionName, parameters, returnType };
+    }
+  }
+  // @end
+
+  private static extractTypeScriptSignature(node: any, functionName: string): { name: string; parameters: Array<{name: string; type: string}>; returnType: string } {
+    const parameters: Array<{name: string; type: string}> = [];
+    let returnType = 'void';
+
+    for (const child of node.children) {
+      if (child.type === 'formal_parameters') {
+        for (const param of child.children) {
+          if (param.type === 'required_parameter' || param.type === 'optional_parameter') {
+            const paramName = param.children.find((c: any) => c.type === 'identifier')?.text || '';
+            const typeAnnotation = param.children.find((c: any) => c.type === 'type_annotation');
+            const paramType = typeAnnotation ? typeAnnotation.text.replace(/^:\s*/, '') : 'any';
+            if (paramName) {
+              parameters.push({ name: paramName, type: paramType });
+            }
+          }
+        }
+      }
+      if (child.type === 'type_annotation') {
+        returnType = child.text.replace(/^:\s*/, '');
+      }
+    }
+
+    return { name: functionName, parameters, returnType };
+  }
+
+  private static extractPythonSignature(node: any, functionName: string): { name: string; parameters: Array<{name: string; type: string}>; returnType: string } {
+    const parameters: Array<{name: string; type: string}> = [];
+    let returnType = 'None';
+
+    for (const child of node.children) {
+      if (child.type === 'parameters') {
+        for (const param of child.children) {
+          if (param.type === 'typed_parameter' || param.type === 'identifier') {
+            const paramName = param.children.find((c: any) => c.type === 'identifier')?.text || param.text;
+            const typeNode = param.children.find((c: any) => c.type === 'type');
+            const paramType = typeNode ? typeNode.text : 'any';
+            if (paramName && paramName !== 'self' && paramName !== 'cls') {
+              parameters.push({ name: paramName, type: paramType });
+            }
+          }
+        }
+      }
+      if (child.type === 'type') {
+        returnType = child.text;
+      }
+    }
+
+    return { name: functionName, parameters, returnType };
+  }
+
+  private static extractGoSignature(node: any, functionName: string): { name: string; parameters: Array<{name: string; type: string}>; returnType: string } {
+    const parameters: Array<{name: string; type: string}> = [];
+    let returnType = 'void';
+
+    for (const child of node.children) {
+      if (child.type === 'parameter_list') {
+        for (const param of child.children) {
+          if (param.type === 'parameter_declaration') {
+            const paramName = param.children.find((c: any) => c.type === 'identifier')?.text || '';
+            const typeNode = param.children.find((c: any) => c.type !== 'identifier' && c.type !== ',');
+            const paramType = typeNode ? typeNode.text : 'interface{}';
+            if (paramName) {
+              parameters.push({ name: paramName, type: paramType });
+            }
+          }
+        }
+      }
+      if (child.type === 'type_identifier' || child.type === 'pointer_type' || child.type === 'slice_type') {
+        returnType = child.text;
+      }
+    }
+
+    return { name: functionName, parameters, returnType };
+  }
+
+  private static extractCppSignature(node: any, functionName: string): { name: string; parameters: Array<{name: string; type: string}>; returnType: string } {
+    const parameters: Array<{name: string; type: string}> = [];
+    let returnType = 'void';
+
+    for (const child of node.children) {
+      if (child.type === 'parameter_list') {
+        for (const param of child.children) {
+          if (param.type === 'parameter_declaration') {
+            const declarator = param.children.find((c: any) => c.type === 'identifier' || c.type === 'pointer_declarator' || c.type === 'reference_declarator');
+            const paramName = declarator?.text || '';
+            const typeNode = param.children.find((c: any) => c.type !== 'identifier' && c.type !== ',' && c.type !== 'pointer_declarator' && c.type !== 'reference_declarator');
+            const paramType = typeNode ? typeNode.text : 'void*';
+            if (paramName) {
+              parameters.push({ name: paramName, type: paramType });
+            }
+          }
+        }
+      }
+      if (child.type === 'primitive_type' || child.type === 'type_identifier' || child.type === 'template_type') {
+        returnType = child.text;
+      }
+    }
+
+    return { name: functionName, parameters, returnType };
+  }
+
   private static findCommentBlock(lines: string[], functionStartLine: number): { startLine: number; endLine: number } | null {
     let commentEndLine = functionStartLine - 1;
     let commentStartLine = -1;

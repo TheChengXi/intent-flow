@@ -113,10 +113,9 @@ class CompilerContextManager {
         const lastReview = await HistoryService_1.HistoryService.getLastReviewerRecord(workspaceRoot, document.fileName, comment.contract.functionName);
         console.log('[CompilerContextManager] 上次审查记录:', lastReview ? '存在' : '不存在');
         // 提取引用的契约（跨文件引用）
-        // 注意：只在第一次编译时提取，重新编译时跳过（避免重复弹出对话框）
         console.log('[CompilerContextManager] 提取引用的契约...');
         let referencedContracts = [];
-        // 如果存在上次编译记录且代码有效，说明这是重新编译，跳过契约搜索
+        // 如果存在上次编译记录且代码有效，说明这是重新编译
         const hasValidPreviousCode = lastCompile &&
             lastCompile.output.success &&
             lastCompile.output.content &&
@@ -124,25 +123,26 @@ class CompilerContextManager {
             !lastCompile.output.content.includes('Missing Prerequisites') &&
             lastCompile.output.content.length >= 50;
         console.log('[CompilerContextManager] 是否存在有效的上次编译:', hasValidPreviousCode);
-        if (!hasValidPreviousCode) {
-            try {
-                // 从文档中提取 import 语句（函数和类型都需要）
-                console.log('[CompilerContextManager] 提取 import 语句...');
-                const fullText = document.getText();
-                const importedFiles = WorkLineService_1.WorkLineService.extractImportedFilesFromText(fullText, workspaceRoot);
-                console.log('[CompilerContextManager] 提取到的导入文件数量:', importedFiles.length);
-                // 将当前文件添加到搜索列表的最前面（优先搜索同文件内的定义）
-                const searchFiles = [document.fileName, ...importedFiles];
-                console.log('[CompilerContextManager] 搜索文件列表（含当前文件）:', searchFiles.length);
-                // 检查当前文件已有的 import 语句
-                console.log('[CompilerContextManager] 检查已有的 import 语句...');
-                const existingImports = this.extractExistingImports(fullText);
-                console.log('[CompilerContextManager] 已有的 import 数量:', existingImports.length);
-                // 如果有已存在的 import，添加到 referencedContracts
-                if (existingImports.length > 0) {
-                    const importHint = '## 当前文件已有的导入语句\n以下导入已存在，不要重复添加：\n\n' + existingImports.join('\n');
-                    referencedContracts.push(importHint);
-                }
+        try {
+            // 从文档中提取 import 语句（总是执行，不跳过）
+            console.log('[CompilerContextManager] 提取 import 语句...');
+            const fullText = document.getText();
+            const importedFiles = WorkLineService_1.WorkLineService.extractImportedFilesFromText(fullText, workspaceRoot);
+            console.log('[CompilerContextManager] 提取到的导入文件数量:', importedFiles.length);
+            // 将当前文件添加到搜索列表的最前面（优先搜索同文件内的定义）
+            const searchFiles = [document.fileName, ...importedFiles];
+            console.log('[CompilerContextManager] 搜索文件列表（含当前文件）:', searchFiles.length);
+            // 检查当前文件已有的 import 语句（总是执行）
+            console.log('[CompilerContextManager] 检查已有的 import 语句...');
+            const existingImports = this.extractExistingImports(fullText, targetLanguage);
+            console.log('[CompilerContextManager] 已有的 import 数量:', existingImports.length);
+            // 如果有已存在的 import，添加到 referencedContracts
+            if (existingImports.length > 0) {
+                const importHint = '## 当前文件已有的导入语句\n以下导入已存在，不要重复添加：\n\n' + existingImports.join('\n');
+                referencedContracts.push(importHint);
+            }
+            // 只在首次编译时进行完整的契约搜索（避免重复弹出对话框）
+            if (!hasValidPreviousCode) {
                 // 1. 提取并搜索类型引用（父依赖）
                 console.log('[CompilerContextManager] 提取类型引用...');
                 const contractLine = selectedText.split('\n')[0]; // 第一行是 @contract
@@ -200,12 +200,12 @@ class CompilerContextManager {
                 referencedContracts = [...new Set(referencedContracts)];
                 console.log('[CompilerContextManager] 最终契约数量（去重后）:', referencedContracts.length);
             }
-            catch (error) {
-                console.warn('[CompilerContextManager] 提取引用契约失败:', error);
+            else {
+                console.log('[CompilerContextManager] 跳过契约搜索（重新编译模式）');
             }
         }
-        else {
-            console.log('[CompilerContextManager] 跳过契约搜索（重新编译模式）');
+        catch (error) {
+            console.warn('[CompilerContextManager] 提取引用契约失败:', error);
         }
         // 构建基础上下文
         console.log('[CompilerContextManager] 构建基础上下文...');
@@ -372,14 +372,58 @@ class CompilerContextManager {
         return '';
     }
     // @end
-    // @contract: extractExistingImports(fileContent: string) => string[]
+    // @contract: extractExistingImports(fileContent: string, language?: string) => string[]
+    // @step: [检测语言] 如果提供了 language，使用对应的正则
     // @step: [正则匹配] 使用正则提取所有 import 语句
     // @step: [过滤空行] 过滤掉空字符串
     // @step: [返回] 返回 import 语句数组
-    static extractExistingImports(fileContent) {
+    static extractExistingImports(fileContent, language) {
         const imports = [];
-        // 匹配 import 语句（支持多行）
-        const importRegex = /^\s*import\s+.*?from\s+['"][^'"]+['"]\s*;?/gm;
+        // 根据语言选择不同的正则表达式
+        let importRegex;
+        if (language) {
+            const lang = language.toLowerCase();
+            if (lang === 'python') {
+                // Python: import re, from typing import Dict
+                importRegex = /^\s*(import\s+[\w.,\s]+|from\s+[\w.]+\s+import\s+[\w.,\s*()]+)/gm;
+            }
+            else if (lang === 'go') {
+                // Go: import "fmt" 或 import ( ... )
+                importRegex = /^\s*import\s+(\([\s\S]*?\)|"[^"]+"|`[^`]+`)/gm;
+            }
+            else if (lang === 'c' || lang === 'cpp' || lang === 'c++') {
+                // C/C++: #include <stdio.h> 或 #include "myheader.h"
+                importRegex = /^\s*#include\s+[<"][^>"]+[>"]/gm;
+            }
+            else if (lang === 'java') {
+                // Java: import java.util.List;
+                importRegex = /^\s*import\s+[\w.]+(\.\*)?;/gm;
+            }
+            else {
+                // TypeScript/JavaScript (默认)
+                importRegex = /^\s*import\s+.*?from\s+['"][^'"]+['"]\s*;?/gm;
+            }
+        }
+        else {
+            // 未指定语言，尝试匹配多种格式
+            const patterns = [
+                /^\s*import\s+.*?from\s+['"][^'"]+['"]\s*;?/gm, // TS/JS
+                /^\s*(import\s+[\w.,\s]+|from\s+[\w.]+\s+import\s+[\w.,\s*()]+)/gm, // Python
+                /^\s*import\s+(\([\s\S]*?\)|"[^"]+"|`[^`]+`)/gm, // Go
+                /^\s*#include\s+[<"][^>"]+[>"]/gm, // C/C++
+                /^\s*import\s+[\w.]+(\.\*)?;/gm // Java
+            ];
+            for (const pattern of patterns) {
+                let match;
+                while ((match = pattern.exec(fileContent)) !== null) {
+                    const importStatement = match[0].trim();
+                    if (!imports.includes(importStatement)) {
+                        imports.push(importStatement);
+                    }
+                }
+            }
+            return imports;
+        }
         let match;
         while ((match = importRegex.exec(fileContent)) !== null) {
             imports.push(match[0].trim());

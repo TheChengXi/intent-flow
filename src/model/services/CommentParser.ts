@@ -113,8 +113,15 @@ export function parseContractLine(line: string): ContractAnnotation {
     const returnType = match[3].trim();
     const throwsStr = match[4]?.trim();
 
-    const parameters = paramsStr ? paramsStr.split(',').map(param => {
-      const [name, type] = param.trim().split(':').map(s => s?.trim());
+    // 智能分割参数：考虑尖括号、方括号、圆括号内的逗号
+    const parameters = paramsStr ? splitParameters(paramsStr).map(param => {
+      const trimmedParam = param.trim();
+      const colonIndex = trimmedParam.indexOf(':');
+      if (colonIndex === -1) {
+        throw new ValidationError(`参数格式错误，必须包含类型标注: ${param}`);
+      }
+      const name = trimmedParam.substring(0, colonIndex).trim();
+      const type = trimmedParam.substring(colonIndex + 1).trim();
       if (!name || !type) {
         throw new ValidationError(`参数格式错误，必须包含类型标注: ${param}`);
       }
@@ -136,6 +143,45 @@ export function parseContractLine(line: string): ContractAnnotation {
     console.error('CommentParser.parseContractLine error:', error);
     throw error;
   }
+}
+
+// @contract: splitParameters(paramsStr: string) => string[]
+// @step: [初始化] 创建结果数组和当前参数字符串
+// @step: [遍历] 遍历每个字符，跟踪括号深度
+// @step: [分割] 只在括号深度为 0 时遇到逗号才分割
+// @step: [返回] 返回分割后的参数数组
+// @boundary: 当括号不匹配时，仍然尝试分割
+function splitParameters(paramsStr: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let depth = 0; // 跟踪 <>, [], () 的嵌套深度
+
+  for (let i = 0; i < paramsStr.length; i++) {
+    const char = paramsStr[i];
+
+    if (char === '<' || char === '[' || char === '(') {
+      depth++;
+      current += char;
+    } else if (char === '>' || char === ']' || char === ')') {
+      depth--;
+      current += char;
+    } else if (char === ',' && depth === 0) {
+      // 只在深度为 0 时，逗号才是参数分隔符
+      if (current.trim()) {
+        result.push(current.trim());
+      }
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  // 添加最后一个参数
+  if (current.trim()) {
+    result.push(current.trim());
+  }
+
+  return result;
 }
 // @end
 

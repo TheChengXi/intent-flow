@@ -1,5 +1,4 @@
 import { BaseRole, RoleResult } from './BaseRole';
-import { CDDComment } from '../../model/entities/CDDComment';
 import { ClaudeAPIService, ClaudeAPIRequest } from '../../model/services/ClaudeAPIService';
 import { LogicUnclearError } from '../../model/entities/Errors';
 
@@ -14,6 +13,9 @@ export interface TranslateContext {
   lastTranslateResult?: string;
   filePath?: string;
   languageId?: string;
+  targetLanguage?: string;
+  existingComment?: string;
+  functionName?: string;
 }
 
 export class TranslatorVM extends BaseRole {
@@ -23,13 +25,15 @@ export class TranslatorVM extends BaseRole {
 
   // @contract: execute(context: TranslateContext) => Promise<RoleResult>
   // @step: [验证输入] 检查代码是否为空
-  // @step: [检测语言] 从 languageId 或 filePath 检测目标语言
-  // @step: [构建 Prompt] 要求 API 逆向生成 @contract、@step、@boundary，指定目标语言的注释格式
+  // @step: [检测语言] 从 targetLanguage、languageId 或 filePath 检测目标语言
+  // @step: [构建 Prompt] 构建用户消息，包含 code、targetLanguage 和可选的 context
   // @step: [调用 API] 通过 apiService.callAPI 生成注释
-  // @step: [检查响应] 检查 API 是否返回"代码逻辑混乱"
+  // @step: [检查 BACKTRACK] 检查 API 是否返回 <<BACKTRACK>>
+  // @step: [清理输出] 去除代码块标记、解释文本等
+  // @step: [提取注释] 提取有效的 CDD 注释块
   // @step: [返回结果] 返回 success: true，artifacts 包含生成的注释文本
   // @boundary: 当代码为空时，返回 success: false 和 ValidationError
-  // @boundary: 当 API 返回"代码逻辑混乱"时，返回 success: false 和 LogicUnclearError
+  // @boundary: 当 API 返回 <<BACKTRACK>> 时，返回 success: false 和错误信息
   // @boundary: 当 API 调用失败时，返回 success: false 和 APIError
   async execute(context: TranslateContext): Promise<RoleResult> {
     try {
@@ -41,11 +45,25 @@ export class TranslatorVM extends BaseRole {
         };
       }
 
-      const language = this.detectLanguage(context.filePath, context.languageId);
+      const language = this.detectLanguage(context.filePath, context.languageId, context.targetLanguage);
       const commentPrefix = this.getCommentPrefix(language);
 
-      // 构建用户消息
-      const userMessage = this.buildUserMessage(context.code, language, commentPrefix);
+      // 构建用户消息（支持 context 参数）
+      const hasExistingComment = context.existingComment && context.existingComment.trim() !== '';
+      const hasFunctionName = context.functionName && context.functionName.trim() !== '';
+
+      let contextText = '';
+      if (hasExistingComment || hasFunctionName) {
+        contextText = '\n\ncontext:\n';
+        if (hasExistingComment) {
+          contextText += `existingComment:\n${context.existingComment}\n`;
+        }
+        if (hasFunctionName) {
+          contextText += `functionName: ${context.functionName}\n`;
+        }
+      }
+
+      const userMessage = this.buildUserMessage(context.code, language, contextText);
 
       const request: ClaudeAPIRequest = {
         role: 'translator',
@@ -60,10 +78,22 @@ export class TranslatorVM extends BaseRole {
       console.log(comments);
       console.log('='.repeat(80));
 
-      // 检查是否返回"代码逻辑混乱"
-      if (comments.includes('代码逻辑混乱')) {
-        throw new LogicUnclearError('代码逻辑混乱，无法转译');
+      // 检查是否返回 <<BACKTRACK>>
+      if (comments.includes('<<BACKTRACK>>')) {
+        const reason = comments.replace('<<BACKTRACK>>', '').trim();
+        throw new LogicUnclearError(reason || '无法转译代码');
       }
+
+      // 清理输出：去除代码块标记
+      comments = comments.replace(/^```[\w]*\n/gm, '').replace(/\n```$/gm, '');
+
+      // 清理解释性文本（markdown 标题、加粗等）
+      // 注意：只清理 Markdown 标题（# 后面必须有空格且不包含 @contract/@step/@boundary/@end）
+      comments = comments.replace(/^#+\s+(?!@contract|@step|@boundary|@end).*$/gm, '');
+      comments = comments.replace(/\*\*.*?\*\*/g, '');
+
+      // 清理完成标记
+      comments = comments.replace(/[✅✓]\s*(转译完成|完成|Done|Completed).*/gi, '');
 
       // 精确接收：只提取有效的 CDD 注释块
       comments = this.extractValidComments(comments, commentPrefix);
@@ -87,11 +117,16 @@ export class TranslatorVM extends BaseRole {
   }
   // @end
 
-  // @contract: detectLanguage(filePath?: string, languageId?: string) => string
+  // @contract: detectLanguage(filePath?: string, languageId?: string, targetLanguage?: string) => string
+  // @step: [优先 targetLanguage] 如果 targetLanguage 存在，直接返回
   // @step: [优先 languageId] 如果 languageId 存在，映射到语言名称
   // @step: [检测扩展名] 从 filePath 提取扩展名，映射到语言名称
   // @step: [兜底] 无法识别时返回 'TypeScript'
-  private detectLanguage(filePath?: string, languageId?: string): string {
+  private detectLanguage(filePath?: string, languageId?: string, targetLanguage?: string): string {
+    if (targetLanguage) {
+      return targetLanguage;
+    }
+
     if (languageId) {
       const languageMap: { [key: string]: string } = {
         'typescript': 'TypeScript',
@@ -206,15 +241,20 @@ export class TranslatorVM extends BaseRole {
     return validLines.join('\n');
   }
 
-  // @contract: buildUserMessage(code: string, language: string, commentPrefix: string) => string
+  // @contract: buildUserMessage(code: string, language: string, contextText: string) => string
   // @step: [构建参数] 按函数调用风格构建参数列表
   // @step: [添加必需参数] 添加 code 和 targetLanguage
+  // @step: [添加可选参数] 如果 contextText 不为空，添加 context
   // @step: [返回] 返回完整的用户消息
-  private buildUserMessage(code: string, language: string, commentPrefix: string): string {
+  private buildUserMessage(code: string, language: string, contextText: string): string {
     let message = '';
 
     message += `code:\n${code}\n\n`;
-    message += `targetLanguage: ${language}\n\n`;
+    message += `targetLanguage: ${language}`;
+
+    if (contextText && contextText.trim() !== '') {
+      message += contextText;
+    }
 
     return message.trim();
   }

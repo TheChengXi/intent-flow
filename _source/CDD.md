@@ -1,9 +1,3 @@
-好的。从现在起，它不再叫“自然语言AI编程范式”，它叫 **Comment-Driven Development (CDD)**。
-
-以下是经过文案整理、去冗余、合并重复概念后的 v2.4.1 完整文档。
-
----
-
 # Comment-Driven Development (CDD) v2.4.1
 
 ## 范式声明

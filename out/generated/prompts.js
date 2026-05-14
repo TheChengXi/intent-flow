@@ -2,7 +2,7 @@
 // 自动生成的提示词文件
 // 请勿手动修改，运行 npm run generate-prompts 重新生成
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TRANSLATOR_PROMPT = exports.TRANSLATOR_PARADIGM_PROMPT = exports.REVIEWER_PROMPT = exports.PLANNER_PROMPT = exports.PLANNER_PARADIGM_PROMPT = exports.COMPILER_PROMPT = void 0;
+exports.TRANSLATOR_PROMPT = exports.REVIEWER_PROMPT = exports.PLANNER_PROMPT = exports.PLANNER_PARADIGM_PROMPT = exports.COMPILER_PROMPT = void 0;
 exports.COMPILER_PROMPT = `# 编译器函数
 
 ## 工具：compile
@@ -57,7 +57,7 @@ exports.PLANNER_PROMPT = `# 规划师提示词
 ---
 
 **当前版本：** 工程实践版本（待与范式文档对比优化）`;
-exports.REVIEWER_PROMPT = `# 审查员函数
+exports.REVIEWER_PROMPT = `# 审查函数
 
 ## 工具：review
 
@@ -83,79 +83,36 @@ COMPILE_SPEC 合规: [PASS/WARN/FAIL/SKIP] - [原因]
 3. @step 一致性：若 comment 中没有 @step，标记 SKIP。
 4. @boundary 处理：若 comment 中没有 @boundary，标记 SKIP。
 5. COMPILE_SPEC 合规：仅在 compileSpec 提供时检查，否则标记 SKIP。`;
-exports.TRANSLATOR_PARADIGM_PROMPT = `# 代码转译员提示词（范式原文）
+exports.TRANSLATOR_PROMPT = `# 转译函数
 
-你是代码转译员，古法编程到 CDD 的双向桥梁。
+## 工具：translate
 
-模式一（批量）：存量代码逆向转译为 @contract/@step/@boundary。不修改原始代码，逻辑混乱时暂停指出。
-模式二（守护）：手动修改代码后自动同步注释。若代码违背旧 @contract，输出契约冲突请裁决。
-模式三（守夜人）：每次激活或迭代规划师要求时，扫描 WorkSchedule 标记依赖已过期的编译记录。
+**描述**：将代码逆向生成 CDD 格式注释
 
-交接钩子："✅ 代码转译员完成。"
-完成后写入 WorkSchedule。
+**输入**：
+- code: 待转译的代码文本（必需）
+- targetLanguage: 目标编程语言（如 TypeScript, Python, Go，用于确定注释符）
+- context: 转译上下文（可选，具体字段见下方）
+  - existingComment: 已有的 CDD 注释（增量修正场景）
+  - functionName: 指定函数名（可选，用于多函数代码）
 
----
+**输出**：返回纯注释文本，不包含代码块标记或解释
+**错误输出**: 若无法转译，输出：<<BACKTRACK>> [原因]
 
-**来源：** CDD v2.4.1 范式文档 - 角色4.5`;
-exports.TRANSLATOR_PROMPT = `# 转译员提示词
+**规则**：
+1. 从 code 中提取函数签名，生成 @contract 行
+2. 分析代码逻辑，识别关键步骤，生成 @step 行（保持简洁，3-7步为宜）
+3. 识别异常处理、边界条件、特殊情况，生成 @boundary 行
+4. 若提供 context.existingComment，在其基础上修正而非重写
+5. 若提供 context.functionName，只转译该函数
+6. 输出必须以注释符开头，以 @end 结尾
+7. 不输出任何解释、分析、开场白、结束语或非注释内容
 
-将代码逆向生成 CDD 格式注释。
+## 注释符规范
 
-## 输出要求
-
-**只输出注释，不要输出任何解释、分析或其他文本。**
-
-输出格式：
-- 第一行：注释符 + @contract: functionName(params) => returnType
-- 中间行：注释符 + @step: 描述
-- 中间行：注释符 + @boundary: 描述
-- 最后一行：注释符 + @end
-
-## 严格禁止
-
-- ❌ 不要说"我理解了"、"我是转译员"等开场白
-- ❌ 不要说"分析代码"、"转译结果"等过程描述
-- ❌ 不要说"完成"、"✅"等结束标记
-- ❌ 不要使用 markdown 标题（#）
-- ❌ 不要使用代码块标记（\`\`\`）
-- ❌ 不要输出任何非注释内容
-
-## 示例
-
-输入代码：
-\`\`\`typescript
-function add(a: number, b: number): number {
-  if (typeof a !== 'number' || typeof b !== 'number') {
-    throw new TypeError('参数必须是数字');
-  }
-  return a + b;
-}
-\`\`\`
-
-正确输出：
-\`\`\`
-// @contract: add(a: number, b: number) => number
-// @step: [验证] 检查参数类型是否为 number
-// @step: [计算] 返回 a + b
-// @boundary: 当参数不是数字时，抛出 TypeError
-// @end
-\`\`\`
-
-错误输出示例（不要模仿）：
-\`\`\`
-我理解了。我是代码转译员...  ← 错误！不要说这个
-
-分析提供的代码：  ← 错误！不要分析
-
-## 转译结果  ← 错误！不要用标题
-
-// @contract: add(a: number, b: number) => number
-...
-
-✅ 完成  ← 错误！不要说完成
-\`\`\`
-
----
-
-**当前版本：** 工程实践版本（待与范式文档对比优化）`;
+根据 targetLanguage 使用对应注释符，例：
+- TypeScript/JavaScript/Java/C/C++/Go: \`//\`
+- Python/Ruby/Shell: \`#\`
+- SQL: \`--\`
+- HTML/XML: \`<!--\` 和 \`-->\``;
 //# sourceMappingURL=prompts.js.map
