@@ -127,7 +127,7 @@ class CompilerContextManager {
             // 从文档中提取 import 语句（总是执行，不跳过）
             console.log('[CompilerContextManager] 提取 import 语句...');
             const fullText = document.getText();
-            const importedFiles = WorkLineService_1.WorkLineService.extractImportedFilesFromText(fullText, workspaceRoot);
+            const importedFiles = await WorkLineService_1.WorkLineService.extractImportedFilesFromText(fullText, workspaceRoot, targetLanguage);
             console.log('[CompilerContextManager] 提取到的导入文件数量:', importedFiles.length);
             // 将当前文件添加到搜索列表的最前面（优先搜索同文件内的定义）
             const searchFiles = [document.fileName, ...importedFiles];
@@ -146,14 +146,14 @@ class CompilerContextManager {
                 // 1. 提取并搜索类型引用（父依赖）
                 console.log('[CompilerContextManager] 提取类型引用...');
                 const contractLine = selectedText.split('\n')[0]; // 第一行是 @contract
-                const typeReferences = WorkLineService_1.WorkLineService.extractTypeReferences(contractLine);
+                const typeReferences = await WorkLineService_1.WorkLineService.extractTypeReferences(contractLine, targetLanguage);
                 console.log('[CompilerContextManager] 提取到的类型引用数量:', typeReferences.length);
                 console.log('[CompilerContextManager] 类型引用:', typeReferences);
                 if (typeReferences.length > 0) {
                     console.log('[CompilerContextManager] 搜索类型定义...');
                     for (const typeName of typeReferences) {
                         for (const filePath of searchFiles) {
-                            const typeDef = await WorkLineService_1.WorkLineService.searchTypeDefinitionInFile(typeName, filePath);
+                            const typeDef = await WorkLineService_1.WorkLineService.searchTypeDefinitionInFile(typeName, filePath, targetLanguage);
                             if (typeDef) {
                                 console.log(`[CompilerContextManager] 找到类型定义: ${typeName}`);
                                 referencedContracts.push(typeDef);
@@ -168,7 +168,7 @@ class CompilerContextManager {
                 const boundariesText = comment.boundaries.map(b => b.description).join(' ');
                 const searchText = stepsText + ' ' + boundariesText;
                 console.log('[CompilerContextManager] 调用 extractFunctionCallsFromText...');
-                const functionCalls = WorkLineService_1.WorkLineService.extractFunctionCallsFromText(searchText);
+                const functionCalls = await WorkLineService_1.WorkLineService.extractFunctionCallsFromText(searchText, targetLanguage);
                 console.log('[CompilerContextManager] 提取到的函数调用数量:', functionCalls.length);
                 // 排除当前正在编译的函数本身（双重保险）
                 const filteredCalls = functionCalls.filter(name => name !== comment.contract.functionName);

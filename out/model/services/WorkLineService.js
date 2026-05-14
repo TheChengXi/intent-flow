@@ -2,6 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WorkLineService = void 0;
 const TreeSitterParser_1 = require("./TreeSitterParser");
+const FunctionCallExtractor_1 = require("./codeAnalysis/FunctionCallExtractor");
+const TypeReferenceExtractor_1 = require("./codeAnalysis/TypeReferenceExtractor");
+const ImportExtractor_1 = require("./codeAnalysis/ImportExtractor");
+const ContractSearcher_1 = require("./codeSearch/ContractSearcher");
+const TypeDefinitionSearcher_1 = require("./codeSearch/TypeDefinitionSearcher");
 // @contract: WorkLineService.parseWorkLine(document: vscode.TextDocument, position: vscode.Position) => Promise<WorkLine | null>
 // @step: [检测语言] 从文档语言 ID 推断语言
 // @step: [获取代码] 获取文档全部文本
@@ -42,12 +47,10 @@ class WorkLineService {
     }
     static async extractReferencedContracts(workLine, workspaceRoot) {
         const vscode = require('vscode');
-        const fs = require('fs').promises;
-        const path = require('path');
         // 1. 从代码中提取 import/include 语句，获取依赖的文件路径
-        const importedFiles = this.extractImportedFiles(workLine.codeText, workspaceRoot);
+        const importedFiles = await ImportExtractor_1.ImportExtractor.extractImportedFiles(workLine.codeText, workspaceRoot);
         // 2. 从代码中提取函数调用
-        const functionCalls = this.extractFunctionCalls(workLine.codeText);
+        const functionCalls = await FunctionCallExtractor_1.FunctionCallExtractor.extractFromText(workLine.codeText);
         // 3. 在导入的文件中搜索这些函数的契约
         const contracts = [];
         const notFoundFunctions = [];
@@ -55,7 +58,7 @@ class WorkLineService {
             let found = false;
             // 优先在导入的文件中搜索
             for (const filePath of importedFiles) {
-                const contract = await this.searchContractInFile(funcName, filePath);
+                const contract = await ContractSearcher_1.ContractSearcher.searchInFile(funcName, filePath);
                 if (contract) {
                     contracts.push(contract);
                     found = true;
@@ -71,7 +74,7 @@ class WorkLineService {
             const choice = await vscode.window.showInformationMessage(`在导入的文件中未找到以下函数的契约：${notFoundFunctions.join(', ')}\n\n是否在整个工作区搜索？`, '搜索', '跳过');
             if (choice === '搜索') {
                 for (const funcName of notFoundFunctions) {
-                    const result = await this.searchContractInWorkspaceWithPath(funcName, workspaceRoot);
+                    const result = await ContractSearcher_1.ContractSearcher.searchInWorkspaceWithPath(funcName, workspaceRoot);
                     if (result) {
                         contracts.push(result.contract);
                         // 询问是否添加 import
@@ -86,76 +89,17 @@ class WorkLineService {
         }
         return contracts;
     }
-    // @contract: extractImportedFiles(code: string, workspaceRoot: string) => string[]
-    // @step: [提取 import] 使用正则提取 import/require/include 语句
-    // @step: [解析路径] 解析相对路径为绝对路径
-    // @step: [返回] 返回文件路径数组
-    static extractImportedFiles(code, workspaceRoot) {
-        const path = require('path');
-        const files = [];
-        // TypeScript/JavaScript: import ... from '...'
-        const importRegex = /import\s+.*?\s+from\s+['"]([^'"]+)['"]/g;
-        let match;
-        while ((match = importRegex.exec(code)) !== null) {
-            const importPath = match[1];
-            // 只处理相对路径（./或../开头）
-            if (importPath.startsWith('./') || importPath.startsWith('../')) {
-                // 尝试添加常见扩展名
-                const extensions = ['.ts', '.js', '.tsx', '.jsx'];
-                for (const ext of extensions) {
-                    files.push(path.resolve(workspaceRoot, importPath + ext));
-                }
-            }
-        }
-        // TypeScript/JavaScript: require('...')
-        const requireRegex = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-        while ((match = requireRegex.exec(code)) !== null) {
-            const requirePath = match[1];
-            if (requirePath.startsWith('./') || requirePath.startsWith('../')) {
-                const extensions = ['.ts', '.js', '.tsx', '.jsx'];
-                for (const ext of extensions) {
-                    files.push(path.resolve(workspaceRoot, requirePath + ext));
-                }
-            }
-        }
-        // Python: from ... import ... / import ...
-        const pythonImportRegex = /(?:from\s+([.\w]+)\s+import|import\s+([.\w]+))/g;
-        while ((match = pythonImportRegex.exec(code)) !== null) {
-            const moduleName = match[1] || match[2];
-            if (moduleName.startsWith('.')) {
-                // 相对导入
-                const modulePath = moduleName.replace(/\./g, '/') + '.py';
-                files.push(path.resolve(workspaceRoot, modulePath));
-            }
-        }
-        // C/C++: #include "..."
-        const includeRegex = /#include\s+["<]([^">]+)[">]/g;
-        while ((match = includeRegex.exec(code)) !== null) {
-            const includePath = match[1];
-            files.push(path.resolve(workspaceRoot, includePath));
-        }
-        // Go: import "..."
-        const goImportRegex = /import\s+(?:\(\s*)?["']([^"']+)["']/g;
-        while ((match = goImportRegex.exec(code)) !== null) {
-            const importPath = match[1];
-            if (importPath.startsWith('./') || importPath.startsWith('../')) {
-                files.push(path.resolve(workspaceRoot, importPath + '.go'));
-            }
-        }
-        return files;
-    }
-    // @end
-    // @contract: extractFunctionCallsFromText(text: string) => string[]
-    // @step: [调用私有方法] 调用 extractFunctionCalls 提取函数调用
+    // @contract: extractFunctionCallsFromText(text: string, language?: string) => Promise<string[]>
+    // @step: [委托] 委托给 FunctionCallExtractor.extractFromText
     // @step: [返回] 返回函数名数组
-    static extractFunctionCallsFromText(text) {
-        return this.extractFunctionCalls(text);
+    static async extractFunctionCallsFromText(text, language) {
+        return await FunctionCallExtractor_1.FunctionCallExtractor.extractFromText(text, language);
     }
-    // @contract: extractImportedFilesFromText(text: string, workspaceRoot: string) => string[]
-    // @step: [调用私有方法] 调用 extractImportedFiles 提取导入文件
+    // @contract: extractImportedFilesFromText(text: string, workspaceRoot: string, language?: string) => Promise<string[]>
+    // @step: [委托] 委托给 ImportExtractor.extractImportedFiles
     // @step: [返回] 返回文件路径数组
-    static extractImportedFilesFromText(text, workspaceRoot) {
-        return this.extractImportedFiles(text, workspaceRoot);
+    static async extractImportedFilesFromText(text, workspaceRoot, language) {
+        return await ImportExtractor_1.ImportExtractor.extractImportedFiles(text, workspaceRoot, language);
     }
     // @contract: searchContractsForFunctions(functionNames: string[], importedFiles: string[], workspaceRoot: string) => Promise<string[]>
     // @step: [初始化] 创建契约数组和未找到函数列表
@@ -174,7 +118,7 @@ class WorkLineService {
             let found = false;
             for (const filePath of importedFiles) {
                 console.log('[WorkLineService] 在文件中搜索:', filePath);
-                const contract = await this.searchContractInFile(funcName, filePath);
+                const contract = await ContractSearcher_1.ContractSearcher.searchInFile(funcName, filePath);
                 if (contract) {
                     console.log('[WorkLineService] 找到契约');
                     contracts.push(contract);
@@ -195,7 +139,7 @@ class WorkLineService {
             if (choice === '搜索') {
                 for (const funcName of notFoundFunctions) {
                     console.log('[WorkLineService] 全局搜索函数:', funcName);
-                    const result = await this.searchContractInWorkspaceWithPath(funcName, workspaceRoot);
+                    const result = await ContractSearcher_1.ContractSearcher.searchInWorkspaceWithPath(funcName, workspaceRoot);
                     if (result) {
                         console.log('[WorkLineService] 全局搜索找到契约:', result.relativePath);
                         contracts.push(result.contract);
@@ -216,71 +160,7 @@ class WorkLineService {
         return contracts;
     }
     // @end
-    // @contract: extractFunctionCalls(code: string) => string[]
-    // @step: [正则匹配] 使用正则提取所有函数调用（函数名后跟括号）
-    // @step: [去重] 使用 Set 去除重复的函数名
-    // @step: [过滤] 过滤掉常见的内置函数和方法
-    // @step: [返回] 返回函数名数组
-    static extractFunctionCalls(code) {
-        const functionCallRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g;
-        const calls = new Set();
-        let match;
-        while ((match = functionCallRegex.exec(code)) !== null) {
-            const funcName = match[1];
-            // 过滤掉常见的内置函数和关键字
-            const builtins = ['if', 'for', 'while', 'switch', 'catch', 'function', 'return',
-                'console', 'log', 'error', 'warn', 'info', 'debug',
-                'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval',
-                'parseInt', 'parseFloat', 'isNaN', 'isFinite',
-                'Array', 'Object', 'String', 'Number', 'Boolean', 'Date', 'Math',
-                'JSON', 'Promise', 'Map', 'Set', 'WeakMap', 'WeakSet'];
-            if (!builtins.includes(funcName)) {
-                calls.add(funcName);
-            }
-        }
-        return Array.from(calls);
-    }
-    // @end
-    // @contract: searchContractInFile(functionName: string, filePath: string) => Promise<string | null>
-    // @step: [读取文件] 读取指定文件内容
-    // @step: [搜索契约] 搜索 @contract: functionName
-    // @step: [提取契约块] 提取完整的契约注释块
-    // @step: [返回] 返回契约文本或 null
-    static async searchContractInFile(functionName, filePath) {
-        const fs = require('fs').promises;
-        try {
-            const content = await fs.readFile(filePath, 'utf-8');
-            // 搜索 @contract: functionName
-            const contractRegex = new RegExp(`@contract:\\s*${functionName}\\s*\\(`, 'i');
-            if (contractRegex.test(content)) {
-                // 找到了，提取完整的契约注释块
-                const lines = content.split('\n');
-                let contractBlock = '';
-                let inContract = false;
-                for (const line of lines) {
-                    if (line.includes(`@contract: ${functionName}`)) {
-                        inContract = true;
-                    }
-                    if (inContract) {
-                        contractBlock += line + '\n';
-                        // 遇到非注释行，停止
-                        const trimmed = line.trim();
-                        if (trimmed && !trimmed.startsWith('//') && !trimmed.startsWith('#')) {
-                            break;
-                        }
-                    }
-                }
-                return contractBlock.trim();
-            }
-            return null;
-        }
-        catch (error) {
-            // 文件不存在或读取失败
-            return null;
-        }
-    }
-    // @end
-    // @contract: searchContractInWorkspaceWithPath(functionName: string, workspaceRoot: string) => Promise<{ contract: string; filePath: string; relativePath: string; importPath: string } | null>
+    // @contract: searchTypeDefinitionInFile(typeName: string, filePath: string) => Promise<string | null>
     // @step: [构建搜索模式] 构建 @contract: functionName 的搜索模式
     // @step: [执行搜索] 使用 vscode.workspace.findFiles 和文件读取搜索契约
     // @step: [解析契约] 找到后提取完整的契约注释块
@@ -336,173 +216,17 @@ class WorkLineService {
         }
     }
     // @end
-    // @contract: searchContractInWorkspace(functionName: string, workspaceRoot: string) => Promise<string | null>
-    // @step: [构建搜索模式] 构建 @contract: functionName 的搜索模式
-    // @step: [执行搜索] 使用 vscode.workspace.findFiles 和文件读取搜索契约
-    // @step: [解析契约] 找到后提取完整的契约注释块
-    // @step: [返回] 返回契约文本或 null
-    // @boundary: 已废弃，使用 searchContractInFile 替代
-    static async searchContractInWorkspace(functionName, workspaceRoot) {
-        const vscode = require('vscode');
-        const fs = require('fs').promises;
-        const path = require('path');
-        try {
-            // 搜索所有代码文件
-            const files = await vscode.workspace.findFiles('**/*.{ts,js,py,go,java,cpp,c,rs,kt,swift,cs,rb,php}', '**/node_modules/**', 100 // 限制搜索文件数
-            );
-            for (const file of files) {
-                const content = await fs.readFile(file.fsPath, 'utf-8');
-                // 搜索 @contract: functionName
-                const contractRegex = new RegExp(`@contract:\\s*${functionName}\\s*\\(`, 'i');
-                if (contractRegex.test(content)) {
-                    // 找到了，提取完整的契约注释块
-                    const lines = content.split('\n');
-                    let contractBlock = '';
-                    let inContract = false;
-                    for (const line of lines) {
-                        if (line.includes(`@contract: ${functionName}`)) {
-                            inContract = true;
-                        }
-                        if (inContract) {
-                            contractBlock += line + '\n';
-                            // 遇到非注释行或空行后的代码行，停止
-                            const trimmed = line.trim();
-                            if (trimmed && !trimmed.startsWith('//') && !trimmed.startsWith('#')) {
-                                break;
-                            }
-                        }
-                    }
-                    return contractBlock.trim();
-                }
-            }
-            return null;
-        }
-        catch (error) {
-            console.error(`搜索契约 ${functionName} 失败:`, error);
-            return null;
-        }
-    }
-    // @contract: extractTypeReferences(contractLine: string) => string[]
-    // @step: [提取参数类型] 从参数列表中提取类型（param: Type）
-    // @step: [提取返回类型] 从返回值中提取类型（=> Type）
-    // @step: [展开泛型] 从泛型中提取内部类型（Promise<User> => User）
-    // @step: [过滤内置类型] 过滤掉基础类型和标准库类型
-    // @step: [去重] 使用 Set 去除重复的类型名
+    // @contract: extractTypeReferences(contractLine: string, language?: string) => Promise<string[]>
+    // @step: [委托] 委托给 TypeReferenceExtractor.extractFromContractLine
     // @step: [返回] 返回类型名数组
-    // @boundary: 当 contractLine 格式不正确时，返回空数组
-    static extractTypeReferences(contractLine) {
-        const types = new Set();
-        // 内置类型列表
-        const builtinTypes = new Set([
-            // 基础类型
-            'string', 'number', 'boolean', 'null', 'undefined', 'void', 'any', 'unknown', 'never', 'symbol', 'bigint',
-            // 标准库类型
-            'Promise', 'Array', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Date', 'Error', 'RegExp',
-            'Partial', 'Required', 'Readonly', 'Record', 'Pick', 'Omit', 'Exclude', 'Extract',
-            // 前端类型（假设 React 已导入）
-            'JSX', 'React', 'ReactNode', 'ReactElement', 'FC', 'Component'
-        ]);
-        // 提取所有类型引用的正则（匹配 : Type 或 => Type）
-        const typeRegex = /:\s*([A-Z][a-zA-Z0-9_<>,\s\[\]|&]*)|=>\s*([A-Z][a-zA-Z0-9_<>,\s\[\]|&]*)/g;
-        let match;
-        while ((match = typeRegex.exec(contractLine)) !== null) {
-            const typeStr = match[1] || match[2];
-            if (typeStr) {
-                // 提取所有类型名（包括泛型内部的类型）
-                const typeNames = this.extractTypeNamesFromTypeString(typeStr.trim());
-                typeNames.forEach(typeName => {
-                    if (!builtinTypes.has(typeName)) {
-                        types.add(typeName);
-                    }
-                });
-            }
-        }
-        return Array.from(types);
+    static async extractTypeReferences(contractLine, language) {
+        return await TypeReferenceExtractor_1.TypeReferenceExtractor.extractFromContractLine(contractLine, language);
     }
-    // @end
-    // @contract: extractTypeNamesFromTypeString(typeStr: string) => string[]
-    // @step: [移除空格] 移除所有空格
-    // @step: [提取类型名] 使用正则提取所有大写开头的类型名
-    // @step: [过滤关键字] 过滤掉 Promise, Array 等泛型容器
-    // @step: [返回] 返回类型名数组
-    static extractTypeNamesFromTypeString(typeStr) {
-        const types = [];
-        // 移除空格
-        const cleaned = typeStr.replace(/\s+/g, '');
-        // 提取所有大写开头的标识符（类型名）
-        const typeNameRegex = /[A-Z][a-zA-Z0-9_]*/g;
-        let match;
-        while ((match = typeNameRegex.exec(cleaned)) !== null) {
-            types.push(match[0]);
-        }
-        return types;
-    }
-    // @end
-    // @contract: searchTypeDefinitionInFile(typeName: string, filePath: string) => Promise<string | null>
-    // @step: [读取文件] 读取指定文件内容
-    // @step: [搜索类型定义] 搜索 interface/type/class/enum TypeName
-    // @step: [提取定义块] 提取完整的类型定义代码
+    // @contract: searchTypeDefinitionInFile(typeName: string, filePath: string, language?: string) => Promise<string | null>
+    // @step: [委托] 委托给 TypeDefinitionSearcher.searchInFile
     // @step: [返回] 返回类型定义文本或 null
-    // @boundary: 当文件不存在时，返回 null
-    // @boundary: 当类型未找到时，返回 null
-    static async searchTypeDefinitionInFile(typeName, filePath) {
-        const fs = require('fs').promises;
-        try {
-            console.log(`[WorkLineService] 搜索类型定义: ${typeName} 在文件: ${filePath}`);
-            const content = await fs.readFile(filePath, 'utf-8');
-            console.log(`[WorkLineService] 文件内容长度: ${content.length}`);
-            // 搜索类型定义（interface, type, class, enum）
-            const typeDefRegex = new RegExp(`^\\s*(export\\s+)?(interface|type|class|enum)\\s+${typeName}\\b`, 'm');
-            const match = typeDefRegex.exec(content);
-            if (!match) {
-                console.log(`[WorkLineService] 未找到类型定义: ${typeName}`);
-                return null;
-            }
-            console.log(`[WorkLineService] 找到类型定义: ${typeName} at index ${match.index}`);
-            // 找到定义的起始位置
-            const startIndex = match.index;
-            const lines = content.split('\n');
-            let currentIndex = 0;
-            let startLine = 0;
-            // 找到起始行
-            for (let i = 0; i < lines.length; i++) {
-                if (currentIndex + lines[i].length >= startIndex) {
-                    startLine = i;
-                    break;
-                }
-                currentIndex += lines[i].length + 1; // +1 for newline
-            }
-            // 提取完整的类型定义
-            let definition = '';
-            let braceCount = 0;
-            let inDefinition = false;
-            for (let i = startLine; i < lines.length; i++) {
-                const line = lines[i];
-                definition += line + '\n';
-                // 计算大括号数量
-                for (const char of line) {
-                    if (char === '{') {
-                        braceCount++;
-                        inDefinition = true;
-                    }
-                    else if (char === '}') {
-                        braceCount--;
-                    }
-                }
-                // 如果是 type 别名（没有大括号），遇到分号或换行结束
-                if (!inDefinition && line.includes('=') && (line.trim().endsWith(';') || line.trim().endsWith(','))) {
-                    break;
-                }
-                // 如果大括号匹配完成，结束
-                if (inDefinition && braceCount === 0) {
-                    break;
-                }
-            }
-            return definition.trim();
-        }
-        catch (error) {
-            return null;
-        }
+    static async searchTypeDefinitionInFile(typeName, filePath, language) {
+        return await TypeDefinitionSearcher_1.TypeDefinitionSearcher.searchInFile(typeName, filePath, language);
     }
 }
 exports.WorkLineService = WorkLineService;
