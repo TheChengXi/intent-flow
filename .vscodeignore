@@ -1,6 +1,8 @@
 .vscode/**
 .vscode-test/**
 src/**
+out/**
+node_modules/**
 .gitignore
 .yarnrc
 vsc-extension-quickstart.md
@@ -8,13 +10,11 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
-!out/**/*.js
-node_modules/**
-!node_modules/@anthropic-ai/**
-!node_modules/openai/**
-!node_modules/web-tree-sitter/**
-!node_modules/tree-sitter-wasms/**
 scripts/**
 .git/**
 .github/**
 *.vsix
+webpack.config.js
+.editorconfig
+.npmrc
+test-*.js
