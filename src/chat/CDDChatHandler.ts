@@ -1,3 +1,5 @@
+// @intent: 处理 CDD Chat Participant 的对话请求，路由到不同的功能模块
+
 import * as vscode from 'vscode';
 import { PlannerVM } from '../viewmodel/roles/PlannerVM';
 import { TranslatorVM } from '../viewmodel/roles/TranslatorVM';

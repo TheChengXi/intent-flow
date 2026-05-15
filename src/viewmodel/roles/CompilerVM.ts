@@ -1,3 +1,5 @@
+// @intent: 将 CDD 格式的注释编译为可执行代码
+
 import { BaseRole, RoleResult } from './BaseRole';
 import { CDDComment } from '../../model/entities/CDDComment';
 import { ClaudeAPIService, ClaudeAPIRequest } from '../../model/services/ClaudeAPIService';

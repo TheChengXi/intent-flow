@@ -1,3 +1,5 @@
+// @intent: CDD Framework VSCode 扩展的入口文件，注册命令和 Chat Participant
+
 import * as vscode from 'vscode';
 import * as CompileCommand from './viewmodel/commands/CompileCommand';
 import * as ReviewCommand from './viewmodel/commands/ReviewCommand';

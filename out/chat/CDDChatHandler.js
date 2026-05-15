@@ -1,4 +1,5 @@
 "use strict";
+// @intent: 处理 CDD Chat Participant 的对话请求，路由到不同的功能模块
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleCDDChat = handleCDDChat;
 const PlannerVM_1 = require("../viewmodel/roles/PlannerVM");

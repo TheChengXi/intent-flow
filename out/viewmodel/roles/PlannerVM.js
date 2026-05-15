@@ -1,4 +1,5 @@
 "use strict";
+// @intent: 分析变更影响，生成项目迭代实施计划
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);

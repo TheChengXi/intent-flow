@@ -1,3 +1,5 @@
+// @intent: 分析变更影响，生成项目迭代实施计划
+
 import { BaseRole, RoleResult } from './BaseRole';
 import * as ChangelogRepo from '../../model/repositories/ChangelogRepo';
 import * as DependencyTracker from '../../model/services/DependencyTracker';

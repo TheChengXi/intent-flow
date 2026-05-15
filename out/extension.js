@@ -1,4 +1,5 @@
 "use strict";
+// @intent: CDD Framework VSCode 扩展的入口文件，注册命令和 Chat Participant
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);

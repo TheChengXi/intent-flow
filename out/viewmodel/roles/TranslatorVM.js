@@ -1,4 +1,5 @@
 "use strict";
+// @intent: 将自然语言需求或代码转译为 CDD 格式的注释
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TranslatorVM = void 0;
 const BaseRole_1 = require("./BaseRole");

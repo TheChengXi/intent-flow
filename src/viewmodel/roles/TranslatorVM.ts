@@ -1,3 +1,5 @@
+// @intent: 将自然语言需求或代码转译为 CDD 格式的注释
+
 import { BaseRole, RoleResult } from './BaseRole';
 import { ClaudeAPIService, ClaudeAPIRequest } from '../../model/services/ClaudeAPIService';
 import { LogicUnclearError } from '../../model/entities/Errors';

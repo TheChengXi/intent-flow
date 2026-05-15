@@ -1,4 +1,5 @@
 "use strict";
+// @intent: 将 CDD 格式的注释编译为可执行代码
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
