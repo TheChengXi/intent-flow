@@ -6,6 +6,7 @@ import * as ReviewCommand from './viewmodel/commands/ReviewCommand';
 import * as TranslateCommand from './viewmodel/commands/TranslateCommand';
 import * as AnalyzeCommand from './viewmodel/commands/AnalyzeCommand';
 import * as InitCommand from './viewmodel/commands/InitCommand';
+import * as CheckFileSizeCommand from './viewmodel/commands/CheckFileSizeCommand';
 import { handleCDDChat } from './chat/CDDChatHandler';
 
 // @contract: activate(context: vscode.ExtensionContext) => void
@@ -27,12 +28,16 @@ export function activate(context: vscode.ExtensionContext) {
   const translateCommand = vscode.commands.registerCommand('cdd.translate', TranslateCommand.execute);
   const analyzeCommand = vscode.commands.registerCommand('cdd.analyze', AnalyzeCommand.execute);
   const initCommand = vscode.commands.registerCommand('cdd.init', InitCommand.execute);
+  const checkFileSizeCommand = vscode.commands.registerCommand('cdd.checkFileSize', CheckFileSizeCommand.execute);
+  const checkCurrentFileCommand = vscode.commands.registerCommand('cdd.checkCurrentFileWithDeps', CheckFileSizeCommand.checkCurrentFileWithDependencies);
 
   context.subscriptions.push(compileCommand);
   context.subscriptions.push(reviewCommand);
   context.subscriptions.push(translateCommand);
   context.subscriptions.push(analyzeCommand);
   context.subscriptions.push(initCommand);
+  context.subscriptions.push(checkFileSizeCommand);
+  context.subscriptions.push(checkCurrentFileCommand);
 
   // 注册 Chat Participant
   const cddParticipant = vscode.chat.createChatParticipant('cdd', handleCDDChat);

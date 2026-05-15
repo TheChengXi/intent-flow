@@ -42,6 +42,7 @@ const ReviewCommand = __importStar(require("./viewmodel/commands/ReviewCommand")
 const TranslateCommand = __importStar(require("./viewmodel/commands/TranslateCommand"));
 const AnalyzeCommand = __importStar(require("./viewmodel/commands/AnalyzeCommand"));
 const InitCommand = __importStar(require("./viewmodel/commands/InitCommand"));
+const CheckFileSizeCommand = __importStar(require("./viewmodel/commands/CheckFileSizeCommand"));
 const CDDChatHandler_1 = require("./chat/CDDChatHandler");
 // @contract: activate(context: vscode.ExtensionContext) => void
 // @step: [初始化] 输出激活日志
@@ -60,11 +61,15 @@ function activate(context) {
     const translateCommand = vscode.commands.registerCommand('cdd.translate', TranslateCommand.execute);
     const analyzeCommand = vscode.commands.registerCommand('cdd.analyze', AnalyzeCommand.execute);
     const initCommand = vscode.commands.registerCommand('cdd.init', InitCommand.execute);
+    const checkFileSizeCommand = vscode.commands.registerCommand('cdd.checkFileSize', CheckFileSizeCommand.execute);
+    const checkCurrentFileCommand = vscode.commands.registerCommand('cdd.checkCurrentFileWithDeps', CheckFileSizeCommand.checkCurrentFileWithDependencies);
     context.subscriptions.push(compileCommand);
     context.subscriptions.push(reviewCommand);
     context.subscriptions.push(translateCommand);
     context.subscriptions.push(analyzeCommand);
     context.subscriptions.push(initCommand);
+    context.subscriptions.push(checkFileSizeCommand);
+    context.subscriptions.push(checkCurrentFileCommand);
     // 注册 Chat Participant
     const cddParticipant = vscode.chat.createChatParticipant('cdd', CDDChatHandler_1.handleCDDChat);
     cddParticipant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'cdd-icon.png');

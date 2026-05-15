@@ -3,6 +3,12 @@
   "displayName": "CDD Framework",
   "description": "Comment-Driven Development Framework - 注释驱动开发框架",
   "version": "0.0.1",
+  "publisher": "your-publisher-name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/CCD-framework.git"
+  },
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -11,11 +17,6 @@
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
-  "files": [
-    "out",
-    "parsers",
-    "node_modules"
-  ],
   "contributes": {
     "chatParticipants": [
       {
@@ -55,6 +56,14 @@
       {
         "command": "cdd.init",
         "title": "CDD: 初始化项目结构"
+      },
+      {
+        "command": "cdd.checkFileSize",
+        "title": "CDD: 扫描项目大文件"
+      },
+      {
+        "command": "cdd.checkCurrentFileWithDeps",
+        "title": "CDD: 检查当前文件及依赖大小"
       },
       {
         "command": "cdd.insertComment",
@@ -101,6 +110,12 @@
         },
         {
           "command": "cdd.init"
+        },
+        {
+          "command": "cdd.checkFileSize"
+        },
+        {
+          "command": "cdd.checkCurrentFileWithDeps"
         }
       ]
     },

@@ -85,15 +85,15 @@ class ImportExtractor {
     // @boundary: 当语言不支持时，回退到正则方案
     static async extractWithTreeSitter(code, workspaceRoot, language) {
         try {
-            await TreeSitterParser_1.TreeSitterParser.init();
-            // 使用 TreeSitterParser 的内部 parser
+            // 获取已初始化的 parser
+            const parser = await TreeSitterParser_1.TreeSitterParser.getParser();
+            // 加载语言
             const lang = await TreeSitterParser_1.TreeSitterParser['getLanguage'](language);
             if (!lang) {
                 console.warn('[ImportExtractor] Tree-sitter 不支持该语言，回退到正则方案');
                 return this.extractWithRegex(code, workspaceRoot);
             }
-            const Parser = require('web-tree-sitter');
-            const parser = new Parser();
+            // 设置语言并解析
             parser.setLanguage(lang);
             const tree = parser.parse(code);
             if (!tree) {

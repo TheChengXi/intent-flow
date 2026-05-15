@@ -59,6 +59,20 @@ class TreeSitterParser {
         this.parser = new web_tree_sitter_1.Parser();
         this.initialized = true;
     }
+    // @contract: getParser() => Promise<Parser>
+    // @step: [检查初始化] 如果未初始化，先调用 init()
+    // @step: [返回 parser] 返回已初始化的 parser
+    // @boundary: 当 parser 为 null 时，抛出错误
+    static async getParser() {
+        if (!this.initialized) {
+            await this.init();
+        }
+        if (!this.parser) {
+            throw new Error('TreeSitterParser: parser is null after initialization');
+        }
+        return this.parser;
+    }
+    // @end
     static async parseWorkLine(code, language, cursorLine) {
         if (!this.initialized) {
             await this.init();

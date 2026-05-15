@@ -90,10 +90,17 @@ async function getLatestEntry(workspaceRoot) {
 }
 // @end
 // @contract: getAllEntries(workspaceRoot: string) => Promise<ChangelogEntry[]>
-// @step: [读取] 读取 _source/CHANGELOG.md 全部内容
-// @step: [解析] 按 BR-005 格式解析每一行为 ChangelogEntry
-// @step: [过滤] 跳过表头和空行
-// @boundary: 当文件不存在时，返回空数组
+// @step: [定位] 构建 CHANGELOG.md 文件路径
+// @step: [检查] 验证文件是否存在
+// @step: [读取] 从文件系统读取内容
+// @step: [解析] 按行分割内容
+// @step: [过滤] 跳过空行、注释行、分隔符
+// @step: [提取] 按管道符分割每行为字段
+// @step: [转换] 将符合条件的行转换为 ChangelogEntry 对象
+// @step: [返回] 返回解析后的条目数组
+// @boundary: 当文件不存在时，应返回空数组
+// @boundary: 当行字段数少于 5 时，应跳过该行
+// @boundary: 当 type 字段类型不匹配时，应使用 as any 强制转换
 async function getAllEntries(workspaceRoot) {
     const filePath = path.join(workspaceRoot, '_source', 'CHANGELOG.md');
     const exists = await FileRepository.fileExists(filePath);
