@@ -14,17 +14,17 @@
 
 将需求转译为 CDD 格式的注释，包含：
 1. @contract: 函数签名
-2. @step: 实现步骤（3-7步为宜）
+2. @step: 实现步骤
 3. @boundary: 边界条件和错误处理
 
 ## 输出格式
 
-```typescript
+
 // @contract: functionName(param: Type) => ReturnType
 // @step: [意图] 具体步骤描述
 // @step: [意图] 具体步骤描述
 // @boundary: 当...时，应...
-```
+
 
 ## 注意事项
 

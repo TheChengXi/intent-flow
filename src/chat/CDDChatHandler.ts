@@ -3,6 +3,9 @@
 import * as vscode from 'vscode';
 import { PlannerVM } from '../viewmodel/roles/PlannerVM';
 import { TranslatorVM } from '../viewmodel/roles/TranslatorVM';
+import { ProductManagerVM, ProductManagerContext } from '../viewmodel/roles/ProductManagerVM';
+import { ProductManagerContextManager } from '../viewmodel/context/ProductManagerContextManager';
+import { ClaudeAPIService } from '../model/services/ClaudeAPIService';
 
 // @contract: handleCDDChat(request: vscode.ChatRequest, context: vscode.ChatContext, stream: vscode.ChatResponseStream, token: vscode.CancellationToken) => Promise<vscode.ChatResult>
 // @step: [解析命令] 从 request.command 获取子命令
@@ -27,6 +30,10 @@ export async function handleCDDChat(
       case 'translate':
         return await handleTranslate(prompt, stream, token);
 
+      case 'pm':
+      case 'product-manager':
+        return await handleProductManager(prompt, stream, context, token);
+
       default:
         return await handleGeneral(prompt, stream, token);
     }
@@ -38,44 +45,34 @@ export async function handleCDDChat(
 
 // @contract: handlePlan(prompt: string, stream: vscode.ChatResponseStream, token: vscode.CancellationToken) => Promise<vscode.ChatResult>
 // @step: [输出提示] 输出分析提示信息
-// @step: [读取项目结构] 调用 readProjectIntents 读取项目的所有 @intent
-// @step: [调用规划师] 调用 PlannerVM.generatePlan 生成计划
-// @step: [输出计划] 将计划格式化输出到 stream
+// @step: [获取工作区] 获取当前工作区路径
+// @step: [调用规划器] 调用 PlannerVM.generateArchitectureView 生成架构视图
+// @step: [输出架构] 将架构视图格式化输出到 stream
 // @step: [返回结果] 返回 ChatResult
-// @boundary: 当读取项目结构失败时，使用空的项目结构
+// @boundary: 当工作区为空时，提示用户打开工作区
 async function handlePlan(
   prompt: string,
   stream: vscode.ChatResponseStream,
   token: vscode.CancellationToken
 ): Promise<vscode.ChatResult> {
 
-  stream.markdown('🔍 Analyzing change impact...\n\n');
+  stream.markdown('🔍 Analyzing project architecture...\n\n');
 
-  // 读取项目结构（所有 @intent）
-  const projectState = await readProjectIntents();
-
-  // 调用迭代规划师
-  const plan = await PlannerVM.generatePlan(prompt, projectState);
-
-  // 输出计划
-  stream.markdown(`## Change Plan: ${prompt}\n\n`);
-  stream.markdown(`### Impact Analysis\n`);
-  stream.markdown(`- Affected modules: ${plan.impact.affectedModules.join(', ')}\n`);
-  stream.markdown(`- Affected files: ${plan.impact.affectedFiles.join(', ')}\n\n`);
-
-  stream.markdown(`### Task List\n`);
-  plan.tasks.forEach((task, index) => {
-    stream.markdown(`${index + 1}. ${task.description}\n`);
-    stream.markdown(`   - Agent: ${task.agent}\n`);
-    stream.markdown(`   - Estimated time: ${task.estimatedTime}\n\n`);
-  });
-
-  if (plan.risks.length > 0) {
-    stream.markdown(`### Risks\n`);
-    plan.risks.forEach(risk => {
-      stream.markdown(`- ⚠️ ${risk}\n`);
-    });
+  // 获取工作区路径
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders || workspaceFolders.length === 0) {
+    stream.markdown('❌ Please open a workspace first.\n');
+    return { metadata: { command: 'plan' } };
   }
+
+  const workspaceRoot = workspaceFolders[0].uri.fsPath;
+
+  // 调用项目规划器生成架构视图
+  const view = await PlannerVM.generateArchitectureView(workspaceRoot, prompt || undefined);
+
+  // 格式化输出
+  const formattedOutput = PlannerVM.formatArchitectureView(view);
+  stream.markdown(formattedOutput);
 
   return { metadata: { command: 'plan' } };
 }
@@ -112,6 +109,129 @@ async function handleTranslate(
   return { metadata: { command: 'translate' } };
 }
 
+// @contract: handleProductManager(prompt: string, stream: vscode.ChatResponseStream, context: vscode.ChatContext, token: vscode.CancellationToken) => Promise<vscode.ChatResult>
+// @step: [获取工作区] 获取当前工作区路径
+// @step: [加载会话] 加载或创建产品经理会话
+// @step: [调用产品经理] 调用 ProductManagerVM 处理对话
+// @step: [输出响应] 将响应输出到 stream
+// @step: [保存会话] 保存会话状态
+// @step: [检查完成] 如果完成，显示文档路径
+// @boundary: 当工作区为空时，提示用户打开工作区
+// @boundary: 当 API 调用失败时，显示错误信息
+async function handleProductManager(
+  prompt: string,
+  stream: vscode.ChatResponseStream,
+  context: vscode.ChatContext,
+  token: vscode.CancellationToken
+): Promise<vscode.ChatResult> {
+
+  stream.markdown('💼 产品经理正在思考...\n\n');
+
+  // 获取工作区路径
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders || workspaceFolders.length === 0) {
+    stream.markdown('❌ 请先打开一个工作区\n');
+    return { metadata: { command: 'product-manager' } };
+  }
+
+  const workspaceRoot = workspaceFolders[0].uri.fsPath;
+
+  try {
+    // 加载或创建会话
+    let session = await ProductManagerContextManager.loadSession(workspaceRoot);
+    if (!session) {
+      session = ProductManagerContextManager.createSession(workspaceRoot);
+      stream.markdown('👋 你好！我是产品经理。我会通过对话帮你将模糊的需求转化为清晰的需求文档。\n\n');
+    }
+
+    // 添加用户消息到会话
+    ProductManagerContextManager.addTurn(session, 'user', prompt);
+
+    // 调用产品经理 VM
+    const apiService = new ClaudeAPIService();
+    const vm = new ProductManagerVM(apiService);
+
+    const pmContext: ProductManagerContext = {
+      workspaceRoot,
+      userMessage: prompt,
+      conversationHistory: session.conversationHistory
+    };
+
+    const result = await vm.execute(pmContext);
+
+    if (!result.success) {
+      stream.markdown(`❌ 产品经理响应失败: ${result.message}\n`);
+      return { metadata: { command: 'product-manager' } };
+    }
+
+    // 提取响应
+    const response = result.artifacts.response || result.artifacts.content;
+    const phase = result.artifacts.phase;
+
+    // 添加 AI 响应到会话
+    ProductManagerContextManager.addTurn(session, 'assistant', response);
+
+    // 更新阶段
+    if (phase) {
+      ProductManagerContextManager.updatePhase(session, phase);
+    }
+
+    // 保存会话
+    await ProductManagerContextManager.saveSession(session);
+
+    // 输出响应
+    stream.markdown(response);
+    stream.markdown('\n\n');
+
+    // 显示当前阶段
+    const phaseLabel = getPhaseLabel(phase);
+    stream.markdown(`**当前阶段**: ${phaseLabel}\n\n`);
+
+    // 检查是否完成
+    if (phase === 'complete') {
+      const docPath = result.artifacts.documentPath;
+      stream.markdown(`✅ **需求文档已生成！**\n`);
+      stream.markdown(`路径: \`${docPath}\`\n\n`);
+
+      // 添加按钮
+      stream.button({
+        command: 'vscode.open',
+        title: '打开需求文档',
+        arguments: [vscode.Uri.file(docPath)]
+      });
+
+      stream.button({
+        command: 'cdd.clearProductManagerSession',
+        title: '清除会话'
+      });
+    } else {
+      stream.markdown('💬 继续对话，或使用 `/pm clear` 清除会话\n');
+    }
+
+    return { metadata: { command: 'product-manager', phase } };
+
+  } catch (error: any) {
+    stream.markdown(`❌ 错误: ${error.message}\n`);
+    return { metadata: { command: 'product-manager' } };
+  }
+}
+
+// @contract: getPhaseLabel(phase: string) => string
+// @step: [映射] 将阶段代码映射为中文标签
+// @step: [返回] 返回标签
+function getPhaseLabel(phase: string): string {
+  const labels: Record<string, string> = {
+    'intent': '理解整体意图',
+    'features': '探索功能边界',
+    'data-model': '设计数据模型',
+    'architecture': '规划架构层次',
+    'details': '确认实现细节',
+    'complete': '完成'
+  };
+
+  return labels[phase] || phase;
+}
+
 // @contract: handleGeneral(prompt: string, stream: vscode.ChatResponseStream, token: vscode.CancellationToken) => Promise<vscode.ChatResult>
 // @step: [输出欢迎] 输出欢迎信息和可用命令列表
 // @step: [返回结果] 返回 ChatResult
@@ -123,21 +243,10 @@ async function handleGeneral(
 
   stream.markdown('👋 Hi! I\'m the CDD Assistant.\n\n');
   stream.markdown('I can help you with:\n');
-  stream.markdown('- `/plan` - Analyze change impact and generate implementation plan\n');
-  stream.markdown('- `/translate` - Translate requirements to CDD comments\n\n');
+  stream.markdown('- `/plan` - Analyze project architecture\n');
+  stream.markdown('- `/translate` - Translate requirements to CDD comments\n');
+  stream.markdown('- `/pm` - Product Manager conversation (collect requirements)\n\n');
   stream.markdown('What would you like to do?\n');
 
   return { metadata: { command: 'general' } };
-}
-
-// @contract: readProjectIntents() => Promise<ProjectState>
-// @step: [TODO] 读取项目中所有的 @intent
-// @step: [返回] 返回项目结构
-// @boundary: 当读取失败时，返回空的项目结构
-async function readProjectIntents(): Promise<any> {
-  // TODO: 实现读取项目 @intent 的逻辑
-  return {
-    intent: 'CDD Framework',
-    modules: []
-  };
 }

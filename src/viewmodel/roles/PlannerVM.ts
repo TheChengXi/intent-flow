@@ -1,276 +1,281 @@
-// @intent: 分析变更影响，生成项目迭代实施计划
+// @intent: 项目架构导航工具，扫描意图树和依赖枝条，生成结构化的项目架构视图
 
-import { BaseRole, RoleResult } from './BaseRole';
-import * as ChangelogRepo from '../../model/repositories/ChangelogRepo';
-import * as DependencyTracker from '../../model/services/DependencyTracker';
-import { ChangelogEntry } from '../../model/entities/ChangelogEntry';
-import { ClaudeAPIService } from '../../model/services/ClaudeAPIService';
-import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as IntentExtractor from '../../model/services/IntentExtractor';
+import { DependencyBranch } from '../../model/services/IntentExtractor';
 
-// @entity: ImpactReport
-// 影响分析报告
-export interface ImpactReport {
-  latestChange: ChangelogEntry | null;
-  affectedFunctions: string[];
-  needsCouncil: boolean;
-  recommendation: string;
+// @entity: ArchitectureView
+// 项目架构视图
+export interface ArchitectureView {
+  scope: string; // 'global' 或具体模块名
+  modules: ModuleArchitecture[];
+  summary: ArchitectureSummary;
 }
 
-// @entity: PlannerContext
-// 迭代规划师上下文
-export interface PlannerContext {
-  workspaceRoot: string;
+// @entity: ModuleArchitecture
+// 模块架构信息
+export interface ModuleArchitecture {
+  moduleName: string;
+  files: FileInfo[];
+  dependencies: string[]; // 依赖的其他模块
 }
 
-// 新增：Chat 功能所需的数据类型
-export interface ProjectState {
+// @entity: FileInfo
+// 文件信息
+export interface FileInfo {
+  fileName: string;
+  filePath: string;
   intent: string;
-  modules: ModuleInfo[];
+  dependencies: string[]; // 依赖的文件名
 }
 
-export interface ModuleInfo {
-  name: string;
-  intent: string;
-  files: string[];
-  dependencies: string[];
+// @entity: ArchitectureSummary
+// 架构摘要
+export interface ArchitectureSummary {
+  totalFiles: number;
+  totalModules: number;
+  maxDependencyDepth: number;
 }
 
-export interface Task {
-  description: string;
-  agent: 'translator' | 'compiler' | 'reviewer';
-  input: string;
-  estimatedTime: string;
-}
+export class PlannerVM {
+  // @contract: generateArchitectureView(workspaceRoot: string, scope?: string) => Promise<ArchitectureView>
+  // @step: [扫描文件] 扫描工作区所有源代码文件
+  // @step: [提取意图] 对每个文件调用 IntentExtractor.extractIntentFromFile
+  // @step: [构建依赖] 对每个文件调用 IntentExtractor.extractIntentWithDependencies
+  // @step: [分组模块] 按目录结构分组为模块
+  // @step: [过滤范围] 如果提供 scope，只保留匹配的模块
+  // @step: [生成摘要] 统计文件数、模块数、依赖深度
+  // @step: [返回视图] 返回 ArchitectureView
+  // @boundary: 当 workspaceRoot 不存在时，抛出错误
+  // @boundary: 当 scope 不匹配任何模块时，返回空视图
+  static async generateArchitectureView(
+    workspaceRoot: string,
+    scope?: string
+  ): Promise<ArchitectureView> {
+    // 检查工作区是否存在
+    if (!fs.existsSync(workspaceRoot)) {
+      throw new Error(`工作区不存在: ${workspaceRoot}`);
+    }
 
-export interface Plan {
-  impact: {
-    affectedModules: string[];
-    affectedFiles: string[];
-  };
-  tasks: Task[];
-  risks: string[];
-}
+    // 扫描所有源代码文件
+    const sourceFiles = await this.scanSourceFiles(workspaceRoot);
 
-export class PlannerVM extends BaseRole {
-  constructor(apiService: ClaudeAPIService) {
-    super(apiService);
-  }
+    // 构建依赖枝条
+    const branches: DependencyBranch[] = [];
+    const visited = new Set<string>();
 
-  // @contract: execute(context: PlannerContext) => Promise<RoleResult>
-  // @step: [验证输入] 检查 workspaceRoot 是否存在
-  // @step: [读取变更] 调用 ChangelogRepo.getLatestEntry
-  // @step: [扫描依赖] 调用 DependencyTracker.checkOutdated
-  // @step: [检测类型] 检查是否包含 [PARADIGM SHIFT]
-  // @step: [生成报告] 构建 ImpactReport 对象
-  // @step: [返回结果] 返回 success: true，artifacts 包含 ImpactReport
-  // @boundary: 当 workspaceRoot 为空时，返回 success: false
-  // @boundary: 当 CHANGELOG.md 为空时，返回"无变更"报告
-  // @boundary: 当检测到 [PARADIGM SHIFT] 时，needsCouncil 设为 true
-  async execute(context: PlannerContext): Promise<RoleResult> {
-    try {
-      if (!context.workspaceRoot) {
-        return {
-          success: false,
-          message: '工作区路径为空',
-          artifacts: null
-        };
+    for (const file of sourceFiles) {
+      if (!visited.has(file)) {
+        const branch = await IntentExtractor.extractIntentWithDependencies(
+          file,
+          workspaceRoot,
+          2, // 依赖深度
+          visited
+        );
+        branches.push(branch);
       }
-
-      const latestChange = await ChangelogRepo.getLatestEntry(context.workspaceRoot);
-
-      if (!latestChange) {
-        const report: ImpactReport = {
-          latestChange: null,
-          affectedFunctions: [],
-          needsCouncil: false,
-          recommendation: '无变更'
-        };
-        return {
-          success: true,
-          message: '无变更',
-          artifacts: report
-        };
-      }
-
-      const needsCouncil = latestChange.type === '[PARADIGM SHIFT]';
-      const changedContracts = [latestChange.file];
-      const affectedFunctions = await DependencyTracker.checkOutdated(changedContracts, context.workspaceRoot);
-
-      const recommendation = this.buildRecommendation(affectedFunctions.length, needsCouncil);
-
-      const report: ImpactReport = {
-        latestChange,
-        affectedFunctions,
-        needsCouncil,
-        recommendation
-      };
-
-      return {
-        success: true,
-        message: `影响分析完成：${affectedFunctions.length} 个函数受影响`,
-        artifacts: report
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        message: error.message,
-        artifacts: error
-      };
-    }
-  }
-  // @end
-
-  // @contract: buildRecommendation(affectedCount: number, needsCouncil: boolean) => string
-  // @step: [判断] 若 needsCouncil 为 true，建议召集 Council
-  // @step: [判断] 若 affectedCount > 10，建议全流程重新编译
-  // @step: [判断] 若 affectedCount 1-10，建议快速通道
-  // @step: [判断] 若 affectedCount 为 0，建议无需操作
-  // @boundary: 当 affectedCount 为 0 且 needsCouncil 为 false 时，返回"无影响"
-  private buildRecommendation(affectedCount: number, needsCouncil: boolean): string {
-    if (needsCouncil) {
-      return '检测到 [PARADIGM SHIFT]，建议召集 Council 评估影响';
     }
 
-    if (affectedCount > 10) {
-      return `${affectedCount} 个函数受影响，建议全流程重新编译`;
+    // 按模块分组
+    const modules = this.groupByModule(branches, workspaceRoot);
+
+    // 如果提供了 scope，过滤模块
+    let filteredModules = modules;
+    if (scope) {
+      filteredModules = modules.filter(m =>
+        m.moduleName.toLowerCase().includes(scope.toLowerCase()) ||
+        m.files.some(f => f.fileName.toLowerCase().includes(scope.toLowerCase()))
+      );
     }
 
-    if (affectedCount >= 1 && affectedCount <= 10) {
-      return `${affectedCount} 个函数受影响，建议快速通道重新编译`;
-    }
+    // 生成摘要
+    const summary = this.generateSummary(filteredModules, branches);
 
-    return '无影响';
-  }
-  // @end
-
-  // @contract: generatePlan(changeDescription: string, projectState: ProjectState) => Promise<Plan>
-  // @step: [读取配置] 读取 API 配置
-  // @step: [读取提示词] 读取 planner.md 提示词模板
-  // @step: [构建提示] 将变更描述和项目状态填入提示词
-  // @step: [调用 API] 调用 Claude API 生成计划
-  // @step: [返回计划] 返回生成的计划
-  // @boundary: 当 API 调用失败时，抛出错误
-  // @boundary: 当提示词文件不存在时，使用默认提示词
-  static async generatePlan(
-    changeDescription: string,
-    projectState: ProjectState
-  ): Promise<Plan> {
-    // 读取配置
-    const config = vscode.workspace.getConfiguration('cdd');
-    const apiKey = config.get<string>('apiKey') || '';
-    const apiBaseUrl = config.get<string>('apiBaseUrl') || 'https://api.anthropic.com';
-    const modelId = config.get<string>('modelId') || 'claude-sonnet-4-20250514';
-
-    if (!apiKey) {
-      throw new Error('API Key not configured. Please set cdd.apiKey in settings.');
-    }
-
-    // 读取提示词模板
-    const promptTemplate = await this.loadPromptTemplate();
-
-    // 构建提示
-    const prompt = this.buildPrompt(promptTemplate, changeDescription, projectState);
-
-    // 调用 API
-    const apiService = new ClaudeAPIService();
-    const response = await apiService.callAPI(
-      {
-        role: 'planner',
-        userMessage: prompt
-      },
-      apiKey,
-      apiBaseUrl,
-      modelId
-    );
-
-    // 返回计划（提示词控制输出格式）
     return {
-      impact: {
-        affectedModules: [],
-        affectedFiles: []
-      },
-      tasks: [],
-      risks: []
+      scope: scope || 'global',
+      modules: filteredModules,
+      summary
     };
   }
+  // @end
 
-  // @contract: loadPromptTemplate() => Promise<string>
-  // @step: [读取文件] 读取 _source/prompts/planner.md
-  // @step: [返回内容] 返回文件内容
-  // @boundary: 当文件不存在时，返回默认提示词
-  private static async loadPromptTemplate(): Promise<string> {
-    const fs = require('fs').promises;
-    const path = require('path');
+  // @contract: scanSourceFiles(workspaceRoot: string) => Promise<string[]>
+  // @step: [定义扩展名] 定义需要扫描的源代码文件扩展名
+  // @step: [递归扫描] 递归扫描工作区目录
+  // @step: [过滤文件] 过滤出源代码文件
+  // @step: [排除目录] 排除 node_modules, dist, out 等目录
+  // @step: [返回] 返回文件路径列表
+  // @boundary: 当目录为空时，返回空数组
+  private static async scanSourceFiles(workspaceRoot: string): Promise<string[]> {
+    const sourceExtensions = ['.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.cpp', '.c', '.java', '.rs'];
+    const excludeDirs = ['node_modules', 'dist', 'out', 'build', '.git', '_source'];
+    const files: string[] = [];
 
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders) {
-      return this.getDefaultPrompt();
+    const scan = async (dir: string) => {
+      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+
+        if (entry.isDirectory()) {
+          // 排除特定目录
+          if (!excludeDirs.includes(entry.name)) {
+            await scan(fullPath);
+          }
+        } else if (entry.isFile()) {
+          const ext = path.extname(entry.name);
+          if (sourceExtensions.includes(ext)) {
+            files.push(fullPath);
+          }
+        }
+      }
+    };
+
+    await scan(workspaceRoot);
+    return files;
+  }
+  // @end
+
+  // @contract: groupByModule(branches: DependencyBranch[], workspaceRoot: string) => ModuleArchitecture[]
+  // @step: [提取模块名] 从文件路径提取模块名（第一级目录）
+  // @step: [分组] 按模块名分组文件
+  // @step: [提取依赖] 提取每个模块依赖的其他模块
+  // @step: [构建结构] 构建 ModuleArchitecture 对象
+  // @step: [返回] 返回模块列表
+  private static groupByModule(
+    branches: DependencyBranch[],
+    workspaceRoot: string
+  ): ModuleArchitecture[] {
+    const moduleMap = new Map<string, FileInfo[]>();
+
+    // 遍历所有枝条，按模块分组
+    for (const branch of branches) {
+      const relativePath = path.relative(workspaceRoot, branch.filePath);
+      const parts = relativePath.split(path.sep);
+
+      // 提取模块名（第一级目录，如 src, model, viewmodel）
+      const moduleName = parts.length > 1 ? parts[0] : 'root';
+
+      // 构建 FileInfo
+      const fileInfo: FileInfo = {
+        fileName: branch.fileName,
+        filePath: branch.filePath,
+        intent: branch.intent,
+        dependencies: branch.dependencies.map(d => d.fileName)
+      };
+
+      // 添加到模块
+      if (!moduleMap.has(moduleName)) {
+        moduleMap.set(moduleName, []);
+      }
+      moduleMap.get(moduleName)!.push(fileInfo);
     }
 
-    const promptPath = path.join(workspaceFolders[0].uri.fsPath, '_source', 'prompts', 'planner.md');
+    // 构建 ModuleArchitecture
+    const modules: ModuleArchitecture[] = [];
+    for (const [moduleName, files] of moduleMap.entries()) {
+      // 提取模块依赖
+      const moduleDeps = new Set<string>();
+      for (const file of files) {
+        for (const dep of file.dependencies) {
+          // 查找依赖文件所属的模块
+          for (const [otherModule, otherFiles] of moduleMap.entries()) {
+            if (otherModule !== moduleName && otherFiles.some(f => f.fileName === dep)) {
+              moduleDeps.add(otherModule);
+            }
+          }
+        }
+      }
 
-    try {
-      const content = await fs.readFile(promptPath, 'utf-8');
-      return content;
-    } catch (error) {
-      console.warn('[PlannerVM] Failed to load prompt template, using default');
-      return this.getDefaultPrompt();
+      modules.push({
+        moduleName,
+        files,
+        dependencies: Array.from(moduleDeps)
+      });
     }
+
+    return modules;
   }
+  // @end
 
-  // @contract: buildPrompt(template: string, changeDescription: string, projectState: ProjectState) => string
-  // @step: [格式化项目结构] 调用 formatProjectState 格式化项目状态
-  // @step: [替换变量] 将模板中的变量替换为实际值
-  // @step: [返回] 返回构建好的提示
-  private static buildPrompt(
-    template: string,
-    changeDescription: string,
-    projectState: ProjectState
-  ): string {
-    const projectStructure = this.formatProjectState(projectState);
+  // @contract: generateSummary(modules: ModuleArchitecture[], branches: DependencyBranch[]) => ArchitectureSummary
+  // @step: [统计文件] 统计总文件数
+  // @step: [统计模块] 统计总模块数
+  // @step: [计算深度] 计算最大依赖深度
+  // @step: [返回] 返回 ArchitectureSummary
+  private static generateSummary(
+    modules: ModuleArchitecture[],
+    branches: DependencyBranch[]
+  ): ArchitectureSummary {
+    const totalFiles = modules.reduce((sum, m) => sum + m.files.length, 0);
+    const totalModules = modules.length;
+    const maxDependencyDepth = this.calculateMaxDepth(branches);
 
-    let prompt = template;
-    prompt = prompt.replace('{{changeDescription}}', changeDescription);
-    prompt = prompt.replace('{{projectStructure}}', projectStructure);
-
-    return prompt;
+    return {
+      totalFiles,
+      totalModules,
+      maxDependencyDepth
+    };
   }
+  // @end
 
-  // @contract: formatProjectState(projectState: ProjectState) => string
-  // @step: [格式化] 将 ProjectState 格式化为可读的字符串
+  // @contract: calculateMaxDepth(branches: DependencyBranch[]) => number
+  // @step: [递归计算] 递归计算每个枝条的深度
+  // @step: [取最大值] 返回最大深度
+  private static calculateMaxDepth(branches: DependencyBranch[]): number {
+    if (branches.length === 0) {
+      return 0;
+    }
+
+    let maxDepth = 0;
+    for (const branch of branches) {
+      const depth = 1 + this.calculateMaxDepth(branch.dependencies);
+      maxDepth = Math.max(maxDepth, depth);
+    }
+
+    return maxDepth;
+  }
+  // @end
+
+  // @contract: formatArchitectureView(view: ArchitectureView) => string
+  // @step: [格式化标题] 生成标题（全局或局部）
+  // @step: [格式化模块] 遍历每个模块，格式化为可读文本
+  // @step: [格式化文件] 遍历每个文件，显示意图和依赖
+  // @step: [格式化摘要] 显示统计信息
   // @step: [返回] 返回格式化后的字符串
-  private static formatProjectState(projectState: ProjectState): string {
-    let result = `Project Intent: ${projectState.intent}\n\n`;
-    result += 'Modules:\n';
-
-    for (const module of projectState.modules) {
-      result += `- ${module.name}/: ${module.intent}\n`;
-      if (module.files.length > 0) {
-        result += `  Files: ${module.files.join(', ')}\n`;
-      }
-      if (module.dependencies.length > 0) {
-        result += `  Dependencies: ${module.dependencies.join(', ')}\n`;
-      }
+  // @boundary: 当模块为空时，返回"无匹配模块"
+  static formatArchitectureView(view: ArchitectureView): string {
+    if (view.modules.length === 0) {
+      return `# 项目架构视图 (${view.scope})\n\n无匹配的模块或文件。`;
     }
 
-    return result;
+    let output = `# 项目架构视图 (${view.scope})\n\n`;
+    output += `## 摘要\n`;
+    output += `- 总文件数: ${view.summary.totalFiles}\n`;
+    output += `- 总模块数: ${view.summary.totalModules}\n`;
+    output += `- 最大依赖深度: ${view.summary.maxDependencyDepth}\n\n`;
+
+    output += `## 模块详情\n\n`;
+
+    for (const module of view.modules) {
+      output += `### ${module.moduleName}/\n`;
+
+      if (module.dependencies.length > 0) {
+        output += `**依赖模块**: ${module.dependencies.join(', ')}\n\n`;
+      }
+
+      output += `**文件列表**:\n`;
+      for (const file of module.files) {
+        output += `- **${file.fileName}**: ${file.intent}\n`;
+        if (file.dependencies.length > 0) {
+          output += `  - 依赖: ${file.dependencies.join(', ')}\n`;
+        }
+      }
+      output += `\n`;
+    }
+
+    return output;
   }
-
-  // @contract: getDefaultPrompt() => string
-  // @step: [返回] 返回默认的提示词模板
-  private static getDefaultPrompt(): string {
-    return `You are a project planner. Analyze the change request and generate an implementation plan.
-
-Change Request: {{changeDescription}}
-
-Project Structure:
-{{projectStructure}}
-
-Please provide:
-1. Impact Analysis (which modules and files are affected)
-2. Task List (what needs to be done)
-3. Risk Assessment (potential risks)
-
-Format your response as a structured plan.`;
-  }
+  // @end
 }

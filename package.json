@@ -50,8 +50,16 @@
         "title": "CDD: 转译代码为注释"
       },
       {
-        "command": "cdd.analyze",
-        "title": "CDD: 分析变更影响"
+        "command": "cdd.planner",
+        "title": "CDD: 查看项目架构"
+      },
+      {
+        "command": "cdd.productManager",
+        "title": "CDD: 产品经理对话"
+      },
+      {
+        "command": "cdd.clearProductManagerSession",
+        "title": "CDD: 清除产品经理会话"
       },
       {
         "command": "cdd.init",
@@ -106,7 +114,13 @@
           "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
         },
         {
-          "command": "cdd.analyze"
+          "command": "cdd.planner"
+        },
+        {
+          "command": "cdd.productManager"
+        },
+        {
+          "command": "cdd.clearProductManagerSession"
         },
         {
           "command": "cdd.init"

@@ -4,14 +4,15 @@ import * as vscode from 'vscode';
 import * as CompileCommand from './viewmodel/commands/CompileCommand';
 import * as ReviewCommand from './viewmodel/commands/ReviewCommand';
 import * as TranslateCommand from './viewmodel/commands/TranslateCommand';
-import * as AnalyzeCommand from './viewmodel/commands/AnalyzeCommand';
 import * as InitCommand from './viewmodel/commands/InitCommand';
 import * as CheckFileSizeCommand from './viewmodel/commands/CheckFileSizeCommand';
+import * as PlannerCommand from './viewmodel/commands/PlannerCommand';
+import * as ProductManagerCommand from './viewmodel/commands/ProductManagerCommand';
 import { handleCDDChat } from './chat/CDDChatHandler';
 
 // @contract: activate(context: vscode.ExtensionContext) => void
 // @step: [初始化] 输出激活日志
-// @step: [注册命令] 注册 5 个命令处理器（compile、review、translate、analyze、init）
+// @step: [注册命令] 注册命令处理器（compile、review、translate、planner、init、checkFileSize）
 // @step: [注册 Chat Participant] 注册 CDD 聊天助手
 // @step: [注册辅助命令] 注册 insertComment 和 insertCode 命令
 // @step: [订阅] 将所有注册器推入上下文订阅列表以确保资源清理
@@ -26,7 +27,9 @@ export function activate(context: vscode.ExtensionContext) {
   const compileCommand = vscode.commands.registerCommand('cdd.compile', CompileCommand.execute);
   const reviewCommand = vscode.commands.registerCommand('cdd.review', ReviewCommand.execute);
   const translateCommand = vscode.commands.registerCommand('cdd.translate', TranslateCommand.execute);
-  const analyzeCommand = vscode.commands.registerCommand('cdd.analyze', AnalyzeCommand.execute);
+  const plannerCommand = vscode.commands.registerCommand('cdd.planner', PlannerCommand.execute);
+  const productManagerCommand = vscode.commands.registerCommand('cdd.productManager', ProductManagerCommand.execute);
+  const clearPMSessionCommand = vscode.commands.registerCommand('cdd.clearProductManagerSession', ProductManagerCommand.clearSession);
   const initCommand = vscode.commands.registerCommand('cdd.init', InitCommand.execute);
   const checkFileSizeCommand = vscode.commands.registerCommand('cdd.checkFileSize', CheckFileSizeCommand.execute);
   const checkCurrentFileCommand = vscode.commands.registerCommand('cdd.checkCurrentFileWithDeps', CheckFileSizeCommand.checkCurrentFileWithDependencies);
@@ -34,7 +37,9 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(compileCommand);
   context.subscriptions.push(reviewCommand);
   context.subscriptions.push(translateCommand);
-  context.subscriptions.push(analyzeCommand);
+  context.subscriptions.push(plannerCommand);
+  context.subscriptions.push(productManagerCommand);
+  context.subscriptions.push(clearPMSessionCommand);
   context.subscriptions.push(initCommand);
   context.subscriptions.push(checkFileSizeCommand);
   context.subscriptions.push(checkCurrentFileCommand);

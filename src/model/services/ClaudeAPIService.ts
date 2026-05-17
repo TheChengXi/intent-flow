@@ -1,14 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { ConfigurationError, APIError, TimeoutError } from '../entities/Errors';
-import { COMPILER_PROMPT, REVIEWER_PROMPT, TRANSLATOR_PROMPT, PLANNER_PROMPT } from '../../generated/prompts';
+import { COMPILER_PROMPT, REVIEWER_PROMPT, TRANSLATOR_PROMPT } from '../../generated/prompts';
 
 // @entity: ClaudeAPIRequest
 // API 请求参数
 export interface ClaudeAPIRequest {
-  role: 'compiler' | 'reviewer' | 'translator' | 'code-translator' | 'planner';
+  role: 'compiler' | 'reviewer' | 'translator' | 'code-translator' | 'product-manager';
   userMessage: string;  // 完整的用户消息，由各 VM 自行构建
   compileSpec?: string; // 编译规范（仅 compiler 和 reviewer 使用）
+  conversationHistory?: any[]; // 对话历史（仅 product-manager 使用）
 }
 
 // @entity: ClaudeAPIResponse
@@ -234,8 +235,8 @@ export class ClaudeAPIService {
       case 'code-translator':
         prompt = '你是代码转译员。将代码的变更同步为注释更新，检测契约冲突。';
         break;
-      case 'planner':
-        prompt = PLANNER_PROMPT;
+      case 'product-manager':
+        prompt = '你是产品经理。通过多轮对话将用户的模糊需求转化为清晰、无歧义的需求文档。';
         break;
       default:
         prompt = '你是 CDD 助手。协助用户完成 Comment-Driven Development 相关任务。';
