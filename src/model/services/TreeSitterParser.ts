@@ -1,10 +1,9 @@
-import { Parser, Language } from 'web-tree-sitter';
-import * as path from 'path';
+import { Parser } from 'web-tree-sitter';
 import { WorkLine } from '../entities/WorkLine';
+import { TreeSitterManager } from './core/TreeSitterManager';
 
 // @contract: TreeSitterParser.init() => Promise<void>
-// @step: [初始化] 初始化 web-tree-sitter
-// @step: [加载语言] 预加载常用语言的 parser
+// @step: [委托] 委托给 TreeSitterManager.init()
 // @boundary: 当初始化失败时，应抛出错误
 
 // @contract: TreeSitterParser.parseWorkLine(code: string, language: string, cursorLine: number) => Promise<WorkLine | null>
@@ -19,49 +18,40 @@ import { WorkLine } from '../entities/WorkLine';
 // @boundary: 当找不到 @contract 注释时，应返回 null
 
 export class TreeSitterParser {
-  private static parser: Parser | null = null;
-  private static languages: Map<string, Language> = new Map();
-  private static initialized = false;
-
   static async init(): Promise<void> {
-    if (this.initialized) {
-      return;
-    }
-
-    await Parser.init();
-    this.parser = new Parser();
-    this.initialized = true;
+    await TreeSitterManager.init();
   }
 
   // @contract: getParser() => Promise<Parser>
-  // @step: [检查初始化] 如果未初始化，先调用 init()
+  // @step: [委托] 委托给 TreeSitterManager.getParser()
   // @step: [返回 parser] 返回已初始化的 parser
   // @boundary: 当 parser 为 null 时，抛出错误
   static async getParser(): Promise<Parser> {
-    if (!this.initialized) {
-      await this.init();
-    }
+    return await TreeSitterManager.getParser();
+  }
+  // @end
 
-    if (!this.parser) {
-      throw new Error('TreeSitterParser: parser is null after initialization');
-    }
-
-    return this.parser;
+  // @contract: getLanguage(language: string) => Promise<Language | null>
+  // @step: [委托] 委托给 TreeSitterManager.getLanguage()
+  // @step: [返回 language] 返回已加载的 language 对象
+  // @boundary: 当语言不支持时，返回 null
+  static async getLanguage(language: string): Promise<any | null> {
+    return await TreeSitterManager.getLanguage(language);
   }
   // @end
 
   static async parseWorkLine(code: string, language: string, cursorLine: number): Promise<WorkLine | null> {
-    if (!this.initialized) {
-      await this.init();
-    }
+    await TreeSitterManager.init();
 
-    const lang = await this.getLanguage(language);
-    if (!lang || !this.parser) {
+    const lang = await TreeSitterManager.getLanguage(language);
+    const parser = await TreeSitterManager.getParser();
+
+    if (!lang || !parser) {
       return null;
     }
 
-    this.parser.setLanguage(lang);
-    const tree = this.parser.parse(code);
+    parser.setLanguage(lang);
+    const tree = parser.parse(code);
     if (!tree) {
       return null;
     }
@@ -100,47 +90,6 @@ export class TreeSitterParser {
       commentText: lines.slice(commentBlock.startLine, commentBlock.endLine + 1).join('\n'),
       codeText: lines.slice(codeStartLine, codeEndLine + 1).join('\n')
     };
-  }
-
-  private static async getLanguage(language: string): Promise<Language | null> {
-    if (this.languages.has(language)) {
-      return this.languages.get(language)!;
-    }
-
-    const wasmFile = this.getWasmFileName(language);
-    if (!wasmFile) {
-      return null;
-    }
-
-    try {
-      const wasmPath = path.join(__dirname, '../../../parsers', wasmFile);
-      const lang = await Language.load(wasmPath);
-      this.languages.set(language, lang);
-      return lang;
-    } catch (error) {
-      console.error(`Failed to load language ${language}:`, error);
-      return null;
-    }
-  }
-
-  private static getWasmFileName(language: string): string | null {
-    const map: { [key: string]: string } = {
-      'typescript': 'tree-sitter-typescript.wasm',
-      'tsx': 'tree-sitter-tsx.wasm',
-      'javascript': 'tree-sitter-javascript.wasm',
-      'python': 'tree-sitter-python.wasm',
-      'cpp': 'tree-sitter-cpp.wasm',
-      'c': 'tree-sitter-c.wasm',
-      'java': 'tree-sitter-java.wasm',
-      'go': 'tree-sitter-go.wasm',
-      'rust': 'tree-sitter-rust.wasm',
-      'kotlin': 'tree-sitter-kotlin.wasm',
-      'swift': 'tree-sitter-swift.wasm',
-      'csharp': 'tree-sitter-c_sharp.wasm',
-      'ruby': 'tree-sitter-ruby.wasm',
-      'php': 'tree-sitter-php.wasm'
-    };
-    return map[language.toLowerCase()] || null;
   }
 
   private static findFunctionAtLine(node: any, line: number): any {

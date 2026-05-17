@@ -1,6 +1,5 @@
-import { Parser, Language } from 'web-tree-sitter';
 import * as fs from 'fs/promises';
-import * as path from 'path';
+import { TreeSitterManager } from './core/TreeSitterManager';
 
 // @entity: CallNode
 // 调用图节点
@@ -39,22 +38,11 @@ export interface ProjectCallGraph {
 export class CallGraphService {
   // 内存缓存
   private static cache: Map<string, CallGraph> = new Map();
-  private static parser: Parser | null = null;
-  private static initialized = false;
 
   // @contract: init() => Promise<void>
-  // @step: [检查初始化] 如果已初始化则直接返回
-  // @step: [初始化 Parser] 调用 Parser.init()
-  // @step: [创建实例] 创建 Parser 实例
-  // @step: [标记完成] 设置 initialized 为 true
+  // @step: [委托] 委托给 TreeSitterManager.init()
   static async init(): Promise<void> {
-    if (this.initialized) {
-      return;
-    }
-
-    await Parser.init();
-    this.parser = new Parser();
-    this.initialized = true;
+    await TreeSitterManager.init();
   }
   // @end
 
@@ -122,13 +110,15 @@ export class CallGraphService {
     try {
       await this.init();
 
-      const lang = await this.loadLanguage(language);
-      if (!lang || !this.parser) {
+      const lang = await TreeSitterManager.getLanguage(language);
+      const parser = await TreeSitterManager.getParser();
+
+      if (!lang || !parser) {
         return [];
       }
 
-      this.parser.setLanguage(lang);
-      const tree = this.parser.parse(code);
+      parser.setLanguage(lang);
+      const tree = parser.parse(code);
 
       if (!tree) {
         return [];
@@ -174,51 +164,6 @@ export class CallGraphService {
   }
   // @end
 
-  // @contract: loadLanguage(language: string) => Promise<any>
-  // @step: [获取 wasm 文件名] 根据语言获取对应的 wasm 文件名
-  // @step: [加载语言] 使用 Tree-sitter 加载语言
-  // @step: [返回] 返回 Language 对象
-  // @boundary: 当语言不支持时，返回 null
-  private static async loadLanguage(language: string): Promise<Language | null> {
-    const wasmFile = this.getWasmFileName(language);
-    if (!wasmFile) {
-      return null;
-    }
-
-    try {
-      const wasmPath = path.join(__dirname, '../../../parsers', wasmFile);
-      return await Language.load(wasmPath);
-    } catch (error) {
-      console.error(`Failed to load language ${language}:`, error);
-      return null;
-    }
-  }
-  // @end
-
-  // @contract: getWasmFileName(language: string) => string | null
-  // @step: [映射] 根据语言名返回对应的 wasm 文件名
-  // @step: [返回] 返回文件名或 null
-  private static getWasmFileName(language: string): string | null {
-    const map: { [key: string]: string } = {
-      'typescript': 'tree-sitter-typescript.wasm',
-      'tsx': 'tree-sitter-tsx.wasm',
-      'javascript': 'tree-sitter-javascript.wasm',
-      'python': 'tree-sitter-python.wasm',
-      'cpp': 'tree-sitter-cpp.wasm',
-      'c': 'tree-sitter-c.wasm',
-      'java': 'tree-sitter-java.wasm',
-      'go': 'tree-sitter-go.wasm',
-      'rust': 'tree-sitter-rust.wasm',
-      'kotlin': 'tree-sitter-kotlin.wasm',
-      'swift': 'tree-sitter-swift.wasm',
-      'csharp': 'tree-sitter-c_sharp.wasm',
-      'ruby': 'tree-sitter-ruby.wasm',
-      'php': 'tree-sitter-php.wasm'
-    };
-    return map[language.toLowerCase()] || null;
-  }
-  // @end
-
   // @contract: extractFunctionNameFromNode(node: any) => string | null
   // @step: [查找标识符] 在节点的子节点中查找 identifier
   // @step: [递归查找] 如果是 function_declarator，递归查找其子节点
@@ -251,13 +196,15 @@ export class CallGraphService {
     try {
       await this.init();
 
-      const lang = await this.loadLanguage(language);
-      if (!lang || !this.parser) {
+      const lang = await TreeSitterManager.getLanguage(language);
+      const parser = await TreeSitterManager.getParser();
+
+      if (!lang || !parser) {
         return calls;
       }
 
-      this.parser.setLanguage(lang);
-      const tree = this.parser.parse(code);
+      parser.setLanguage(lang);
+      const tree = parser.parse(code);
 
       if (!tree) {
         return calls;

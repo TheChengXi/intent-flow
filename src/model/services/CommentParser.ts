@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { CDDComment, ContractAnnotation, StepAnnotation, BoundaryAnnotation } from '../entities/CDDComment';
 import { ValidationError } from '../entities/Errors';
+import { LanguageConfig } from './core/LanguageConfig';
 
 // @contract: parseComment(text: string, document: vscode.TextDocument, startLine: number) => CDDComment | null
 // @step: [跳过装饰行] 跳过不包含 @contract 的注释行
@@ -249,28 +250,11 @@ export function findCommentBlock(document: vscode.TextDocument, position: vscode
 // @end
 
 // @contract: getCommentPrefixes(languageId: string) => string[]
-// @step: [映射语言] 根据语言 ID 返回对应的注释前缀
+// @step: [委托] 委托给 LanguageConfig.getCommentPrefixes
 // @step: [返回] 返回注释前缀数组
 function getCommentPrefixes(languageId: string): string[] {
-  const map: { [key: string]: string[] } = {
-    'typescript': ['//'],
-    'javascript': ['//'],
-    'typescriptreact': ['//'],
-    'javascriptreact': ['//'],
-    'python': ['#'],
-    'go': ['//'],
-    'rust': ['//'],
-    'java': ['//'],
-    'cpp': ['//'],
-    'c': ['//'],
-    'csharp': ['//'],
-    'swift': ['//'],
-    'kotlin': ['//'],
-    'php': ['//'],
-    'ruby': ['#']
-  };
-
-  return map[languageId] || ['//'];
+  const language = LanguageConfig.getLanguageName(languageId);
+  return LanguageConfig.getCommentPrefixes(language);
 }
 // @end
 

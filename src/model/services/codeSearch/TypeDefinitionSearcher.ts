@@ -1,4 +1,4 @@
-import { TreeSitterParser } from '../TreeSitterParser';
+import { TreeSitterManager } from '../core/TreeSitterManager';
 
 // @contract: TypeDefinitionSearcher.searchInFile(typeName: string, filePath: string, language?: string) => Promise<string | null>
 // @step: [读取文件] 读取指定文件内容
@@ -45,16 +45,15 @@ export class TypeDefinitionSearcher {
   // @boundary: 当语言不支持时，回退到正则方案
   private static async searchWithTreeSitter(typeName: string, content: string, language: string): Promise<string | null> {
     try {
-      await TreeSitterParser.init();
+      await TreeSitterManager.init();
 
-      const lang = await TreeSitterParser['getLanguage'](language);
+      const lang = await TreeSitterManager.getLanguage(language);
       if (!lang) {
         console.warn('[TypeDefinitionSearcher] Tree-sitter 不支持该语言，回退到正则方案');
         return this.searchWithRegex(typeName, content);
       }
 
-      const Parser = require('web-tree-sitter');
-      const parser = new Parser();
+      const parser = await TreeSitterManager.getParser();
       parser.setLanguage(lang);
       const tree = parser.parse(content);
 

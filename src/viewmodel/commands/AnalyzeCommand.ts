@@ -3,11 +3,19 @@ import { PlannerVM, PlannerContext } from '../roles/PlannerVM';
 import { ClaudeAPIService } from '../../model/services/ClaudeAPIService';
 import * as WorkScheduleRepo from '../../model/repositories/WorkScheduleRepo';
 
+
 // @contract: execute() => Promise<void>
-// @step: [分析] 调用 PlannerVM.analyzeImpact
-// @step: [显示报告] 在 OutputPanel 显示影响分析报告
-// @step: [记录日志] 调用 WorkScheduleRepo.addRecord
-// @boundary: 当 CHANGELOG.md 不存在时，按 BUSINESS_RULES 流程4异常处理
+// @step: [验证] 检查工作区是否打开，未打开则显示错误并返回
+// @step: [初始化] 创建 ClaudeAPIService 和 PlannerVM 实例
+// @step: [执行] 在进度通知中运行 plannerVM.execute() 分析变更影响
+// @step: [检查] 若分析失败，显示错误消息并返回
+// @step: [生成] 构建 Markdown 格式的变更影响分析报告
+// @step: [展示] 在编辑器中打开并显示报告文档
+// @step: [记录] 将分析操作记录到工作计划仓库
+// @step: [通知] 显示完成消息，包含受影响函数数量
+// @boundary: 当工作区未打开时，显示错误消息 '未打开工作区' 并返回
+// @boundary: 当 plannerVM.execute() 返回失败结果时，显示错误消息并返回
+// @boundary: 当受影响函数列表为空时，报告中显示 '无'
 export async function execute(): Promise<void> {
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
   if (!workspaceRoot) {

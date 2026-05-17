@@ -1,4 +1,5 @@
-import { TreeSitterParser } from '../TreeSitterParser';
+import { TreeSitterManager } from '../core/TreeSitterManager';
+import { LanguageConfig } from '../core/LanguageConfig';
 
 // @contract: FunctionCallExtractor.extractFromText(text: string, language?: string) => Promise<string[]>
 // @step: [检测语言] 如果提供了 language，使用 Tree-sitter 方案
@@ -58,12 +59,11 @@ export class FunctionCallExtractor {
   // @boundary: 当语言不支持时，回退到正则方案
   private static async extractWithTreeSitter(code: string, language: string): Promise<string[]> {
     try {
-      await TreeSitterParser.init();
+      await TreeSitterManager.init();
 
-      const Parser = require('web-tree-sitter');
-      const parser = new Parser();
+      const parser = await TreeSitterManager.getParser();
+      const lang = await TreeSitterManager.getLanguage(language);
 
-      const lang = await TreeSitterParser['getLanguage'](language);
       if (!lang) {
         console.warn('[FunctionCallExtractor] Tree-sitter 不支持该语言，回退到正则方案');
         return this.extractWithRegex(code);
@@ -167,37 +167,6 @@ export class FunctionCallExtractor {
   }
 
   private static getBuiltinFunctions(language: string): Set<string> {
-    const lang = language.toLowerCase();
-
-    if (lang === 'typescript' || lang === 'javascript' || lang === 'tsx') {
-      return new Set([
-        'console', 'log', 'error', 'warn', 'info', 'debug',
-        'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval',
-        'parseInt', 'parseFloat', 'isNaN', 'isFinite',
-        'Array', 'Object', 'String', 'Number', 'Boolean', 'Date', 'Math',
-        'JSON', 'Promise', 'Map', 'Set', 'WeakMap', 'WeakSet',
-        'require', 'import', 'export', 'typeof', 'instanceof'
-      ]);
-    } else if (lang === 'python') {
-      return new Set([
-        'print', 'len', 'range', 'enumerate', 'zip', 'map', 'filter', 'reduce',
-        'sorted', 'reversed', 'sum', 'min', 'max', 'abs', 'round', 'pow',
-        'open', 'input', 'type', 'isinstance', 'hasattr', 'getattr', 'setattr',
-        'dir', 'help', 'id', 'hash', 'hex', 'oct', 'bin', 'chr', 'ord',
-        'str', 'int', 'float', 'bool', 'list', 'dict', 'tuple', 'set'
-      ]);
-    } else if (lang === 'go') {
-      return new Set([
-        'make', 'len', 'cap', 'append', 'copy', 'delete', 'panic', 'recover',
-        'close', 'new', 'println', 'printf', 'print'
-      ]);
-    } else if (lang === 'cpp' || lang === 'c') {
-      return new Set([
-        'printf', 'scanf', 'malloc', 'free', 'sizeof', 'strlen', 'strcpy', 'strcmp',
-        'memcpy', 'memset', 'fopen', 'fclose', 'fread', 'fwrite', 'fprintf', 'fscanf'
-      ]);
-    }
-
-    return new Set();
+    return LanguageConfig.getBuiltinFunctions(language);
   }
 }

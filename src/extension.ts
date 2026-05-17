@@ -41,7 +41,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   // 注册 Chat Participant
   const cddParticipant = vscode.chat.createChatParticipant('cdd', handleCDDChat);
-  cddParticipant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'cdd-icon.png');
+  // 暂时不设置图标，避免因文件不存在导致注册失败
+  // cddParticipant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'cdd-icon.png');
   context.subscriptions.push(cddParticipant);
 
   // 注册辅助命令（用于 Chat 按钮）

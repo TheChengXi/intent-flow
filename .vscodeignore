@@ -1,20 +1,25 @@
-.vscode/**
-.vscode-test/**
+# 源代码（已被 webpack 打包到 dist/）
 src/**
-out/**
-node_modules/**
-.gitignore
-.yarnrc
-vsc-extension-quickstart.md
-**/tsconfig.json
-**/.eslintrc.json
-**/*.map
-**/*.ts
 scripts/**
-.git/**
-.github/**
-*.vsix
+_source/**
+
+# 开发依赖（已被 webpack 打包）
+node_modules/**
+
+# 配置文件
+.vscode/**
+.gitignore
+.gitattributes
+tsconfig.json
 webpack.config.js
-.editorconfig
-.npmrc
+
+# 测试文件
 test-*.js
+out/**
+
+# 文档（保留 readme.md）
+*.md
+!readme.md
+
+# 其他
+.vscodeignore

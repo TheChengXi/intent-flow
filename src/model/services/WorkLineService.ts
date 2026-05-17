@@ -6,6 +6,7 @@ import { TypeReferenceExtractor } from './codeAnalysis/TypeReferenceExtractor';
 import { ImportExtractor } from './codeAnalysis/ImportExtractor';
 import { ContractSearcher } from './codeSearch/ContractSearcher';
 import { TypeDefinitionSearcher } from './codeSearch/TypeDefinitionSearcher';
+import { LanguageConfig } from './core/LanguageConfig';
 
 // @contract: WorkLineService.parseWorkLine(document: vscode.TextDocument, position: vscode.Position) => Promise<WorkLine | null>
 // @step: [检测语言] 从文档语言 ID 推断语言
@@ -30,25 +31,7 @@ export class WorkLineService {
   }
 
   static detectLanguage(languageId: string): string {
-    const map: { [key: string]: string } = {
-      'typescript': 'typescript',
-      'typescriptreact': 'tsx',
-      'javascript': 'javascript',
-      'javascriptreact': 'javascript',
-      'python': 'python',
-      'cpp': 'cpp',
-      'c': 'c',
-      'java': 'java',
-      'go': 'go',
-      'rust': 'rust',
-      'kotlin': 'kotlin',
-      'swift': 'swift',
-      'csharp': 'csharp',
-      'ruby': 'ruby',
-      'php': 'php'
-    };
-
-    return map[languageId] || 'typescript';
+    return LanguageConfig.getLanguageName(languageId);
   }
 
   static async extractReferencedContracts(workLine: WorkLine, workspaceRoot: string): Promise<string[]> {
@@ -210,74 +193,6 @@ export class WorkLineService {
 
     console.log('[WorkLineService] 契约搜索完成，找到数量:', contracts.length);
     return contracts;
-  }
-  // @end
-
-  // @contract: searchTypeDefinitionInFile(typeName: string, filePath: string) => Promise<string | null>
-  // @step: [构建搜索模式] 构建 @contract: functionName 的搜索模式
-  // @step: [执行搜索] 使用 vscode.workspace.findFiles 和文件读取搜索契约
-  // @step: [解析契约] 找到后提取完整的契约注释块
-  // @step: [计算路径] 计算相对路径和导入路径
-  // @step: [返回] 返回契约文本、文件路径、相对路径和导入路径
-  // @boundary: 当找不到契约时，返回 null
-  private static async searchContractInWorkspaceWithPath(functionName: string, workspaceRoot: string): Promise<{ contract: string; filePath: string; relativePath: string; importPath: string } | null> {
-    const vscode = require('vscode');
-    const fs = require('fs').promises;
-    const path = require('path');
-
-    try {
-      // 搜索所有代码文件
-      const files = await vscode.workspace.findFiles(
-        '**/*.{ts,js,py,go,java,cpp,c,rs,kt,swift,cs,rb,php}',
-        '**/node_modules/**',
-        100 // 限制搜索文件数
-      );
-
-      for (const file of files) {
-        const content = await fs.readFile(file.fsPath, 'utf-8');
-
-        // 搜索 @contract: functionName
-        const contractRegex = new RegExp(`@contract:\\s*${functionName}\\s*\\(`, 'i');
-        if (contractRegex.test(content)) {
-          // 找到了，提取完整的契约注释块
-          const lines = content.split('\n');
-          let contractBlock = '';
-          let inContract = false;
-
-          for (const line of lines) {
-            if (line.includes(`@contract: ${functionName}`)) {
-              inContract = true;
-            }
-
-            if (inContract) {
-              contractBlock += line + '\n';
-
-              // 遇到非注释行或空行后的代码行，停止
-              const trimmed = line.trim();
-              if (trimmed && !trimmed.startsWith('//') && !trimmed.startsWith('#')) {
-                break;
-              }
-            }
-          }
-
-          // 计算相对路径和导入路径
-          const relativePath = path.relative(workspaceRoot, file.fsPath);
-          const importPath = './' + relativePath.replace(/\\/g, '/').replace(/\.(ts|js|py|go|java|cpp|c|rs|kt|swift|cs|rb|php)$/, '');
-
-          return {
-            contract: contractBlock.trim(),
-            filePath: file.fsPath,
-            relativePath,
-            importPath
-          };
-        }
-      }
-
-      return null;
-    } catch (error) {
-      console.error(`搜索契约 ${functionName} 失败:`, error);
-      return null;
-    }
   }
   // @end
 

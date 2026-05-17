@@ -1,4 +1,4 @@
-import { TreeSitterParser } from '../TreeSitterParser';
+import { TreeSitterManager } from '../core/TreeSitterManager';
 
 // @contract: ImportExtractor.extractImportedFiles(code: string, workspaceRoot: string, language?: string) => Promise<string[]>
 // @step: [检测语言] 如果提供了 language，使用 Tree-sitter 方案
@@ -93,10 +93,10 @@ export class ImportExtractor {
   private static async extractWithTreeSitter(code: string, workspaceRoot: string, language: string): Promise<string[]> {
     try {
       // 获取已初始化的 parser
-      const parser = await TreeSitterParser.getParser();
+      const parser = await TreeSitterManager.getParser();
 
       // 加载语言
-      const lang = await TreeSitterParser['getLanguage'](language);
+      const lang = await TreeSitterManager.getLanguage(language);
       if (!lang) {
         console.warn('[ImportExtractor] Tree-sitter 不支持该语言，回退到正则方案');
         return this.extractWithRegex(code, workspaceRoot);

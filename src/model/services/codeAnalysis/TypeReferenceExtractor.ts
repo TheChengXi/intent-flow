@@ -1,4 +1,5 @@
-import { TreeSitterParser } from '../TreeSitterParser';
+import { TreeSitterManager } from '../core/TreeSitterManager';
+import { LanguageConfig } from '../core/LanguageConfig';
 
 // @contract: TypeReferenceExtractor.extractFromContractLine(contractLine: string, language?: string) => Promise<string[]>
 // @step: [检测语言] 如果提供了 language，使用 Tree-sitter 方案
@@ -65,16 +66,15 @@ export class TypeReferenceExtractor {
   // @boundary: 当语言不支持时，回退到正则方案
   private static async extractWithTreeSitter(contractLine: string, language: string): Promise<string[]> {
     try {
-      await TreeSitterParser.init();
+      await TreeSitterManager.init();
 
-      const lang = await TreeSitterParser['getLanguage'](language);
+      const lang = await TreeSitterManager.getLanguage(language);
       if (!lang) {
         console.warn('[TypeReferenceExtractor] Tree-sitter 不支持该语言，回退到正则方案');
         return this.extractWithRegex(contractLine);
       }
 
-      const Parser = require('web-tree-sitter');
-      const parser = new Parser();
+      const parser = await TreeSitterManager.getParser();
       parser.setLanguage(lang);
 
       // 将契约行包装成可解析的代码
@@ -205,14 +205,10 @@ export class TypeReferenceExtractor {
   // @end
 
   // @contract: getBuiltinTypes() => Set<string>
+  // @step: [委托] 委托给 LanguageConfig.getBuiltinTypes
   // @step: [返回] 返回内置类型集合
   private static getBuiltinTypes(): Set<string> {
-    return new Set([
-      'string', 'number', 'boolean', 'null', 'undefined', 'void', 'any', 'unknown', 'never', 'symbol', 'bigint',
-      'Promise', 'Array', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Date', 'Error', 'RegExp',
-      'Partial', 'Required', 'Readonly', 'Record', 'Pick', 'Omit', 'Exclude', 'Extract',
-      'JSX', 'React', 'ReactNode', 'ReactElement', 'FC', 'Component'
-    ]);
+    return LanguageConfig.getBuiltinTypes('typescript');
   }
   // @end
 }

@@ -113,11 +113,12 @@ async function extractIntentWithTreeSitter(
   maxLines: number
 ): Promise<string | null> {
   try {
-    // 获取已初始化的 parser
-    const parser = await TreeSitterParser.getParser();
+    // 初始化 Tree-sitter
+    await TreeSitterParser.init();
 
-    // 加载语言
-    const lang = await TreeSitterParser['getLanguage'](language);
+    // 获取 parser 和语言
+    const parser = await TreeSitterParser.getParser();
+    const lang = await TreeSitterParser.getLanguage(language);
     if (!lang) {
       return null;
     }
