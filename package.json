@@ -27,11 +27,15 @@
         "commands": [
           {
             "name": "plan",
-            "description": "Analyze change impact and generate implementation plan"
+            "description": "Analyze project architecture"
           },
           {
             "name": "translate",
             "description": "Translate natural language requirements to CDD comments"
+          },
+          {
+            "name": "pm",
+            "description": "Product Manager conversation - collect requirements through dialogue"
           }
         ]
       }

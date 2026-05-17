@@ -123,6 +123,9 @@ export class ProductManagerVM extends BaseRole {
       // 构建对话消息
       const messages = this.buildMessages(context);
 
+      // 读取 API 配置
+      const config = await this.getAPIConfig();
+
       // 调用 API
       const apiResponse = await this.apiService.callAPI(
         {
@@ -130,9 +133,9 @@ export class ProductManagerVM extends BaseRole {
           userMessage: context.userMessage,
           conversationHistory: messages
         },
-        '', // API key 从配置读取
-        '', // API base URL 从配置读取
-        ''  // Model ID 从配置读取
+        config.apiKey,
+        config.apiBaseUrl,
+        config.modelId
       );
 
       // 提取响应内容
@@ -176,6 +179,22 @@ export class ProductManagerVM extends BaseRole {
         artifacts: error
       };
     }
+  }
+  // @end
+
+  // @contract: getAPIConfig() => Promise<{apiKey: string, apiBaseUrl: string, modelId: string}>
+  // @step: [读取配置] 从 vscode.workspace.getConfiguration 读取配置
+  // @step: [返回] 返回配置对象
+  // @boundary: 当配置不存在时，返回默认值
+  private async getAPIConfig(): Promise<{apiKey: string, apiBaseUrl: string, modelId: string}> {
+    const vscode = require('vscode');
+    const config = vscode.workspace.getConfiguration('cdd');
+
+    return {
+      apiKey: config.get('apiKey') || '',
+      apiBaseUrl: config.get('apiBaseUrl') || 'https://api.anthropic.com',
+      modelId: config.get('modelId') || 'claude-sonnet-4-20250514'
+    };
   }
   // @end
 

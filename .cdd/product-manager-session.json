@@ -1,0 +1,15 @@
+{
+  "sessionId": "pm-mp9idrnp-n2fnk7n",
+  "workspaceRoot": "d:\\w_dev\\CCD-framework",
+  "conversationHistory": [
+    {
+      "role": "user",
+      "content": "你好",
+      "timestamp": 1779006399734
+    }
+  ],
+  "currentPhase": "intent",
+  "collectedInfo": {},
+  "createdAt": 1779006239557,
+  "updatedAt": 1779007061300
+}
