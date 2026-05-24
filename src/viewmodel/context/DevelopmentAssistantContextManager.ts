@@ -1,32 +1,32 @@
-// @intent: 管理产品经理 Agent 的对话上下文，持久化对话历史
+// @intent: 管理开发助手 Agent 的对话上下文，持久化对话历史
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { ConversationTurn, ProductManagerPhase, CollectedInfo } from '../roles/ProductManagerVM';
+import { ConversationTurn, DevelopmentAssistantPhase, CollectedInfo } from '../roles/DevelopmentAssistantVM';
 
-// @entity: ProductManagerSession
-// 产品经理会话
-export interface ProductManagerSession {
+// @entity: DevelopmentAssistantSession
+// 开发助手会话
+export interface DevelopmentAssistantSession {
   sessionId: string;
   workspaceRoot: string;
   conversationHistory: ConversationTurn[];
-  currentPhase: ProductManagerPhase;
+  currentPhase: DevelopmentAssistantPhase;
   collectedInfo: CollectedInfo;
   createdAt: number;
   updatedAt: number;
 }
 
-export class ProductManagerContextManager {
+export class DevelopmentAssistantContextManager {
   private static readonly CONTEXT_DIR = '.cdd';
-  private static readonly SESSION_FILE = 'product-manager-session.json';
+  private static readonly SESSION_FILE = 'development-assistant-session.json';
 
-  // @contract: saveSession(session: ProductManagerSession) => Promise<void>
+  // @contract: saveSession(session: DevelopmentAssistantSession) => Promise<void>
   // @step: [构建路径] 构建会话文件路径
   // @step: [确保目录] 确保 .cdd 目录存在
   // @step: [序列化] 将会话对象序列化为 JSON
   // @step: [写入文件] 写入会话文件
   // @boundary: 当写入失败时，抛出错误
-  static async saveSession(session: ProductManagerSession): Promise<void> {
+  static async saveSession(session: DevelopmentAssistantSession): Promise<void> {
     const sessionPath = this.getSessionPath(session.workspaceRoot);
 
     // 确保目录存在
@@ -42,7 +42,7 @@ export class ProductManagerContextManager {
   }
   // @end
 
-  // @contract: loadSession(workspaceRoot: string) => Promise<ProductManagerSession | null>
+  // @contract: loadSession(workspaceRoot: string) => Promise<DevelopmentAssistantSession | null>
   // @step: [构建路径] 构建会话文件路径
   // @step: [检查存在] 检查文件是否存在
   // @step: [读取文件] 读取会话文件
@@ -50,7 +50,7 @@ export class ProductManagerContextManager {
   // @step: [返回] 返回会话对象或 null
   // @boundary: 当文件不存在时，返回 null
   // @boundary: 当文件格式错误时，返回 null
-  static async loadSession(workspaceRoot: string): Promise<ProductManagerSession | null> {
+  static async loadSession(workspaceRoot: string): Promise<DevelopmentAssistantSession | null> {
     const sessionPath = this.getSessionPath(workspaceRoot);
 
     try {
@@ -61,7 +61,7 @@ export class ProductManagerContextManager {
       const content = await fs.promises.readFile(sessionPath, 'utf-8');
 
       // 反序列化
-      const session: ProductManagerSession = JSON.parse(content);
+      const session: DevelopmentAssistantSession = JSON.parse(content);
 
       return session;
     } catch (error) {
@@ -71,11 +71,11 @@ export class ProductManagerContextManager {
   }
   // @end
 
-  // @contract: createSession(workspaceRoot: string) => ProductManagerSession
+  // @contract: createSession(workspaceRoot: string) => DevelopmentAssistantSession
   // @step: [生成 ID] 生成唯一的会话 ID
   // @step: [初始化] 初始化会话对象
   // @step: [返回] 返回新会话
-  static createSession(workspaceRoot: string): ProductManagerSession {
+  static createSession(workspaceRoot: string): DevelopmentAssistantSession {
     const sessionId = this.generateSessionId();
     const now = Date.now();
 
@@ -91,12 +91,12 @@ export class ProductManagerContextManager {
   }
   // @end
 
-  // @contract: addTurn(session: ProductManagerSession, role: 'user' | 'assistant', content: string) => void
+  // @contract: addTurn(session: DevelopmentAssistantSession, role: 'user' | 'assistant', content: string) => void
   // @step: [创建轮次] 创建新的对话轮次
   // @step: [添加到历史] 添加到对话历史
   // @step: [更新时间] 更新会话时间戳
   static addTurn(
-    session: ProductManagerSession,
+    session: DevelopmentAssistantSession,
     role: 'user' | 'assistant',
     content: string
   ): void {
@@ -111,10 +111,10 @@ export class ProductManagerContextManager {
   }
   // @end
 
-  // @contract: updatePhase(session: ProductManagerSession, phase: ProductManagerPhase) => void
+  // @contract: updatePhase(session: DevelopmentAssistantSession, phase: DevelopmentAssistantPhase) => void
   // @step: [更新阶段] 更新当前阶段
   // @step: [更新时间] 更新会话时间戳
-  static updatePhase(session: ProductManagerSession, phase: ProductManagerPhase): void {
+  static updatePhase(session: DevelopmentAssistantSession, phase: DevelopmentAssistantPhase): void {
     session.currentPhase = phase;
     session.updatedAt = Date.now();
   }
@@ -136,7 +136,7 @@ export class ProductManagerContextManager {
   // @end
 
   // @contract: getSessionPath(workspaceRoot: string) => string
-  // @step: [构建路径] 构建 .cdd/product-manager-session.json 路径
+  // @step: [构建路径] 构建 .cdd/development-assistant-session.json 路径
   // @step: [返回] 返回路径
   private static getSessionPath(workspaceRoot: string): string {
     return path.join(workspaceRoot, this.CONTEXT_DIR, this.SESSION_FILE);
@@ -149,15 +149,15 @@ export class ProductManagerContextManager {
   private static generateSessionId(): string {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 9);
-    return `pm-${timestamp}-${random}`;
+    return `da-${timestamp}-${random}`;
   }
   // @end
 
-  // @contract: getConversationSummary(session: ProductManagerSession) => string
+  // @contract: getConversationSummary(session: DevelopmentAssistantSession) => string
   // @step: [统计] 统计对话轮次
   // @step: [格式化] 格式化会话摘要
   // @step: [返回] 返回摘要字符串
-  static getConversationSummary(session: ProductManagerSession): string {
+  static getConversationSummary(session: DevelopmentAssistantSession): string {
     const turnCount = session.conversationHistory.length;
     const duration = session.updatedAt - session.createdAt;
     const durationMinutes = Math.floor(duration / 60000);
@@ -171,11 +171,11 @@ export class ProductManagerContextManager {
   }
   // @end
 
-  // @contract: getPhaseLabel(phase: ProductManagerPhase) => string
+  // @contract: getPhaseLabel(phase: DevelopmentAssistantPhase) => string
   // @step: [映射] 将阶段代码映射为中文标签
   // @step: [返回] 返回标签
-  private static getPhaseLabel(phase: ProductManagerPhase): string {
-    const labels: Record<ProductManagerPhase, string> = {
+  private static getPhaseLabel(phase: DevelopmentAssistantPhase): string {
+    const labels: Record<DevelopmentAssistantPhase, string> = {
       'intent': '理解整体意图',
       'features': '探索功能边界',
       'data-model': '设计数据模型',

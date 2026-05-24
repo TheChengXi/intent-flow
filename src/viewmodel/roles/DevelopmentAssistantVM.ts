@@ -1,13 +1,13 @@
-// @intent: 产品经理 Agent，通过多轮对话将模糊需求转化为结构化需求文档
+// @intent: 开发助手 Agent，通过多轮对话将模糊需求转化为结构化需求文档
 
 import { BaseRole, RoleResult } from './BaseRole';
 import { ClaudeAPIService } from '../../model/services/ClaudeAPIService';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// @entity: ProductManagerContext
-// 产品经理上下文
-export interface ProductManagerContext {
+// @entity: DevelopmentAssistantContext
+// 开发助手上下文
+export interface DevelopmentAssistantContext {
   workspaceRoot: string;
   userMessage: string;
   conversationHistory?: ConversationTurn[];
@@ -21,9 +21,9 @@ export interface ConversationTurn {
   timestamp: number;
 }
 
-// @entity: ProductManagerPhase
-// 产品经理对话阶段
-export type ProductManagerPhase =
+// @entity: DevelopmentAssistantPhase
+// 开发助手对话阶段
+export type DevelopmentAssistantPhase =
   | 'intent'           // 理解整体意图
   | 'features'         // 探索功能边界
   | 'data-model'       // 设计数据模型
@@ -88,15 +88,15 @@ export interface ImplementationDetail {
   errorHandling: string;
 }
 
-export class ProductManagerVM extends BaseRole {
+export class DevelopmentAssistantVM extends BaseRole {
   private promptTemplate: string = '';
 
   constructor(apiService: ClaudeAPIService) {
     super(apiService);
   }
 
-  // @contract: execute(context: ProductManagerContext) => Promise<RoleResult>
-  // @step: [加载提示词] 读取 product-manager.md 提示词模板
+  // @contract: execute(context: DevelopmentAssistantContext) => Promise<RoleResult>
+  // @step: [加载提示词] 读取 development-assistant.md 提示词模板
   // @step: [构建消息] 构建对话历史和当前用户消息
   // @step: [调用 API] 调用 Claude API 进行对话
   // @step: [解析响应] 解析 AI 响应，判断是否完成需求收集
@@ -105,7 +105,7 @@ export class ProductManagerVM extends BaseRole {
   // @boundary: 当工作区路径为空时，返回 success: false
   // @boundary: 当 API 调用失败时，返回错误信息
   // @boundary: 当提示词文件不存在时，使用默认提示词
-  async execute(context: ProductManagerContext): Promise<RoleResult> {
+  async execute(context: DevelopmentAssistantContext): Promise<RoleResult> {
     try {
       if (!context.workspaceRoot) {
         return {
@@ -129,7 +129,7 @@ export class ProductManagerVM extends BaseRole {
       // 调用 API
       const apiResponse = await this.apiService.callAPI(
         {
-          role: 'product-manager',
+          role: 'development-assistant',
           userMessage: context.userMessage,
           conversationHistory: messages
         },
@@ -199,7 +199,7 @@ export class ProductManagerVM extends BaseRole {
   // @end
 
   // @contract: loadPromptTemplate(workspaceRoot: string) => Promise<string>
-  // @step: [构建路径] 构建 _source/prompts/product-manager.md 路径
+  // @step: [构建路径] 构建 _source/prompts/development-assistant.md 路径
   // @step: [读取文件] 读取提示词文件
   // @step: [返回内容] 返回文件内容
   // @boundary: 当文件不存在时，返回默认提示词
@@ -208,25 +208,25 @@ export class ProductManagerVM extends BaseRole {
       workspaceRoot,
       '_source',
       'prompts',
-      'product-manager.md'
+      'development-assistant.md'
     );
 
     try {
       const content = await fs.promises.readFile(promptPath, 'utf-8');
       return content;
     } catch (error) {
-      console.warn('[ProductManagerVM] 提示词文件不存在，使用默认提示词');
+      console.warn('[DevelopmentAssistantVM] 提示词文件不存在，使用默认提示词');
       return this.getDefaultPrompt();
     }
   }
   // @end
 
-  // @contract: buildMessages(context: ProductManagerContext) => any[]
+  // @contract: buildMessages(context: DevelopmentAssistantContext) => any[]
   // @step: [添加系统消息] 将提示词模板作为系统消息
   // @step: [添加历史] 添加对话历史
   // @step: [添加当前消息] 添加当前用户消息
   // @step: [返回] 返回消息数组
-  private buildMessages(context: ProductManagerContext): any[] {
+  private buildMessages(context: DevelopmentAssistantContext): any[] {
     const messages: any[] = [];
 
     // 添加系统消息（提示词模板）
@@ -260,15 +260,15 @@ export class ProductManagerVM extends BaseRole {
   // @step: [返回] 返回是否完成
   private checkIfComplete(response: string): boolean {
     // 检查是否包含完成标记
-    return response.includes('✅ 产品经理完成') ||
+    return response.includes('✅ 开发助手完成') ||
            response.includes('# 需求文档：');
   }
   // @end
 
-  // @contract: detectPhase(response: string) => ProductManagerPhase
+  // @contract: detectPhase(response: string) => DevelopmentAssistantPhase
   // @step: [关键词匹配] 根据响应内容中的关键词判断当前阶段
   // @step: [返回阶段] 返回当前阶段
-  private detectPhase(response: string): ProductManagerPhase {
+  private detectPhase(response: string): DevelopmentAssistantPhase {
     const lowerResponse = response.toLowerCase();
 
     if (lowerResponse.includes('核心目标') || lowerResponse.includes('主要解决')) {
@@ -315,9 +315,9 @@ export class ProductManagerVM extends BaseRole {
   // @end
 
   // @contract: getDefaultPrompt() => string
-  // @step: [返回] 返回默认的产品经理提示词
+  // @step: [返回] 返回默认的开发助手提示词
   private getDefaultPrompt(): string {
-    return `你是产品经理。你的职责是通过对话将用户的模糊需求转化为清晰、无歧义的需求文档。
+    return `你是开发助手。你的职责是通过对话将用户的模糊需求转化为清晰、无歧义的需求文档。
 
 ## 你的工作流程
 
@@ -348,7 +348,7 @@ export class ProductManagerVM extends BaseRole {
 - 非功能需求
 - MVP 范围
 
-最后添加标记：✅ 产品经理完成。建议下一步：架构探讨者。`;
+最后添加标记：✅ 开发助手完成。建议下一步：架构探讨者。`;
   }
   // @end
 }

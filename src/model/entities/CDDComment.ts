@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 
-// @entity: CDDComment
 // 表示一个完整的 CDD 注释块
 export interface CDDComment {
   contract: ContractAnnotation;
@@ -9,7 +8,7 @@ export interface CDDComment {
   range: vscode.Range;
 }
 
-// @entity: ContractAnnotation
+
 // @constraint: version 用于依赖追踪，格式为 functionName:vX.Y
 export interface ContractAnnotation {
   functionName: string;
@@ -24,7 +23,6 @@ export interface Parameter {
   type: string;
 }
 
-// @entity: StepAnnotation
 // @constraint: isSimple 为 true 时，审查员跳过该步骤的严格检查
 export interface StepAnnotation {
   description: string;

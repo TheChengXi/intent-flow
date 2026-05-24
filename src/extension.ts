@@ -7,7 +7,7 @@ import * as TranslateCommand from './viewmodel/commands/TranslateCommand';
 import * as InitCommand from './viewmodel/commands/InitCommand';
 import * as CheckFileSizeCommand from './viewmodel/commands/CheckFileSizeCommand';
 import * as PlannerCommand from './viewmodel/commands/PlannerCommand';
-import * as ProductManagerCommand from './viewmodel/commands/ProductManagerCommand';
+import * as DevelopmentAssistantCommand from './viewmodel/commands/DevelopmentAssistantCommand';
 import { handleCDDChat } from './chat/CDDChatHandler';
 
 // @contract: activate(context: vscode.ExtensionContext) => void
@@ -28,8 +28,8 @@ export function activate(context: vscode.ExtensionContext) {
   const reviewCommand = vscode.commands.registerCommand('cdd.review', ReviewCommand.execute);
   const translateCommand = vscode.commands.registerCommand('cdd.translate', TranslateCommand.execute);
   const plannerCommand = vscode.commands.registerCommand('cdd.planner', PlannerCommand.execute);
-  const productManagerCommand = vscode.commands.registerCommand('cdd.productManager', ProductManagerCommand.execute);
-  const clearPMSessionCommand = vscode.commands.registerCommand('cdd.clearProductManagerSession', ProductManagerCommand.clearSession);
+  const developmentAssistantCommand = vscode.commands.registerCommand('cdd.developmentAssistant', DevelopmentAssistantCommand.execute);
+  const clearDASessionCommand = vscode.commands.registerCommand('cdd.clearDevelopmentAssistantSession', DevelopmentAssistantCommand.clearSession);
   const initCommand = vscode.commands.registerCommand('cdd.init', InitCommand.execute);
   const checkFileSizeCommand = vscode.commands.registerCommand('cdd.checkFileSize', CheckFileSizeCommand.execute);
   const checkCurrentFileCommand = vscode.commands.registerCommand('cdd.checkCurrentFileWithDeps', CheckFileSizeCommand.checkCurrentFileWithDependencies);
@@ -38,8 +38,8 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(reviewCommand);
   context.subscriptions.push(translateCommand);
   context.subscriptions.push(plannerCommand);
-  context.subscriptions.push(productManagerCommand);
-  context.subscriptions.push(clearPMSessionCommand);
+  context.subscriptions.push(developmentAssistantCommand);
+  context.subscriptions.push(clearDASessionCommand);
   context.subscriptions.push(initCommand);
   context.subscriptions.push(checkFileSizeCommand);
   context.subscriptions.push(checkCurrentFileCommand);

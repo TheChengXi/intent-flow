@@ -6,10 +6,10 @@ import { COMPILER_PROMPT, REVIEWER_PROMPT, TRANSLATOR_PROMPT } from '../../gener
 // @entity: ClaudeAPIRequest
 // API 请求参数
 export interface ClaudeAPIRequest {
-  role: 'compiler' | 'reviewer' | 'translator' | 'code-translator' | 'product-manager';
+  role: 'compiler' | 'reviewer' | 'translator' | 'code-translator' | 'development-assistant';
   userMessage: string;  // 完整的用户消息，由各 VM 自行构建
   compileSpec?: string; // 编译规范（仅 compiler 和 reviewer 使用）
-  conversationHistory?: any[]; // 对话历史（仅 product-manager 使用）
+  conversationHistory?: any[]; // 对话历史（仅 development-assistant 使用）
 }
 
 // @entity: ClaudeAPIResponse
@@ -222,21 +222,19 @@ export class ClaudeAPIService {
 
     switch (role) {
       case 'compiler':
-        // 范式版本 + 工程补充
         prompt = COMPILER_PROMPT + '\n\n重要：只输出纯代码，不要包含任何注释（包括原始的 @contract、@step、@boundary 注释），不要添加代码块标记（```），不要解释。直接输出可执行的代码。';
         break;
       case 'reviewer':
         prompt = REVIEWER_PROMPT;
         break;
       case 'translator':
-        // 范式版本 + 工程补充（格式规范）
         prompt = TRANSLATOR_PROMPT + '\n\n重要格式规范：\n1. 必须严格按照 CDD v2.4.1 格式输出\n2. @contract 格式：functionName(param1: Type1, param2: Type2) => ReturnType\n3. @step 格式：[意图] 描述\n4. @boundary 格式：当<条件>时，应<动作>\n5. 每个注释独占一行，以 // 或 # 开头\n6. 不要输出文档注释格式（/** */）\n7. 不要解释代码，只提取意图\n\n示例输出：\n// @contract: add(a: number, b: number) => number\n// @step: [验证] 检查参数类型\n// @step: [计算] 返回 a + b\n// @boundary: 当参数不是数字时，抛出 TypeError';
         break;
       case 'code-translator':
         prompt = '你是代码转译员。将代码的变更同步为注释更新，检测契约冲突。';
         break;
-      case 'product-manager':
-        prompt = '你是产品经理。通过多轮对话将用户的模糊需求转化为清晰、无歧义的需求文档。';
+      case 'development-assistant':
+        prompt = '你是开发助手。通过多轮对话将用户的模糊需求转化为清晰、无歧义的需求文档。';
         break;
       default:
         prompt = '你是 CDD 助手。协助用户完成 Comment-Driven Development 相关任务。';

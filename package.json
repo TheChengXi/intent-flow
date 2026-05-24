@@ -34,8 +34,8 @@
             "description": "Translate natural language requirements to CDD comments"
           },
           {
-            "name": "pm",
-            "description": "Product Manager conversation - collect requirements through dialogue"
+            "name": "da",
+            "description": "Development Assistant - collect requirements through dialogue"
           }
         ]
       }
@@ -58,12 +58,12 @@
         "title": "CDD: 查看项目架构"
       },
       {
-        "command": "cdd.productManager",
-        "title": "CDD: 产品经理对话"
+        "command": "cdd.developmentAssistant",
+        "title": "CDD: 开发助手对话"
       },
       {
-        "command": "cdd.clearProductManagerSession",
-        "title": "CDD: 清除产品经理会话"
+        "command": "cdd.clearDevelopmentAssistantSession",
+        "title": "CDD: 清除开发助手会话"
       },
       {
         "command": "cdd.init",
@@ -121,10 +121,10 @@
           "command": "cdd.planner"
         },
         {
-          "command": "cdd.productManager"
+          "command": "cdd.developmentAssistant"
         },
         {
-          "command": "cdd.clearProductManagerSession"
+          "command": "cdd.clearDevelopmentAssistantSession"
         },
         {
           "command": "cdd.init"
