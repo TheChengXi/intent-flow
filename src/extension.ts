@@ -1,18 +1,22 @@
 // @intent: CDD Framework VSCode 扩展的入口文件，注册命令和 Chat Participant
 
 import * as vscode from 'vscode';
-import * as CompileCommand from './viewmodel/commands/CompileCommand';
-import * as ReviewCommand from './viewmodel/commands/ReviewCommand';
-import * as TranslateCommand from './viewmodel/commands/TranslateCommand';
-import * as InitCommand from './viewmodel/commands/InitCommand';
-import * as CheckFileSizeCommand from './viewmodel/commands/CheckFileSizeCommand';
-import * as PlannerCommand from './viewmodel/commands/PlannerCommand';
-import * as ProductManagerCommand from './viewmodel/commands/ProductManagerCommand';
-import { handleCDDChat } from './chat/CDDChatHandler';
+import * as CompileCommand from './application/commands/CompileCommand';
+import * as ReviewCommand from './application/commands/ReviewCommand';
+import * as TranslateCommand from './application/commands/TranslateCommand';
+import * as InitCommand from './application/commands/InitCommand';
+import * as CheckFileSizeCommand from './application/commands/CheckFileSizeCommand';
+import * as PlannerCommand from './application/commands/PlannerCommand';
+import * as DevelopmentAssistantCommand from './application/commands/DevelopmentAssistantCommand';
+import * as RequirementTranslatorCommand from './application/commands/RequirementTranslatorCommand';
+// import { handleCDDChat } from './chat/CDDChatHandler'; // 暂时禁用 Chat Participant
+
+// 功能开关：是否启用 Chat Participant
+const ENABLE_CHAT_PARTICIPANT = false;
 
 // @contract: activate(context: vscode.ExtensionContext) => void
 // @step: [初始化] 输出激活日志
-// @step: [注册命令] 注册命令处理器（compile、review、translate、planner、init、checkFileSize）
+// @step: [注册命令] 注册命令处理器（compile、review、translate、requirementTranslator、planner、init、checkFileSize）
 // @step: [注册 Chat Participant] 注册 CDD 聊天助手
 // @step: [注册辅助命令] 注册 insertComment 和 insertCode 命令
 // @step: [订阅] 将所有注册器推入上下文订阅列表以确保资源清理
@@ -27,9 +31,10 @@ export function activate(context: vscode.ExtensionContext) {
   const compileCommand = vscode.commands.registerCommand('cdd.compile', CompileCommand.execute);
   const reviewCommand = vscode.commands.registerCommand('cdd.review', ReviewCommand.execute);
   const translateCommand = vscode.commands.registerCommand('cdd.translate', TranslateCommand.execute);
+  const requirementTranslatorCommand = vscode.commands.registerCommand('cdd.requirementTranslator', RequirementTranslatorCommand.execute);
   const plannerCommand = vscode.commands.registerCommand('cdd.planner', PlannerCommand.execute);
-  const productManagerCommand = vscode.commands.registerCommand('cdd.productManager', ProductManagerCommand.execute);
-  const clearPMSessionCommand = vscode.commands.registerCommand('cdd.clearProductManagerSession', ProductManagerCommand.clearSession);
+  const developmentAssistantCommand = vscode.commands.registerCommand('cdd.developmentAssistant', DevelopmentAssistantCommand.execute);
+  const clearDASessionCommand = vscode.commands.registerCommand('cdd.clearDevelopmentAssistantSession', DevelopmentAssistantCommand.clearSession);
   const initCommand = vscode.commands.registerCommand('cdd.init', InitCommand.execute);
   const checkFileSizeCommand = vscode.commands.registerCommand('cdd.checkFileSize', CheckFileSizeCommand.execute);
   const checkCurrentFileCommand = vscode.commands.registerCommand('cdd.checkCurrentFileWithDeps', CheckFileSizeCommand.checkCurrentFileWithDependencies);
@@ -37,40 +42,44 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(compileCommand);
   context.subscriptions.push(reviewCommand);
   context.subscriptions.push(translateCommand);
+  context.subscriptions.push(requirementTranslatorCommand);
   context.subscriptions.push(plannerCommand);
-  context.subscriptions.push(productManagerCommand);
-  context.subscriptions.push(clearPMSessionCommand);
+  context.subscriptions.push(developmentAssistantCommand);
+  context.subscriptions.push(clearDASessionCommand);
   context.subscriptions.push(initCommand);
   context.subscriptions.push(checkFileSizeCommand);
   context.subscriptions.push(checkCurrentFileCommand);
 
-  // 注册 Chat Participant
-  const cddParticipant = vscode.chat.createChatParticipant('cdd', handleCDDChat);
-  // 暂时不设置图标，避免因文件不存在导致注册失败
-  // cddParticipant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'cdd-icon.png');
-  context.subscriptions.push(cddParticipant);
+  // 注册 Chat Participant（可选功能，通过 ENABLE_CHAT_PARTICIPANT 控制）
+  if (ENABLE_CHAT_PARTICIPANT) {
+    const { handleCDDChat } = require('./chat/CDDChatHandler');
+    const cddParticipant = vscode.chat.createChatParticipant('cdd', handleCDDChat);
+    // 暂时不设置图标，避免因文件不存在导致注册失败
+    // cddParticipant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'cdd-icon.png');
+    context.subscriptions.push(cddParticipant);
 
-  // 注册辅助命令（用于 Chat 按钮）
-  const insertCommentCommand = vscode.commands.registerCommand('cdd.insertComment', (comment: string) => {
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-      editor.edit(editBuilder => {
-        editBuilder.insert(editor.selection.active, comment);
-      });
-    }
-  });
+    // 注册辅助命令（用于 Chat 按钮）
+    const insertCommentCommand = vscode.commands.registerCommand('cdd.insertComment', (comment: string) => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        editor.edit(editBuilder => {
+          editBuilder.insert(editor.selection.active, comment);
+        });
+      }
+    });
 
-  const insertCodeCommand = vscode.commands.registerCommand('cdd.insertCode', (code: string) => {
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-      editor.edit(editBuilder => {
-        editBuilder.insert(editor.selection.active, code);
-      });
-    }
-  });
+    const insertCodeCommand = vscode.commands.registerCommand('cdd.insertCode', (code: string) => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        editor.edit(editBuilder => {
+          editBuilder.insert(editor.selection.active, code);
+        });
+      }
+    });
 
-  context.subscriptions.push(insertCommentCommand);
-  context.subscriptions.push(insertCodeCommand);
+    context.subscriptions.push(insertCommentCommand);
+    context.subscriptions.push(insertCodeCommand);
+  }
 }
 // @end
 

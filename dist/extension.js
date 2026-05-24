@@ -49,11 +49,14 @@ const TranslateCommand = __importStar(__webpack_require__(269));
 const InitCommand = __importStar(__webpack_require__(272));
 const CheckFileSizeCommand = __importStar(__webpack_require__(273));
 const PlannerCommand = __importStar(__webpack_require__(276));
-const ProductManagerCommand = __importStar(__webpack_require__(278));
-const CDDChatHandler_1 = __webpack_require__(280);
+const DevelopmentAssistantCommand = __importStar(__webpack_require__(278));
+const RequirementTranslatorCommand = __importStar(__webpack_require__(280));
+// import { handleCDDChat } from './chat/CDDChatHandler'; // 暂时禁用 Chat Participant
+// 功能开关：是否启用 Chat Participant
+const ENABLE_CHAT_PARTICIPANT = false;
 // @contract: activate(context: vscode.ExtensionContext) => void
 // @step: [初始化] 输出激活日志
-// @step: [注册命令] 注册命令处理器（compile、review、translate、planner、init、checkFileSize）
+// @step: [注册命令] 注册命令处理器（compile、review、translate、requirementTranslator、planner、init、checkFileSize）
 // @step: [注册 Chat Participant] 注册 CDD 聊天助手
 // @step: [注册辅助命令] 注册 insertComment 和 insertCode 命令
 // @step: [订阅] 将所有注册器推入上下文订阅列表以确保资源清理
@@ -66,45 +69,50 @@ function activate(context) {
     const compileCommand = vscode.commands.registerCommand('cdd.compile', CompileCommand.execute);
     const reviewCommand = vscode.commands.registerCommand('cdd.review', ReviewCommand.execute);
     const translateCommand = vscode.commands.registerCommand('cdd.translate', TranslateCommand.execute);
+    const requirementTranslatorCommand = vscode.commands.registerCommand('cdd.requirementTranslator', RequirementTranslatorCommand.execute);
     const plannerCommand = vscode.commands.registerCommand('cdd.planner', PlannerCommand.execute);
-    const productManagerCommand = vscode.commands.registerCommand('cdd.productManager', ProductManagerCommand.execute);
-    const clearPMSessionCommand = vscode.commands.registerCommand('cdd.clearProductManagerSession', ProductManagerCommand.clearSession);
+    const developmentAssistantCommand = vscode.commands.registerCommand('cdd.developmentAssistant', DevelopmentAssistantCommand.execute);
+    const clearDASessionCommand = vscode.commands.registerCommand('cdd.clearDevelopmentAssistantSession', DevelopmentAssistantCommand.clearSession);
     const initCommand = vscode.commands.registerCommand('cdd.init', InitCommand.execute);
     const checkFileSizeCommand = vscode.commands.registerCommand('cdd.checkFileSize', CheckFileSizeCommand.execute);
     const checkCurrentFileCommand = vscode.commands.registerCommand('cdd.checkCurrentFileWithDeps', CheckFileSizeCommand.checkCurrentFileWithDependencies);
     context.subscriptions.push(compileCommand);
     context.subscriptions.push(reviewCommand);
     context.subscriptions.push(translateCommand);
+    context.subscriptions.push(requirementTranslatorCommand);
     context.subscriptions.push(plannerCommand);
-    context.subscriptions.push(productManagerCommand);
-    context.subscriptions.push(clearPMSessionCommand);
+    context.subscriptions.push(developmentAssistantCommand);
+    context.subscriptions.push(clearDASessionCommand);
     context.subscriptions.push(initCommand);
     context.subscriptions.push(checkFileSizeCommand);
     context.subscriptions.push(checkCurrentFileCommand);
-    // 注册 Chat Participant
-    const cddParticipant = vscode.chat.createChatParticipant('cdd', CDDChatHandler_1.handleCDDChat);
-    // 暂时不设置图标，避免因文件不存在导致注册失败
-    // cddParticipant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'cdd-icon.png');
-    context.subscriptions.push(cddParticipant);
-    // 注册辅助命令（用于 Chat 按钮）
-    const insertCommentCommand = vscode.commands.registerCommand('cdd.insertComment', (comment) => {
-        const editor = vscode.window.activeTextEditor;
-        if (editor) {
-            editor.edit(editBuilder => {
-                editBuilder.insert(editor.selection.active, comment);
-            });
-        }
-    });
-    const insertCodeCommand = vscode.commands.registerCommand('cdd.insertCode', (code) => {
-        const editor = vscode.window.activeTextEditor;
-        if (editor) {
-            editor.edit(editBuilder => {
-                editBuilder.insert(editor.selection.active, code);
-            });
-        }
-    });
-    context.subscriptions.push(insertCommentCommand);
-    context.subscriptions.push(insertCodeCommand);
+    // 注册 Chat Participant（可选功能，通过 ENABLE_CHAT_PARTICIPANT 控制）
+    if (ENABLE_CHAT_PARTICIPANT) {
+        const { handleCDDChat } = __webpack_require__(283);
+        const cddParticipant = vscode.chat.createChatParticipant('cdd', handleCDDChat);
+        // 暂时不设置图标，避免因文件不存在导致注册失败
+        // cddParticipant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'cdd-icon.png');
+        context.subscriptions.push(cddParticipant);
+        // 注册辅助命令（用于 Chat 按钮）
+        const insertCommentCommand = vscode.commands.registerCommand('cdd.insertComment', (comment) => {
+            const editor = vscode.window.activeTextEditor;
+            if (editor) {
+                editor.edit(editBuilder => {
+                    editBuilder.insert(editor.selection.active, comment);
+                });
+            }
+        });
+        const insertCodeCommand = vscode.commands.registerCommand('cdd.insertCode', (code) => {
+            const editor = vscode.window.activeTextEditor;
+            if (editor) {
+                editor.edit(editBuilder => {
+                    editBuilder.insert(editor.selection.active, code);
+                });
+            }
+        });
+        context.subscriptions.push(insertCommentCommand);
+        context.subscriptions.push(insertCodeCommand);
+    }
 }
 // @end
 // @contract: deactivate() => void
@@ -6420,27 +6428,29 @@ class ClaudeAPIService {
     // @step: [编译器] 返回范式定义的编译器提示词 + 工程补充规则
     // @step: [审查员] 返回范式定义的审查员提示词
     // @step: [转译员] 返回范式定义的转译员提示词 + 工程补充规则
+    // @step: [需求转译器] 返回需求转译器提示词
     // @step: [追加规范] 如果 role 是 compiler 或 reviewer 且 compileSpec 存在，追加到系统提示词
     // @boundary: 当 role 未知时，返回通用提示词
     buildSystemPrompt(role, compileSpec) {
         let prompt = '';
         switch (role) {
             case 'compiler':
-                // 范式版本 + 工程补充
                 prompt = prompts_1.COMPILER_PROMPT + '\n\n重要：只输出纯代码，不要包含任何注释（包括原始的 @contract、@step、@boundary 注释），不要添加代码块标记（```），不要解释。直接输出可执行的代码。';
                 break;
             case 'reviewer':
                 prompt = prompts_1.REVIEWER_PROMPT;
                 break;
             case 'translator':
-                // 范式版本 + 工程补充（格式规范）
                 prompt = prompts_1.TRANSLATOR_PROMPT + '\n\n重要格式规范：\n1. 必须严格按照 CDD v2.4.1 格式输出\n2. @contract 格式：functionName(param1: Type1, param2: Type2) => ReturnType\n3. @step 格式：[意图] 描述\n4. @boundary 格式：当<条件>时，应<动作>\n5. 每个注释独占一行，以 // 或 # 开头\n6. 不要输出文档注释格式（/** */）\n7. 不要解释代码，只提取意图\n\n示例输出：\n// @contract: add(a: number, b: number) => number\n// @step: [验证] 检查参数类型\n// @step: [计算] 返回 a + b\n// @boundary: 当参数不是数字时，抛出 TypeError';
                 break;
             case 'code-translator':
                 prompt = '你是代码转译员。将代码的变更同步为注释更新，检测契约冲突。';
                 break;
-            case 'product-manager':
-                prompt = '你是产品经理。通过多轮对话将用户的模糊需求转化为清晰、无歧义的需求文档。';
+            case 'development-assistant':
+                prompt = '你是开发助手。通过多轮对话将用户的模糊需求转化为清晰、无歧义的需求文档。';
+                break;
+            case 'requirement-translator':
+                prompt = prompts_1.REQUIREMENT_TRANSLATOR_PROMPT;
                 break;
             default:
                 prompt = '你是 CDD 助手。协助用户完成 Comment-Driven Development 相关任务。';
@@ -29674,7 +29684,7 @@ const _deployments_endpoints = new Set([
 // 自动生成的提示词文件
 // 请勿手动修改，运行 npm run generate-prompts 重新生成
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.TRANSLATOR_PROMPT = exports.REVIEWER_PROMPT = exports.REQUIREMENT_TRANSLATOR_PROMPT = exports.PRODUCT_MANAGER_PROMPT = exports.COMPILER_PROMPT = void 0;
+exports.WORKFLOW_README_PROMPT = exports.TRANSLATOR_PROMPT = exports.REVIEWER_PROMPT = exports.REQUIREMENT_TRANSLATOR_PROMPT = exports.GLOSSARY_PROMPT = exports.COMPILER_PROMPT = void 0;
 exports.COMPILER_PROMPT = `# 编译器函数
 
 ## 工具：compile
@@ -29706,402 +29716,433 @@ exports.COMPILER_PROMPT = `# 编译器函数
 - 如果契约中使用了未定义的类型，不要自动创建接口
 - 应该假设类型已在项目中定义，提示用户添加 import
 - 只有基础类型（string, number, boolean 等）和标准库类型（JSX.Element, Promise 等）可以直接使用`;
-exports.PRODUCT_MANAGER_PROMPT = `# 产品经理
+exports.GLOSSARY_PROMPT = `# CDD 框架术语表
 
-你是产品经理。你的职责是通过对话将用户的模糊需求转化为清晰、无歧义的需求文档。
+本文档定义 CDD（Contract-Driven Development）框架中使用的所有核心术语。
 
-## 你的工作流程
+## 代码注解术语
 
-### 阶段 1: 理解整体意图
+### @intent（意图）
+**定义**：描述一个文件将要实现或已实现的功能
 
-首先理解用户想要构建什么。询问：
-- 这个项目/功能的核心目标是什么？
-- 主要解决什么问题？
-- 面向什么用户群体？
+**位置**：文件顶部，import 语句之前
 
-**每次只问 1-3 个问题**，等待用户回答后再继续。
+**格式**：
+\`\`\`typescript
+// @intent: 管理编译上下文的准备和保存
+\`\`\`
 
-### 阶段 2: 探索功能边界
+**作用**：让 agent 快速理解文件职责，无需读取文件内容
 
-逐步细化功能范围：
-- 有哪些主要功能模块？
-- 每个模块负责什么？
-- 模块之间如何协作？
+---
 
-**使用具体场景来验证理解**：
-- "如果用户想要 X，系统应该如何响应？"
-- "当 Y 情况发生时，应该怎么处理？"
+### @contract（契约）
+**定义**：定义函数的签名，包括函数名、参数、返回值
 
-### 阶段 3: 设计数据模型
+**位置**：函数定义之前
 
-针对每个核心实体询问：
-- 这个实体有哪些字段？
-- 字段的类型是什么？
-- 有哪些必填字段？
-- 实体之间的关系是什么？（一对一、一对多、多对多）
+**格式**：
+\`\`\`typescript
+// @contract: functionName(param1: Type1, param2: Type2) => ReturnType
+\`\`\`
 
-### 阶段 4: 规划架构层次
+**作用**：明确函数的输入输出接口
 
-**首先识别项目的架构风格**：
-- 这是什么类型的项目？（Web 应用、CLI 工具、库、服务端 API、桌面应用等）
-- 项目使用什么技术栈？（React、Vue、Node.js、Python、Go 等）
-- 有既定的架构模式吗？（MVC、MVVM、Clean Architecture、分层架构等）
+---
 
-**然后根据项目实际情况询问**：
+### @step（步骤）
+**定义**：定义函数执行的步骤流程
 
-如果是 **Web 前端项目**：
-- 需要哪些页面/组件？
-- 状态管理方案是什么？（Redux、Zustand、Context 等）
-- 需要哪些 API 调用？
-- 路由结构如何设计？
+**位置**：@contract 之后，按执行顺序列出
 
-如果是 **后端 API 项目**：
-- 需要哪些 API 端点？
-- 数据模型有哪些？
-- 需要哪些服务层逻辑？
-- 数据持久化方案是什么？
+**格式**：
+\`\`\`typescript
+// @step: [步骤名称] 步骤描述
+\`\`\`
 
-如果是 **全栈项目**：
-- 前后端如何分工？
-- API 契约如何定义？
-- 数据流向是怎样的？
+**作用**：描述函数的执行逻辑，指导代码实现
 
-如果是 **CLI 工具**：
-- 有哪些命令？
-- 每个命令的参数是什么？
-- 配置文件格式是什么？
+---
 
-如果是 **库/SDK**：
-- 对外暴露哪些 API？
-- 核心功能模块有哪些？
-- 依赖关系如何管理？
+### @boundary（边界）
+**定义**：定义函数的错误处理、限制条件、边界情况
 
-**通用架构问题**（适用于所有项目）：
-- 代码如何组织？（按功能、按层次、按模块）
-- 有哪些核心模块？
-- 模块之间如何通信？
-- 有哪些共享的工具/辅助函数？
+**位置**：@step 之后
 
-### 阶段 5: 确认实现细节
+**格式**：
+\`\`\`typescript
+// @boundary: 当某种情况发生时，应如何处理
+\`\`\`
 
-对于关键功能，询问实现细节：
-- 计算逻辑如何实现？（例如：记账软件的统计功能）
-- 数据验证规则是什么？
-- 错误处理策略是什么？
-- 性能要求是什么？
+**作用**：明确函数的错误处理策略和边界条件
 
-## 对话原则
+---
 
-1. **渐进式提问**：从大到小，从抽象到具体
-2. **一次一个主题**：不要同时问多个不相关的问题
-3. **提供推荐答案**：对于每个问题，给出你的建议
-4. **使用具体场景**：用实际例子帮助用户思考
-5. **验证理解**：定期总结已确认的内容，确保理解一致
+### @end
+**定义**：标记契约块的结束
+
+**位置**：函数实现之后
+
+**格式**：
+\`\`\`typescript
+// @end
+\`\`\`
+
+**作用**：明确契约块的范围
+
+---
+
+### @entity（实体）
+**定义**：定义数据实体或类型
+
+**位置**：类型定义之前
+
+**格式**：
+\`\`\`typescript
+// @entity: EntityName
+// 实体描述
+export interface EntityName {
+  // ...
+}
+\`\`\`
+
+**作用**：标注数据实体，便于理解数据结构
+
+---
+
+### @dependency（依赖）
+**定义**：当前文件依赖的其他模块
+
+**提取方式**：通过 \`ImportExtractor\` 自动从 \`import\` 语句中提取
+
+**注意**：不需要手动标注，系统会自动分析
+
+---
+
+## 架构术语
+
+### Model 层（模型层）
+**定义**：数据实体、数据持久化、业务服务
+
+**职责**：
+- 定义数据实体（Entities）
+- 管理数据持久化（Repositories）
+- 实现业务逻辑（Services）
+
+**特点**：
+- 纯数据层，不包含 UI 逻辑
+- 不依赖 ViewModel 和 View 层
+- 不需要标注 @intent（因为是纯数据实体）
+
+---
+
+### ViewModel 层（视图模型层）
+**定义**：状态管理、用户操作处理、业务逻辑编排
+
+**职责**：
+- 管理应用状态（State）
+- 处理用户命令（Commands）
+- 管理上下文（Context Managers）
+- 编排业务逻辑（Roles）
+
+**特点**：
+- 只能依赖 Model 层
+- 不能依赖 View 层
+- 必须标注 @intent
+- 依赖通过 import 语句声明
+
+**依赖规则**：View → ViewModel → Model（单向依赖）
+
+---
+
+### View 层（视图层）
+**定义**：UI 组件、页面、用户交互
+
+**职责**：
+- 渲染用户界面（Components）
+- 处理用户交互（Event Handlers）
+- 展示数据（Pages）
+
+**特点**：
+- 只能依赖 ViewModel 层
+- 不能直接依赖 Model 层
+- 必须标注 @intent
+- 依赖通过 import 语句声明
+
+---
+
+### Chat 层（对话层）
+**定义**：对话式交互界面
+
+**职责**：
+- 处理用户消息（Message Handlers）
+- 管理对话状态（Conversation State）
+- 生成响应（Response Generation）
+
+**特点**：
+- 与 View 层平级，都属于表现层
+- 只能依赖 ViewModel 层
+- 必须标注 @intent
+
+---
+
+## 设计流程术语
+
+### 需求结构化（Structure）
+**目标**：收集业务需求，输出结构化需求文档
+
+**命令**：\`/structure\`
+
+**输出**：\`.cdd/01-requirements.md\`
+
+**内容**：项目意图、用户群体、核心功能、业务规则、非功能需求、MVP 范围
+
+---
+
+### 架构设计（Architecture Design）
+**目标**：确定技术栈、架构模式、模块划分
+
+**命令**：\`/architecture\`
+
+**输入**：\`.cdd/01-requirements.md\`
+
+**输出**：\`.cdd/02-architecture.md\`
+
+**内容**：项目类型、技术栈、架构模式、模块划分、模块通信、数据流向
+
+---
+
+### Model 设计（Model Design）
+**目标**：设计数据实体、仓库、服务，并生成代码
+
+**命令**：\`/model-design\`
+
+**输入**：\`.cdd/01-requirements.md\`、\`.cdd/02-architecture.md\`
+
+**输出**：
+- \`.cdd/03-model-design.md\`（设计文档）
+- \`src/model/entities/\`（实体代码）
+- \`src/model/repositories/\`（仓库代码）
+- \`src/model/services/\`（服务代码）
+
+**特点**：唯一会生成实际代码的阶段
+
+---
+
+### ViewModel 设计（ViewModel Design）
+**目标**：设计命令、上下文、角色，生成文件骨架
+
+**命令**：\`/viewmodel-design\`
+
+**输入**：\`.cdd/01-requirements.md\`、\`.cdd/02-architecture.md\`、\`.cdd/03-model-design.md\`
+
+**输出**：
+- \`.cdd/04-viewmodel-design.md\`（设计文档）
+- \`src/viewmodel/commands/\`（命令骨架：@intent + import + 函数签名）
+- \`src/viewmodel/context/\`（上下文骨架）
+- \`src/viewmodel/roles/\`（角色骨架）
+
+**特点**：生成文件骨架，不实现具体逻辑
+
+---
+
+### View 设计（View Design）
+**目标**：设计界面、交互、组件，生成文件骨架
+
+**命令**：\`/view-design\`
+
+**输入**：\`.cdd/01-requirements.md\`、\`.cdd/02-architecture.md\`、\`.cdd/03-model-design.md\`、\`.cdd/04-viewmodel-design.md\`
+
+**输出**：
+- \`.cdd/05-view-chat-design.md\`（设计文档）
+- \`src/view/pages/\`（页面骨架）
+- \`src/view/components/\`（组件骨架）
+- \`src/chat/handlers/\`（Chat 处理器骨架）
+
+**特点**：生成文件骨架，不实现具体逻辑
+
+---
+
+## 设计原则
+
+### 单向依赖
+View → ViewModel → Model
+
+表现层只能依赖模块层，模块层只能依赖模型层。
+
+### 职责分明
+- Model：数据和业务逻辑
+- ViewModel：状态管理和命令处理
+- View/Chat：用户界面和交互
+
+### 渐进式设计
+需求结构化 → 架构设计 → Model 设计 → ViewModel 设计 → View 设计
+
+每个阶段完成后，用户确认才进入下一阶段。
+
+### 弱依赖
+每个阶段可以独立执行，但需要明确标注前置依赖。
+
+用户可以从任意阶段开始，跳过的阶段需要手动提供输入。
+
+---
+
+## 文件组织
+
+### 设计文档
+\`\`\`
+.cdd/
+├── 01-requirements.md          # 需求文档
+├── 02-architecture.md          # 架构设计
+├── 03-model-design.md          # Model 设计
+├── 04-viewmodel-design.md      # ViewModel 设计
+└── 05-view-chat-design.md      # View/Chat 设计
+\`\`\`
+
+### 代码结构
+\`\`\`
+src/
+├── model/                      # Model 层
+│   ├── entities/              # 数据实体
+│   ├── repositories/          # 数据仓库
+│   └── services/              # 业务服务
+├── viewmodel/                 # ViewModel 层
+│   ├── commands/              # 命令处理器
+│   ├── context/               # 上下文管理器
+│   └── roles/                 # 角色/功能模块
+├── view/                      # View 层
+│   ├── pages/                 # 页面组件
+│   └── components/            # 可复用组件
+└── chat/                      # Chat 层
+    └── handlers/              # 消息处理器
+\`\`\`
+
+---
+
+## 工具支持
+
+### IntentExtractor
+从文件中提取 @intent 注释，快速了解文件功能。
+
+### ImportExtractor
+从文件中提取 import 语句，自动构建依赖关系。
+
+### DependencyTracker
+追踪模块间的依赖关系，生成依赖关系图。
+
+### CommentParser
+解析 @contract、@step、@boundary 等注释，提取函数契约。`;
+exports.REQUIREMENT_TRANSLATOR_PROMPT = `# 需求转译器
+
+## 工具：translateRequirement
+
+**描述**：将自然语言需求转译为 CDD 格式的注释
+
+**输入**：
+- @intent: 用户的自然语言需求描述（必须）
+- dependencies: 项目依赖信息（**由算法自动提取并注入，你只需读取，无需关心其来源**）
+  - 文件名列表
+  - 文件内的 @intent 注释
+  - 类型定义（如果可用）
+  - 函数签名（如果可用）
+
+**输出**：返回 CDD 格式的注释文本，不包含代码块标记或解释
+**错误输出**：若无法翻译，输出：<<BACKTRACK>> [具体缺少的信息]
 
 ## 输出格式
 
-当所有信息收集完毕后，输出结构化的需求文档：
-
-### 需求文档格式
-
-\`\`\`markdown
-# 需求文档：[项目名称]
-
-## 项目意图
-[一句话描述项目的核心目标]
-
-## 用户群体
-[目标用户是谁]
-
-## 核心功能
-1. [功能1]：[功能描述]
-2. [功能2]：[功能描述]
-...
-
-## 数据模型
-
-### [实体名称1]
-**用途**：[这个实体的作用]
-**字段**：
-- \`fieldName\`: \`type\` - [字段说明]（必填/可选）
-- ...
-
-**关系**：
-- 与 [实体2] 的关系：[一对一/一对多/多对多]
-
-### [实体名称2]
-...
-
-## 架构决策
-
-**项目类型**：[Web应用/CLI工具/库/API等]
-**技术栈**：[React/Vue/Node.js/Python等]
-**架构模式**：[MVC/MVVM/Clean Architecture等]
-
-**模块划分**：
-- [模块1]：[职责描述]
-- [模块2]：[职责描述]
-
-**模块通信**：
-- [模块1] → [模块2]：[通信方式]
-
-## 业务规则
-
-### 规则1：[规则名称]
-**场景**：[什么情况下触发]
-**行为**：[系统应该如何响应]
-**异常处理**：[异常情况如何处理]
-
-### 规则2：[规则名称]
-...
-
-## 实现细节
-
-### [关键功能1]
-**计算逻辑**：[如何计算]
-**验证规则**：[如何验证]
-**错误处理**：[如何处理错误]
-
-### [关键功能2]
-...
-
-## 非功能需求
-- **性能要求**：[响应时间/并发量等]
-- **安全要求**：[认证/授权/数据加密等]
-- **可用性要求**：[易用性/无障碍等]
-
-## MVP 范围
-**核心功能**（第一版必须实现）：
-1. [功能1]
-2. [功能2]
-
-**扩展功能**（后续版本）：
-1. [功能3]
-2. [功能4]
 \`\`\`
-
-### 输出示例
-
-\`\`\`markdown
-# 需求文档：个人记账软件
-
-## 项目意图
-帮助个人用户记录和管理日常收支，提供统计分析功能
-
-## 用户群体
-需要管理个人财务的普通用户
-
-## 核心功能
-1. 收支记录：记录每笔收入和支出
-2. 分类管理：按类别组织收支记录
-3. 统计分析：按时间、分类统计收支情况
-4. 预算管理：设置预算并跟踪执行情况
-
-## 数据模型
-
-### Transaction（收支记录）
-**用途**：表示一条收入或支出记录
-**字段**：
-- \`id\`: \`string\` - 唯一标识（必填）
-- \`amount\`: \`number\` - 金额（必填）
-- \`type\`: \`'income' | 'expense'\` - 类型（必填）
-- \`category\`: \`Category\` - 分类（必填）
-- \`date\`: \`Date\` - 日期（必填）
-- \`paymentMethod\`: \`'cash' | 'alipay' | 'wechat'\` - 支付方式（必填）
-- \`note\`: \`string\` - 备注（可选）
-
-**关系**：
-- 与 Category 的关系：多对一（多条记录属于一个分类）
-
-### Category（分类）
-**用途**：收支的分类标签
-**字段**：
-- \`id\`: \`string\` - 唯一标识（必填）
-- \`name\`: \`string\` - 分类名称（必填）
-- \`type\`: \`'income' | 'expense'\` - 适用类型（必填）
-- \`icon\`: \`string\` - 图标（可选）
-
-### Budget（预算）
-**用途**：用户设置的预算目标
-**字段**：
-- \`id\`: \`string\` - 唯一标识（必填）
-- \`category\`: \`Category\` - 关联分类（必填）
-- \`amount\`: \`number\` - 预算金额（必填）
-- \`period\`: \`'monthly' | 'yearly'\` - 周期（必填）
-
-## 架构决策
-
-**项目类型**：Web 应用
-**技术栈**：React + TypeScript
-**架构模式**：MVVM
-
-**模块划分**：
-- Model 层：数据实体、仓库、业务服务
-- ViewModel 层：状态管理、用户操作处理
-- View 层：UI 组件、页面
-
-**模块通信**：
-- View → ViewModel：通过事件/方法调用
-- ViewModel → Model：通过服务/仓库接口
-
-## 业务规则
-
-### 规则1：支付方式固定
-**场景**：用户添加收支记录时选择支付方式
-**行为**：只能从预设的三种支付方式中选择（现金、支付宝、微信）
-**异常处理**：不允许自定义支付方式
-
-### 规则2：预算超支提醒
-**场景**：当前周期的支出超过预算时
-**行为**：在统计页面显示警告提示
-**异常处理**：无预算时不显示提醒
-
-## 实现细节
-
-### 统计分析功能
-**计算逻辑**：
-- 按时间范围：筛选指定日期范围内的记录，分别统计收入和支出总额
-- 按分类：按 category 分组，计算每个分类的总额
-- 趋势分析：按日/周/月分组，计算每个时间段的收支
-
-**验证规则**：
-- 时间范围：开始日期不能晚于结束日期
-- 分类筛选：只能选择已存在的分类
-
-**错误处理**：
-- 数据为空时显示"暂无数据"
-- 计算失败时显示错误提示
-
-## 非功能需求
-- **性能要求**：列表加载时间 < 1秒
-- **安全要求**：数据存储在本地，无需认证
-- **可用性要求**：界面简洁，操作流程不超过3步
-
-## MVP 范围
-**核心功能**（第一版必须实现）：
-1. 收支记录的增删改查
-2. 基础分类管理
-3. 简单的统计分析（按时间、按分类）
-
-**扩展功能**（后续版本）：
-1. 预算管理
-2. 数据导出
-3. 多账户支持
-\`\`\`
-
-## 特殊情况处理
-
-### 当用户需求过于模糊时
-不要直接拒绝，而是：
-1. 提供 2-3 个常见的实现方向
-2. 询问用户更倾向于哪个方向
-3. 根据选择继续细化
-
-### 当用户需求过于复杂时
-建议分阶段实现：
-1. 识别核心功能（MVP）
-2. 识别扩展功能
-3. 建议先实现核心功能
-4. 为扩展功能预留接口
-
-### 当用户不确定技术细节时
-提供技术建议：
-1. 基于项目现有技术栈
-2. 考虑性能和可维护性
-3. 给出推荐方案和理由
-
-## 注意事项
-
-- **不要生成文件结构或代码**：只生成需求文档
-- **不要假设未确认的需求**：不确定时一定要问
-- **保持业务语言**：使用用户能理解的术语，避免过早技术化
-- **关注业务规则**：重点澄清业务逻辑和边界条件
-- **输出交给下游**：需求文档将交给架构探讨者和自然语言转译员处理
-
-## 示例对话流程
-
-\`\`\`
-产品经理: 你想构建什么类型的应用？主要解决什么问题？
-
-用户: 我想做一个记账软件
-
-产品经理: 好的，记账软件的核心功能通常包括：
-1. 记录收入和支出
-2. 按分类管理
-3. 统计分析
-这些功能都需要吗？还是有其他特殊需求？
-
-用户: 都需要，另外还想要预算管理
-
-产品经理: 明白了。那么对于收支记录，需要记录哪些信息？
-我的建议是：金额、类型（收入/支出）、分类、日期、备注
-你觉得还需要其他字段吗？
-
-用户: 还需要记录支付方式，比如现金、支付宝、微信
-
-产品经理: 好的。那么支付方式是固定的几种，还是用户可以自定义？
-
-用户: 固定的就行
-
-产品经理: 收到。现在让我们确认一下分类功能...
-[继续询问]
-\`\`\`
-
-## 最终交付物
-
-当所有信息收集完毕后，输出完整的需求文档，包含：
-
-1. **项目意图**：一句话描述核心目标
-2. **用户群体**：目标用户画像
-3. **核心功能**：功能列表及描述
-4. **数据模型**：实体定义、字段、关系
-5. **架构决策**：项目类型、技术栈、架构模式、模块划分
-6. **业务规则**：业务逻辑和边界条件
-7. **实现细节**：关键功能的计算逻辑、验证规则、错误处理
-8. **非功能需求**：性能、安全、可用性要求
-9. **MVP 范围**：核心功能和扩展功能的划分
-
-**交接钩子**：
-\`\`\`
-✅ 产品经理完成。建议下一步：架构探讨者。
-\`\`\`
-
-需求文档将保存为 \`_source/BUSINESS_RULES.md\`，供后续角色使用。`;
-exports.REQUIREMENT_TRANSLATOR_PROMPT = `# 需求转译器提示词模板
-
-你是一位需求转译器。负责将自然语言需求转译为 CDD 格式的注释。
-
-## 输入信息
-
-### 需求描述
-{{requirement}}
-
-### 上下文信息
-{{context}}
-
-## 你的任务
-
-将需求转译为 CDD 格式的注释，包含：
-1. @contract: 函数签名
-2. @step: 实现步骤
-3. @boundary: 边界条件和错误处理
-
-## 输出格式
-
-
 // @contract: functionName(param: Type) => ReturnType
 // @step: [意图] 具体步骤描述
 // @step: [意图] 具体步骤描述
 // @boundary: 当...时，应...
+\`\`\`
 
+## 翻译规则
+
+### 1. 严格性原则
+**不允许推断**。所有信息必须从 @intent 或 dependencies 中明确获取。
+
+### 2. BACKTRACK 触发条件
+
+以下任一条件满足时，必须输出 \`<<BACKTRACK>>\` 并说明具体原因：
+
+- **缺少函数名称**：@intent 中没有明确或可推断的函数名
+- **缺少参数类型**：@intent 中描述了参数但未明确其类型，且 dependencies 中无法找到
+- **缺少返回值类型**：@intent 中描述了功能但未明确返回值类型，且 dependencies 中无法找到
+- **步骤描述不清晰**：@intent 中的某个步骤过于模糊（如"处理数据"、"做校验"），无法被精确转译为可验证的 @step
+- **依赖的类型未找到**：@intent 中引用了某个类型或模块，但该类型/模块在 dependencies 中不存在
+
+**示例**：
+\`\`\`
+<<BACKTRACK>> 缺少参数类型：需求中提到"接收用户数据"，但未指定 userData 的类型，且 dependencies 中未找到相关类型定义
+\`\`\`
+
+### 3. 多函数处理
+
+- **一个 @intent 对应一个函数**：如果 @intent 涉及多个函数，输出 \`<<BACKTRACK>>\` 并要求用户拆分
+- **函数调用关系**：如果需要调用其他函数，在 @step 中明确引用函数名（如"调用 validateUser 验证用户"）
+- **不替用户做拆分决策**：不自行将一个 @intent 拆分为多个函数
+
+**示例**：
+\`\`\`
+<<BACKTRACK>> 需求涉及多个函数：当前 @intent 同时描述了"验证用户"和"保存数据"两个独立功能，请拆分为两个独立的 @intent
+\`\`\`
+
+### 4. @contract 规则
+
+- 函数名必须明确（从 @intent 中获取）
+- 参数类型必须明确（从 @intent 或 dependencies 中获取）
+- 返回值类型必须明确（从 @intent 或 dependencies 中获取）
+- 如果 dependencies 中存在相关类型定义，优先使用已有类型
+
+### 5. @step 规则
+
+- 描述"做什么"（What），不是"怎么做"（How）
+- 每个 @step 必须精确到可验证的程度
+- 每个 @step 必须包含 [意图] 标签，说明该步骤的目的
+- 避免模糊描述（如"处理数据"），改为具体描述（如"验证用户邮箱格式"）
+
+**好的示例**：
+\`\`\`
+// @step: [验证] 检查 email 是否符合 RFC 5322 标准
+// @step: [查询] 从数据库中查询 email 对应的用户记录
+// @step: [返回] 返回用户对象或 null
+\`\`\`
+
+**坏的示例**：
+\`\`\`
+// @step: 处理用户数据
+// @step: 做一些验证
+// @step: 保存结果
+\`\`\`
+
+### 6. @boundary 规则
+
+- 包含边界条件和错误处理策略
+- 明确指出异常情况和对应的处理方式
+- 使用"当...时，应..."的格式
+
+**示例**：
+\`\`\`
+// @boundary: 当 email 为空或格式不正确时，应抛出 ValidationError
+// @boundary: 当数据库连接失败时，应返回 null 并记录错误日志
+// @boundary: 当用户不存在时，应返回 null（不抛出异常）
+\`\`\`
+
+## 类型和依赖规范
+
+- 如果 @intent 中使用了未定义的类型，检查 dependencies 中是否存在
+- 如果 dependencies 中不存在该类型，输出 \`<<BACKTRACK>>\` 要求用户补充类型定义或导入
+- 只有基础类型（string, number, boolean 等）和标准库类型可以直接使用
+- 自定义类型必须在 dependencies 中找到
 
 ## 注意事项
 
-- @step 描述"做什么"（What），不是"怎么做"（How）
-- @step 要精确到可验证的程度
-- @boundary 包含边界条件和错误处理策略
 - 不要添加代码实现，只输出注释
-- 如果需求涉及多个函数，为每个函数生成独立的注释块`;
+- 不要添加代码块标记（\`\`\`）或解释性文字
+- 输出必须是纯 CDD 注释文本
+- 宁可回溯要求用户补充，也不可自行猜测`;
 exports.REVIEWER_PROMPT = `# 审查函数
 
 ## 工具：review
@@ -30161,6 +30202,215 @@ exports.TRANSLATOR_PROMPT = `# 转译函数
 - Python/Ruby/Shell: \`#\`
 - SQL: \`--\`
 - HTML/XML: \`<!--\` 和 \`-->\``;
+exports.WORKFLOW_README_PROMPT = `# CDD 流程式 Agent 设计
+
+本目录包含 CDD 框架的流程式 agent 设计，用于指导项目从需求分析到界面设计的完整流程。
+
+## 设计理念
+
+借鉴 [skills-main](https://github.com/anthropics/skills) 项目的最佳实践：
+- **渐进式披露**：主 SKILL.md 保持简洁，详细内容拆分到独立文件
+- **简洁明确**：删除冗长的示例代码，用清晰的步骤和原则代替
+- **阶段化流程**：每个阶段有明确的目标和检查点
+- **术语一致性**：使用统一的术语表（GLOSSARY.md）
+
+## 核心术语
+
+参见 [GLOSSARY.md](GLOSSARY.md) 了解所有术语定义，包括：
+- **@intent**、**@contract**、**@step**、**@boundary**、**@end**、**@entity**
+- **Model 层**、**ViewModel 层**、**View 层**、**Chat 层**
+- **需求结构化**、**架构设计**、**Model 设计**、**ViewModel 设计**、**View 设计**
+
+## 流程阶段
+
+### 阶段 1：需求结构化
+**命令**：\`/structure\`
+
+**目录**：[structure/](structure/)
+
+**目标**：收集业务需求，输出结构化需求文档
+
+**输出**：\`.cdd/01-requirements.md\`
+
+**触发条件**：用户想要开始新项目设计、明确需求
+
+### 阶段 2：架构设计
+**命令**：\`/architecture\`
+
+**目录**：[architecture/](architecture/)
+
+**目标**：确定技术栈、架构模式、模块划分
+
+**输入**：\`.cdd/01-requirements.md\`
+
+**输出**：\`.cdd/02-architecture.md\`
+
+**触发条件**：用户完成需求结构化后想要设计架构
+
+### 阶段 3：Model 设计
+**命令**：\`/model-design\`
+
+**目录**：[model-design/](model-design/)
+
+**目标**：设计数据实体、仓库、服务，并生成 Model 层代码
+
+**输入**：\`.cdd/01-requirements.md\`、\`.cdd/02-architecture.md\`
+
+**输出**：
+- \`.cdd/03-model-design.md\`（设计文档）
+- \`src/model/entities/\`（实体代码）
+- \`src/model/repositories/\`（仓库代码）
+- \`src/model/services/\`（服务代码）
+
+**特点**：唯一会生成实际代码的阶段
+
+**触发条件**：用户完成架构设计后想要设计数据模型
+
+### 阶段 4：ViewModel 设计
+**命令**：\`/viewmodel-design\`
+
+**目录**：[viewmodel-design/](viewmodel-design/)
+
+**目标**：设计命令、上下文、角色，生成文件骨架
+
+**输入**：\`.cdd/01-requirements.md\`、\`.cdd/02-architecture.md\`、\`.cdd/03-model-design.md\`
+
+**输出**：
+- \`.cdd/04-viewmodel-design.md\`（设计文档）
+- \`src/viewmodel/commands/\`（命令骨架）
+- \`src/viewmodel/context/\`（上下文骨架）
+- \`src/viewmodel/roles/\`（角色骨架）
+
+**特点**：生成文件骨架（@intent + import + @contract/@step/@boundary + 函数签名）
+
+**触发条件**：用户完成 Model 设计后想要设计 ViewModel
+
+### 阶段 5：View 设计
+**命令**：\`/view-design\`
+
+**目录**：[view-design/](view-design/)
+
+**目标**：设计界面、交互、组件，生成文件骨架
+
+**输入**：\`.cdd/01-requirements.md\`、\`.cdd/02-architecture.md\`、\`.cdd/03-model-design.md\`、\`.cdd/04-viewmodel-design.md\`
+
+**输出**：
+- \`.cdd/05-view-chat-design.md\`（设计文档）
+- \`src/view/pages/\`（页面骨架）
+- \`src/view/components/\`（组件骨架）
+- \`src/chat/handlers/\`（Chat 处理器骨架）
+
+**特点**：生成文件骨架（@intent + import + 组件结构）
+
+**触发条件**：用户完成 ViewModel 设计后想要设计界面
+
+## 使用方式
+
+### 1. 顺序执行（推荐）
+按照阶段顺序执行，每个阶段完成后用户确认才进入下一阶段：
+
+\`\`\`
+/structure → /architecture → /model-design → /viewmodel-design → /view-design
+\`\`\`
+
+**示例**：
+\`\`\`
+@cdd /structure 我想做一个记账软件
+@cdd /architecture 继续架构设计
+@cdd /model-design 继续 Model 设计
+@cdd /viewmodel-design 继续 ViewModel 设计
+@cdd /view-design 继续 View 设计
+\`\`\`
+
+### 2. 跳跃执行
+用户可以从任意阶段开始，但需要手动提供前置阶段的输出文档。
+
+**示例**：
+\`\`\`
+@cdd /model-design 直接开始 Model 设计（需要先有 01-requirements.md 和 02-architecture.md）
+\`\`\`
+
+### 3. 回退修改
+允许回退到前面的阶段重新设计，后续阶段需要重新生成。
+
+**示例**：
+\`\`\`
+@cdd /architecture 重新设计架构（会影响后续的 Model、ViewModel、View 设计）
+\`\`\`
+
+## 设计原则
+
+### 单向依赖
+\`\`\`
+View → ViewModel → Model
+\`\`\`
+表现层只能依赖模块层，模块层只能依赖模型层。
+
+### 职责分明
+- **Model**：数据和业务逻辑
+- **ViewModel**：状态管理和命令处理
+- **View/Chat**：用户界面和交互
+
+### 渐进式设计
+每个阶段完成后，用户确认才进入下一阶段。
+
+### 弱依赖
+每个阶段可以独立执行，但需要明确标注前置依赖。
+
+## 文件组织
+
+### 设计文档
+\`\`\`
+.cdd/
+├── 01-requirements.md          # 需求文档
+├── 02-architecture.md          # 架构设计
+├── 03-model-design.md          # Model 设计
+├── 04-viewmodel-design.md      # ViewModel 设计
+└── 05-view-chat-design.md      # View/Chat 设计
+\`\`\`
+
+### 代码结构
+\`\`\`
+src/
+├── model/                      # Model 层
+│   ├── entities/              # 数据实体
+│   ├── repositories/          # 数据仓库
+│   └── services/              # 业务服务
+├── viewmodel/                 # ViewModel 层
+│   ├── commands/              # 命令处理器
+│   ├── context/               # 上下文管理器
+│   └── roles/                 # 角色/功能模块
+├── view/                      # View 层
+│   ├── pages/                 # 页面组件
+│   └── components/            # 可复用组件
+└── chat/                      # Chat 层
+    └── handlers/              # 消息处理器
+\`\`\`
+
+## 与原有 prompt 的区别
+
+### 旧设计（角色式）
+- 单个大文件，包含所有阶段
+- 冗长的示例代码
+- 一次性输出完整文档
+
+### 新设计（流程式）
+- 每个阶段独立目录
+- 简洁的步骤和原则
+- 阶段性输出，用户确认后继续
+- 借鉴 skills-main 的渐进式披露
+
+## 工具支持
+
+- **IntentExtractor**：提取 @intent 注释
+- **ImportExtractor**：提取 import 语句，构建依赖关系
+- **DependencyTracker**：追踪模块依赖
+- **CommentParser**：解析 @contract、@step、@boundary
+
+## 参考资料
+
+- [GLOSSARY.md](GLOSSARY.md) - 术语表
+- [skills-main](https://github.com/anthropics/skills) - 参考项目`;
 
 
 /***/ }),
@@ -37212,7 +37462,7 @@ exports.PlannerVM = PlannerVM;
 
 "use strict";
 
-// @intent: 提供产品经理对话命令，引导用户使用聊天框
+// @intent: 提供流程式开发助手命令，引导用户使用 5 个设计阶段
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -37250,25 +37500,45 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.execute = execute;
 exports.clearSession = clearSession;
 const vscode = __importStar(__webpack_require__(1));
-const ProductManagerContextManager_1 = __webpack_require__(279);
+const DevelopmentAssistantContextManager_1 = __webpack_require__(279);
 // @contract: execute() => Promise<void>
-// @step: [显示提示] 提示用户在聊天框中使用产品经理
-// @step: [提供示例] 显示使用示例
+// @step: [显示阶段选择] 显示 5 个设计阶段供用户选择
+// @step: [提供说明] 显示每个阶段的说明和使用方式
 async function execute() {
-    const message = `💼 产品经理对话
+    const message = `🚀 CDD 流程式开发助手
 
-请在 **聊天面板** 中使用产品经理功能：
+请在 **聊天面板** 中使用流程式开发助手：
 
-1. 打开聊天面板（Ctrl+Alt+I 或点击侧边栏聊天图标）
-2. 输入：@cdd /pm 你的需求
+**5 个设计阶段**：
+1️⃣ 需求结构化 - 收集业务需求并结构化
+2️⃣ 架构设计 - 确定技术栈和模块划分
+3️⃣ Model 设计 - 设计数据模型并生成代码
+4️⃣ ViewModel 设计 - 设计业务逻辑并生成骨架
+5️⃣ View 设计 - 设计界面并生成骨架
 
-示例：
-  @cdd /pm 我想做一个记账软件
+**使用方式**：
+1. 打开聊天面板（Ctrl+Alt+I）
+2. 输入：@cdd /structure 开始需求结构化
+3. 完成后依次进入下一阶段
 
-产品经理会通过多轮对话帮你将模糊需求转化为清晰的需求文档。`;
-    const action = await vscode.window.showInformationMessage(message, '打开聊天面板', '清除会话');
+**示例**：
+  @cdd /structure 我想做一个记账软件
+  @cdd /architecture 继续架构设计
+  @cdd /model-design 继续 Model 设计
+  @cdd /viewmodel-design 继续 ViewModel 设计
+  @cdd /view-design 继续 View 设计
+
+详细说明请查看：_source/prompts/WORKFLOW-README.md`;
+    const action = await vscode.window.showInformationMessage(message, '打开聊天面板', '查看文档', '清除会话');
     if (action === '打开聊天面板') {
         vscode.commands.executeCommand('workbench.panel.chat.view.copilot.focus');
+    }
+    else if (action === '查看文档') {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (workspaceFolders && workspaceFolders.length > 0) {
+            const docPath = vscode.Uri.joinPath(workspaceFolders[0].uri, '_source', 'prompts', 'WORKFLOW-README.md');
+            vscode.commands.executeCommand('markdown.showPreview', docPath);
+        }
     }
     else if (action === '清除会话') {
         await clearSession();
@@ -37277,7 +37547,7 @@ async function execute() {
 // @end
 // @contract: clearSession() => Promise<void>
 // @step: [获取工作区] 获取当前工作区根路径
-// @step: [清除会话] 调用 ProductManagerContextManager.clearSession
+// @step: [清除会话] 调用 DevelopmentAssistantContextManager.clearSession
 // @step: [显示消息] 显示清除成功消息
 // @boundary: 当工作区为空时，提示用户打开工作区
 async function clearSession() {
@@ -37288,8 +37558,8 @@ async function clearSession() {
             return;
         }
         const workspaceRoot = workspaceFolders[0].uri.fsPath;
-        await ProductManagerContextManager_1.ProductManagerContextManager.clearSession(workspaceRoot);
-        vscode.window.showInformationMessage('产品经理会话已清除');
+        await DevelopmentAssistantContextManager_1.DevelopmentAssistantContextManager.clearSession(workspaceRoot);
+        vscode.window.showInformationMessage('开发助手会话已清除');
     }
     catch (error) {
         vscode.window.showErrorMessage(`清除会话失败: ${error.message}`);
@@ -37304,7 +37574,7 @@ async function clearSession() {
 
 "use strict";
 
-// @intent: 管理产品经理 Agent 的对话上下文，持久化对话历史
+// @intent: 管理开发助手 Agent 的对话上下文，持久化对话历史
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -37339,11 +37609,11 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ProductManagerContextManager = void 0;
+exports.DevelopmentAssistantContextManager = void 0;
 const fs = __importStar(__webpack_require__(15));
 const path = __importStar(__webpack_require__(10));
-class ProductManagerContextManager {
-    // @contract: saveSession(session: ProductManagerSession) => Promise<void>
+class DevelopmentAssistantContextManager {
+    // @contract: saveSession(session: DevelopmentAssistantSession) => Promise<void>
     // @step: [构建路径] 构建会话文件路径
     // @step: [确保目录] 确保 .cdd 目录存在
     // @step: [序列化] 将会话对象序列化为 JSON
@@ -37361,7 +37631,7 @@ class ProductManagerContextManager {
         await fs.promises.writeFile(sessionPath, content, 'utf-8');
     }
     // @end
-    // @contract: loadSession(workspaceRoot: string) => Promise<ProductManagerSession | null>
+    // @contract: loadSession(workspaceRoot: string) => Promise<DevelopmentAssistantSession | null>
     // @step: [构建路径] 构建会话文件路径
     // @step: [检查存在] 检查文件是否存在
     // @step: [读取文件] 读取会话文件
@@ -37386,7 +37656,7 @@ class ProductManagerContextManager {
         }
     }
     // @end
-    // @contract: createSession(workspaceRoot: string) => ProductManagerSession
+    // @contract: createSession(workspaceRoot: string) => DevelopmentAssistantSession
     // @step: [生成 ID] 生成唯一的会话 ID
     // @step: [初始化] 初始化会话对象
     // @step: [返回] 返回新会话
@@ -37404,7 +37674,7 @@ class ProductManagerContextManager {
         };
     }
     // @end
-    // @contract: addTurn(session: ProductManagerSession, role: 'user' | 'assistant', content: string) => void
+    // @contract: addTurn(session: DevelopmentAssistantSession, role: 'user' | 'assistant', content: string) => void
     // @step: [创建轮次] 创建新的对话轮次
     // @step: [添加到历史] 添加到对话历史
     // @step: [更新时间] 更新会话时间戳
@@ -37418,7 +37688,7 @@ class ProductManagerContextManager {
         session.updatedAt = Date.now();
     }
     // @end
-    // @contract: updatePhase(session: ProductManagerSession, phase: ProductManagerPhase) => void
+    // @contract: updatePhase(session: DevelopmentAssistantSession, phase: DevelopmentAssistantPhase) => void
     // @step: [更新阶段] 更新当前阶段
     // @step: [更新时间] 更新会话时间戳
     static updatePhase(session, phase) {
@@ -37441,7 +37711,7 @@ class ProductManagerContextManager {
     }
     // @end
     // @contract: getSessionPath(workspaceRoot: string) => string
-    // @step: [构建路径] 构建 .cdd/product-manager-session.json 路径
+    // @step: [构建路径] 构建 .cdd/development-assistant-session.json 路径
     // @step: [返回] 返回路径
     static getSessionPath(workspaceRoot) {
         return path.join(workspaceRoot, this.CONTEXT_DIR, this.SESSION_FILE);
@@ -37453,10 +37723,10 @@ class ProductManagerContextManager {
     static generateSessionId() {
         const timestamp = Date.now().toString(36);
         const random = Math.random().toString(36).substring(2, 9);
-        return `pm-${timestamp}-${random}`;
+        return `da-${timestamp}-${random}`;
     }
     // @end
-    // @contract: getConversationSummary(session: ProductManagerSession) => string
+    // @contract: getConversationSummary(session: DevelopmentAssistantSession) => string
     // @step: [统计] 统计对话轮次
     // @step: [格式化] 格式化会话摘要
     // @step: [返回] 返回摘要字符串
@@ -37472,7 +37742,7 @@ class ProductManagerContextManager {
 - 更新时间: ${new Date(session.updatedAt).toLocaleString()}`;
     }
     // @end
-    // @contract: getPhaseLabel(phase: ProductManagerPhase) => string
+    // @contract: getPhaseLabel(phase: DevelopmentAssistantPhase) => string
     // @step: [映射] 将阶段代码映射为中文标签
     // @step: [返回] 返回标签
     static getPhaseLabel(phase) {
@@ -37487,13 +37757,368 @@ class ProductManagerContextManager {
         return labels[phase] || phase;
     }
 }
-exports.ProductManagerContextManager = ProductManagerContextManager;
-ProductManagerContextManager.CONTEXT_DIR = '.cdd';
-ProductManagerContextManager.SESSION_FILE = 'product-manager-session.json';
+exports.DevelopmentAssistantContextManager = DevelopmentAssistantContextManager;
+DevelopmentAssistantContextManager.CONTEXT_DIR = '.cdd';
+DevelopmentAssistantContextManager.SESSION_FILE = 'development-assistant-session.json';
 
 
 /***/ }),
 /* 280 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.execute = execute;
+const vscode = __importStar(__webpack_require__(1));
+const RequirementTranslatorVM_1 = __webpack_require__(281);
+const ClaudeAPIService_1 = __webpack_require__(17);
+const RequirementTranslatorContextManager_1 = __webpack_require__(282);
+// @intent: 处理需求转译命令，将用户选中的自然语言需求转译为 CDD 格式的注释
+// @contract: execute() => Promise<void>
+// @step: [获取选区] 获取当前编辑器选中的文本作为需求描述
+// @step: [读取配置] 读取 apiKey、apiBaseUrl、modelId 配置
+// @step: [准备上下文] 调用 RequirementTranslatorContextManager.prepare
+// @step: [转译] 调用 RequirementTranslatorVM.execute
+// @step: [处理结果] 如果成功，将生成的 CDD 注释插入到选中文本的上方；如果失败，显示错误信息
+// @boundary: 当未选中文本时，提示"请选中需求描述文本"
+// @boundary: 当 API 返回 <<BACKTRACK>> 时，显示回溯原因并要求用户补充信息
+// @boundary: 当未打开工作区时，提示"请先打开工作区"
+async function execute() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+        vscode.window.showErrorMessage('未打开编辑器');
+        return;
+    }
+    const selection = editor.selection;
+    if (selection.isEmpty) {
+        vscode.window.showErrorMessage('请选中需求描述文本');
+        return;
+    }
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!workspaceRoot) {
+        vscode.window.showErrorMessage('请先打开工作区');
+        return;
+    }
+    // 获取选中的文本作为需求描述
+    const intent = editor.document.getText(selection);
+    const apiKey = vscode.workspace.getConfiguration('cdd').get('apiKey') || '';
+    if (!apiKey) {
+        vscode.window.showErrorMessage('请先配置 API Key');
+        return;
+    }
+    const apiBaseUrl = vscode.workspace.getConfiguration('cdd').get('apiBaseUrl') || undefined;
+    const modelId = vscode.workspace.getConfiguration('cdd').get('modelId') || undefined;
+    // 准备上下文
+    const context = await RequirementTranslatorContextManager_1.RequirementTranslatorContextManager.prepare(intent, workspaceRoot, apiKey, apiBaseUrl, modelId);
+    const apiService = new ClaudeAPIService_1.ClaudeAPIService();
+    const translatorVM = new RequirementTranslatorVM_1.RequirementTranslatorVM(apiService);
+    const result = await vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: '正在转译需求为 CDD 注释...',
+        cancellable: false
+    }, async () => {
+        return await translatorVM.execute(context);
+    });
+    if (!result.success) {
+        vscode.window.showErrorMessage(`转译失败：${result.message}`);
+        return;
+    }
+    const commentText = result.artifacts;
+    const insertPosition = selection.start;
+    await editor.edit(editBuilder => {
+        editBuilder.insert(insertPosition, commentText + '\n\n');
+    });
+    vscode.window.showInformationMessage('CDD 注释已生成，请审查后使用编译命令生成代码');
+}
+// @end
+
+
+/***/ }),
+/* 281 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RequirementTranslatorVM = void 0;
+const BaseRole_1 = __webpack_require__(5);
+// @contract: RequirementTranslatorVM
+// 需求转译器 ViewModel
+class RequirementTranslatorVM extends BaseRole_1.BaseRole {
+    constructor(apiService) {
+        super(apiService);
+    }
+    // @contract: execute(context: RequirementTranslateContext) => Promise<RoleResult>
+    // @step: [构建消息] 构建包含 @intent 和 dependencies 的用户消息
+    // @step: [调用 API] 调用 Claude API 进行转译
+    // @step: [检查回溯] 检查响应是否包含 <<BACKTRACK>>
+    // @step: [返回结果] 如果成功，返回 CDD 注释；如果回溯，返回失败和原因
+    // @boundary: 当 API 调用失败时，返回 success: false 和 APIError
+    // @boundary: 当响应包含 <<BACKTRACK>> 时，返回 success: false 和回溯原因
+    async execute(context) {
+        try {
+            // 构建用户消息
+            const userMessage = this.buildUserMessage(context.intent, context.dependencies);
+            const request = {
+                role: 'requirement-translator',
+                userMessage: userMessage
+            };
+            const response = await this.apiService.callAPI(request, context.apiKey);
+            // 检查是否需要回溯
+            if (response.content.includes('<<BACKTRACK>>')) {
+                const backtrackReason = this.extractBacktrackReason(response.content);
+                return {
+                    success: false,
+                    message: `需求信息不足：${backtrackReason}`,
+                    artifacts: null
+                };
+            }
+            return {
+                success: true,
+                message: '需求转译成功',
+                artifacts: response.content
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                message: error.message,
+                artifacts: error
+            };
+        }
+    }
+    // @end
+    // @contract: buildUserMessage(intent: string, dependencies: DependencyInfo) => string
+    // @step: [添加 @intent] 添加用户的自然语言需求
+    // @step: [添加 dependencies] 格式化并添加依赖信息
+    // @step: [返回] 返回完整的用户消息
+    buildUserMessage(intent, dependencies) {
+        let message = '';
+        // 添加 @intent
+        message += `@intent:\n${intent}\n\n`;
+        // 添加 dependencies
+        message += `dependencies:\n`;
+        message += `  fileNames: [${dependencies.fileNames.join(', ')}]\n`;
+        // 添加 intents
+        if (dependencies.intents.size > 0) {
+            message += `  intents:\n`;
+            for (const [fileName, intent] of dependencies.intents.entries()) {
+                message += `    - ${fileName}: ${intent}\n`;
+            }
+        }
+        // 添加 typeDefinitions（如果有）
+        if (dependencies.typeDefinitions && dependencies.typeDefinitions.size > 0) {
+            message += `  typeDefinitions:\n`;
+            for (const [typeName, typeDef] of dependencies.typeDefinitions.entries()) {
+                message += `    - ${typeName}: ${typeDef}\n`;
+            }
+        }
+        // 添加 functionSignatures（如果有）
+        if (dependencies.functionSignatures && dependencies.functionSignatures.size > 0) {
+            message += `  functionSignatures:\n`;
+            for (const [funcName, funcSig] of dependencies.functionSignatures.entries()) {
+                message += `    - ${funcName}: ${funcSig}\n`;
+            }
+        }
+        return message.trim();
+    }
+    // @end
+    // @contract: extractBacktrackReason(response: string) => string
+    // @step: [正则匹配] 使用正则提取 <<BACKTRACK>> 后的原因
+    // @step: [返回] 返回原因字符串
+    // @boundary: 当无法提取原因时，返回完整响应
+    extractBacktrackReason(response) {
+        const match = response.match(/<<BACKTRACK>>\s*(.+)/);
+        if (match) {
+            return match[1].trim();
+        }
+        return response;
+    }
+}
+exports.RequirementTranslatorVM = RequirementTranslatorVM;
+
+
+/***/ }),
+/* 282 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RequirementTranslatorContextManager = void 0;
+const IntentExtractor_1 = __webpack_require__(275);
+const path = __importStar(__webpack_require__(10));
+const fs = __importStar(__webpack_require__(9));
+// @contract: RequirementTranslatorContextManager.prepare(intent: string, workspaceRoot: string, apiKey: string, apiBaseUrl?: string, modelId?: string) => Promise<RequirementTranslatorContext>
+// @step: [提取依赖] 调用 extractDependencies 提取项目依赖信息
+// @step: [构建上下文] 构建 RequirementTranslatorContext 对象
+// @step: [返回] 返回上下文
+// @boundary: 当提取依赖失败时，返回空的依赖信息
+class RequirementTranslatorContextManager {
+    static async prepare(intent, workspaceRoot, apiKey, apiBaseUrl, modelId) {
+        // 提取依赖信息
+        const dependencies = await this.extractDependencies(workspaceRoot);
+        // 构建上下文
+        const context = {
+            intent,
+            dependencies,
+            apiKey,
+            apiBaseUrl,
+            modelId
+        };
+        return context;
+    }
+    // @end
+    // @contract: extractDependencies(workspaceRoot: string) => Promise<DependencyInfo>
+    // @step: [扫描文件] 递归扫描 src 目录下的所有 .ts 文件
+    // @step: [提取 @intent] 对每个文件调用 extractIntentFromFile
+    // @step: [构建依赖信息] 构建 DependencyInfo 对象
+    // @step: [返回] 返回依赖信息
+    // @boundary: 当扫描失败时，返回空的依赖信息
+    // @boundary: 当文件读取失败时，跳过该文件
+    static async extractDependencies(workspaceRoot) {
+        const fileNames = [];
+        const intents = new Map();
+        try {
+            // 扫描 src 目录
+            const srcDir = path.join(workspaceRoot, 'src');
+            const files = await this.scanDirectory(srcDir, ['.ts', '.tsx']);
+            // 提取每个文件的 @intent
+            for (const filePath of files) {
+                try {
+                    const intentResult = await (0, IntentExtractor_1.extractIntentFromFile)(filePath);
+                    const fileName = path.basename(filePath, path.extname(filePath));
+                    fileNames.push(fileName);
+                    if (intentResult.found) {
+                        intents.set(fileName, intentResult.intent);
+                    }
+                }
+                catch (error) {
+                    // 跳过无法读取的文件
+                    console.warn(`[RequirementTranslatorContextManager] 无法提取文件 ${filePath} 的 @intent:`, error);
+                }
+            }
+        }
+        catch (error) {
+            console.error('[RequirementTranslatorContextManager] 提取依赖失败:', error);
+        }
+        return {
+            fileNames,
+            intents,
+            typeDefinitions: new Map(), // 暂时为空，后续集成 LSP 后填充
+            functionSignatures: new Map() // 暂时为空，后续集成 LSP 后填充
+        };
+    }
+    // @end
+    // @contract: scanDirectory(dir: string, extensions: string[]) => Promise<string[]>
+    // @step: [读取目录] 读取目录下的所有文件和子目录
+    // @step: [过滤文件] 过滤出指定扩展名的文件
+    // @step: [递归扫描] 递归扫描子目录
+    // @step: [返回] 返回所有文件路径
+    // @boundary: 当目录不存在时，返回空数组
+    // @boundary: 当读取失败时，返回空数组
+    static async scanDirectory(dir, extensions) {
+        const files = [];
+        try {
+            const entries = await fs.readdir(dir, { withFileTypes: true });
+            for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    // 跳过 node_modules 和 .git 等目录
+                    if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist') {
+                        continue;
+                    }
+                    // 递归扫描子目录
+                    const subFiles = await this.scanDirectory(fullPath, extensions);
+                    files.push(...subFiles);
+                }
+                else if (entry.isFile()) {
+                    // 检查文件扩展名
+                    const ext = path.extname(entry.name).toLowerCase();
+                    if (extensions.includes(ext)) {
+                        files.push(fullPath);
+                    }
+                }
+            }
+        }
+        catch (error) {
+            console.error(`[RequirementTranslatorContextManager] 扫描目录 ${dir} 失败:`, error);
+        }
+        return files;
+    }
+}
+exports.RequirementTranslatorContextManager = RequirementTranslatorContextManager;
+
+
+/***/ }),
+/* 283 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -37537,8 +38162,8 @@ exports.handleCDDChat = handleCDDChat;
 const vscode = __importStar(__webpack_require__(1));
 const PlannerVM_1 = __webpack_require__(277);
 const TranslatorVM_1 = __webpack_require__(270);
-const ProductManagerVM_1 = __webpack_require__(281);
-const ProductManagerContextManager_1 = __webpack_require__(279);
+const DevelopmentAssistantVM_1 = __webpack_require__(284);
+const DevelopmentAssistantContextManager_1 = __webpack_require__(279);
 const ClaudeAPIService_1 = __webpack_require__(17);
 // @contract: handleCDDChat(request: vscode.ChatRequest, context: vscode.ChatContext, stream: vscode.ChatResponseStream, token: vscode.CancellationToken) => Promise<vscode.ChatResult>
 // @step: [解析命令] 从 request.command 获取子命令
@@ -37554,9 +38179,10 @@ async function handleCDDChat(request, context, stream, token) {
                 return await handlePlan(prompt, stream, token);
             case 'translate':
                 return await handleTranslate(prompt, stream, token);
-            case 'pm':
-            case 'product-manager':
-                return await handleProductManager(prompt, stream, context, token);
+            case 'da':
+            case 'dev-assistant':
+            case 'development-assistant':
+                return await handleDevelopmentAssistant(prompt, stream, context, token);
             default:
                 return await handleGeneral(prompt, stream, token);
         }
@@ -37611,57 +38237,57 @@ async function handleTranslate(prompt, stream, token) {
     });
     return { metadata: { command: 'translate' } };
 }
-// @contract: handleProductManager(prompt: string, stream: vscode.ChatResponseStream, context: vscode.ChatContext, token: vscode.CancellationToken) => Promise<vscode.ChatResult>
+// @contract: handleDevelopmentAssistant(prompt: string, stream: vscode.ChatResponseStream, context: vscode.ChatContext, token: vscode.CancellationToken) => Promise<vscode.ChatResult>
 // @step: [获取工作区] 获取当前工作区路径
-// @step: [加载会话] 加载或创建产品经理会话
-// @step: [调用产品经理] 调用 ProductManagerVM 处理对话
+// @step: [加载会话] 加载或创建开发助手会话
+// @step: [调用开发助手] 调用 DevelopmentAssistantVM 处理对话
 // @step: [输出响应] 将响应输出到 stream
 // @step: [保存会话] 保存会话状态
 // @step: [检查完成] 如果完成，显示文档路径
 // @boundary: 当工作区为空时，提示用户打开工作区
 // @boundary: 当 API 调用失败时，显示错误信息
-async function handleProductManager(prompt, stream, context, token) {
-    stream.markdown('💼 产品经理正在思考...\n\n');
+async function handleDevelopmentAssistant(prompt, stream, context, token) {
+    stream.markdown('💼 开发助手正在思考...\n\n');
     // 获取工作区路径
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
         stream.markdown('❌ 请先打开一个工作区\n');
-        return { metadata: { command: 'product-manager' } };
+        return { metadata: { command: 'development-assistant' } };
     }
     const workspaceRoot = workspaceFolders[0].uri.fsPath;
     try {
         // 加载或创建会话
-        let session = await ProductManagerContextManager_1.ProductManagerContextManager.loadSession(workspaceRoot);
+        let session = await DevelopmentAssistantContextManager_1.DevelopmentAssistantContextManager.loadSession(workspaceRoot);
         if (!session) {
-            session = ProductManagerContextManager_1.ProductManagerContextManager.createSession(workspaceRoot);
-            stream.markdown('👋 你好！我是产品经理。我会通过对话帮你将模糊的需求转化为清晰的需求文档。\n\n');
+            session = DevelopmentAssistantContextManager_1.DevelopmentAssistantContextManager.createSession(workspaceRoot);
+            stream.markdown('👋 你好！我是开发助手。我会通过对话帮你将模糊的需求转化为清晰的需求文档。\n\n');
         }
         // 添加用户消息到会话
-        ProductManagerContextManager_1.ProductManagerContextManager.addTurn(session, 'user', prompt);
-        // 调用产品经理 VM
+        DevelopmentAssistantContextManager_1.DevelopmentAssistantContextManager.addTurn(session, 'user', prompt);
+        // 调用开发助手 VM
         const apiService = new ClaudeAPIService_1.ClaudeAPIService();
-        const vm = new ProductManagerVM_1.ProductManagerVM(apiService);
-        const pmContext = {
+        const vm = new DevelopmentAssistantVM_1.DevelopmentAssistantVM(apiService);
+        const daContext = {
             workspaceRoot,
             userMessage: prompt,
             conversationHistory: session.conversationHistory
         };
-        const result = await vm.execute(pmContext);
+        const result = await vm.execute(daContext);
         if (!result.success) {
-            stream.markdown(`❌ 产品经理响应失败: ${result.message}\n`);
-            return { metadata: { command: 'product-manager' } };
+            stream.markdown(`❌ 开发助手响应失败: ${result.message}\n`);
+            return { metadata: { command: 'development-assistant' } };
         }
         // 提取响应
         const response = result.artifacts.response || result.artifacts.content;
         const phase = result.artifacts.phase;
         // 添加 AI 响应到会话
-        ProductManagerContextManager_1.ProductManagerContextManager.addTurn(session, 'assistant', response);
+        DevelopmentAssistantContextManager_1.DevelopmentAssistantContextManager.addTurn(session, 'assistant', response);
         // 更新阶段
         if (phase) {
-            ProductManagerContextManager_1.ProductManagerContextManager.updatePhase(session, phase);
+            DevelopmentAssistantContextManager_1.DevelopmentAssistantContextManager.updatePhase(session, phase);
         }
         // 保存会话
-        await ProductManagerContextManager_1.ProductManagerContextManager.saveSession(session);
+        await DevelopmentAssistantContextManager_1.DevelopmentAssistantContextManager.saveSession(session);
         // 输出响应
         stream.markdown(response);
         stream.markdown('\n\n');
@@ -37680,18 +38306,18 @@ async function handleProductManager(prompt, stream, context, token) {
                 arguments: [vscode.Uri.file(docPath)]
             });
             stream.button({
-                command: 'cdd.clearProductManagerSession',
+                command: 'cdd.clearDevelopmentAssistantSession',
                 title: '清除会话'
             });
         }
         else {
-            stream.markdown('💬 继续对话，或使用 `/pm clear` 清除会话\n');
+            stream.markdown('💬 继续对话，或使用 `/da clear` 清除会话\n');
         }
-        return { metadata: { command: 'product-manager', phase } };
+        return { metadata: { command: 'development-assistant', phase } };
     }
     catch (error) {
         stream.markdown(`❌ 错误: ${error.message}\n`);
-        return { metadata: { command: 'product-manager' } };
+        return { metadata: { command: 'development-assistant' } };
     }
 }
 // @contract: getPhaseLabel(phase: string) => string
@@ -37716,19 +38342,19 @@ async function handleGeneral(prompt, stream, token) {
     stream.markdown('I can help you with:\n');
     stream.markdown('- `/plan` - Analyze project architecture\n');
     stream.markdown('- `/translate` - Translate requirements to CDD comments\n');
-    stream.markdown('- `/pm` - Product Manager conversation (collect requirements)\n\n');
+    stream.markdown('- `/da` - Development Assistant conversation (collect requirements)\n\n');
     stream.markdown('What would you like to do?\n');
     return { metadata: { command: 'general' } };
 }
 
 
 /***/ }),
-/* 281 */
+/* 284 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
-// @intent: 产品经理 Agent，通过多轮对话将模糊需求转化为结构化需求文档
+// @intent: 开发助手 Agent，通过多轮对话将模糊需求转化为结构化需求文档
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -37763,17 +38389,17 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ProductManagerVM = void 0;
+exports.DevelopmentAssistantVM = void 0;
 const BaseRole_1 = __webpack_require__(5);
 const fs = __importStar(__webpack_require__(15));
 const path = __importStar(__webpack_require__(10));
-class ProductManagerVM extends BaseRole_1.BaseRole {
+class DevelopmentAssistantVM extends BaseRole_1.BaseRole {
     constructor(apiService) {
         super(apiService);
         this.promptTemplate = '';
     }
-    // @contract: execute(context: ProductManagerContext) => Promise<RoleResult>
-    // @step: [加载提示词] 读取 product-manager.md 提示词模板
+    // @contract: execute(context: DevelopmentAssistantContext) => Promise<RoleResult>
+    // @step: [加载提示词] 读取 development-assistant.md 提示词模板
     // @step: [构建消息] 构建对话历史和当前用户消息
     // @step: [调用 API] 调用 Claude API 进行对话
     // @step: [解析响应] 解析 AI 响应，判断是否完成需求收集
@@ -37801,7 +38427,7 @@ class ProductManagerVM extends BaseRole_1.BaseRole {
             const config = await this.getAPIConfig();
             // 调用 API
             const apiResponse = await this.apiService.callAPI({
-                role: 'product-manager',
+                role: 'development-assistant',
                 userMessage: context.userMessage,
                 conversationHistory: messages
             }, config.apiKey, config.apiBaseUrl, config.modelId);
@@ -37856,23 +38482,23 @@ class ProductManagerVM extends BaseRole_1.BaseRole {
     }
     // @end
     // @contract: loadPromptTemplate(workspaceRoot: string) => Promise<string>
-    // @step: [构建路径] 构建 _source/prompts/product-manager.md 路径
+    // @step: [构建路径] 构建 _source/prompts/development-assistant.md 路径
     // @step: [读取文件] 读取提示词文件
     // @step: [返回内容] 返回文件内容
     // @boundary: 当文件不存在时，返回默认提示词
     async loadPromptTemplate(workspaceRoot) {
-        const promptPath = path.join(workspaceRoot, '_source', 'prompts', 'product-manager.md');
+        const promptPath = path.join(workspaceRoot, '_source', 'prompts', 'development-assistant.md');
         try {
             const content = await fs.promises.readFile(promptPath, 'utf-8');
             return content;
         }
         catch (error) {
-            console.warn('[ProductManagerVM] 提示词文件不存在，使用默认提示词');
+            console.warn('[DevelopmentAssistantVM] 提示词文件不存在，使用默认提示词');
             return this.getDefaultPrompt();
         }
     }
     // @end
-    // @contract: buildMessages(context: ProductManagerContext) => any[]
+    // @contract: buildMessages(context: DevelopmentAssistantContext) => any[]
     // @step: [添加系统消息] 将提示词模板作为系统消息
     // @step: [添加历史] 添加对话历史
     // @step: [添加当前消息] 添加当前用户消息
@@ -37906,11 +38532,11 @@ class ProductManagerVM extends BaseRole_1.BaseRole {
     // @step: [返回] 返回是否完成
     checkIfComplete(response) {
         // 检查是否包含完成标记
-        return response.includes('✅ 产品经理完成') ||
+        return response.includes('✅ 开发助手完成') ||
             response.includes('# 需求文档：');
     }
     // @end
-    // @contract: detectPhase(response: string) => ProductManagerPhase
+    // @contract: detectPhase(response: string) => DevelopmentAssistantPhase
     // @step: [关键词匹配] 根据响应内容中的关键词判断当前阶段
     // @step: [返回阶段] 返回当前阶段
     detectPhase(response) {
@@ -37950,9 +38576,9 @@ class ProductManagerVM extends BaseRole_1.BaseRole {
     }
     // @end
     // @contract: getDefaultPrompt() => string
-    // @step: [返回] 返回默认的产品经理提示词
+    // @step: [返回] 返回默认的开发助手提示词
     getDefaultPrompt() {
-        return `你是产品经理。你的职责是通过对话将用户的模糊需求转化为清晰、无歧义的需求文档。
+        return `你是开发助手。你的职责是通过对话将用户的模糊需求转化为清晰、无歧义的需求文档。
 
 ## 你的工作流程
 
@@ -37983,10 +38609,10 @@ class ProductManagerVM extends BaseRole_1.BaseRole {
 - 非功能需求
 - MVP 范围
 
-最后添加标记：✅ 产品经理完成。建议下一步：架构探讨者。`;
+最后添加标记：✅ 开发助手完成。建议下一步：架构探讨者。`;
     }
 }
-exports.ProductManagerVM = ProductManagerVM;
+exports.DevelopmentAssistantVM = DevelopmentAssistantVM;
 
 
 /***/ })

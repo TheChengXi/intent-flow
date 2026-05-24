@@ -1,11 +1,11 @@
 // @intent: 处理 CDD Chat Participant 的对话请求，路由到不同的功能模块
 
 import * as vscode from 'vscode';
-import { PlannerVM } from '../viewmodel/roles/PlannerVM';
-import { TranslatorVM } from '../viewmodel/roles/TranslatorVM';
-import { ProductManagerVM, ProductManagerContext } from '../viewmodel/roles/ProductManagerVM';
-import { ProductManagerContextManager } from '../viewmodel/context/ProductManagerContextManager';
-import { ClaudeAPIService } from '../model/services/ClaudeAPIService';
+import { PlannerVM } from '../application/roles/PlannerVM';
+import { TranslatorVM } from '../application/roles/TranslatorVM';
+import { DevelopmentAssistantVM, DevelopmentAssistantContext } from '../application/roles/DevelopmentAssistantVM';
+import { DevelopmentAssistantContextManager } from '../application/context/DevelopmentAssistantContextManager';
+import { ClaudeAPIService } from '../data/services/ClaudeAPIService';
 
 // @contract: handleCDDChat(request: vscode.ChatRequest, context: vscode.ChatContext, stream: vscode.ChatResponseStream, token: vscode.CancellationToken) => Promise<vscode.ChatResult>
 // @step: [解析命令] 从 request.command 获取子命令
@@ -30,9 +30,10 @@ export async function handleCDDChat(
       case 'translate':
         return await handleTranslate(prompt, stream, token);
 
-      case 'pm':
-      case 'product-manager':
-        return await handleProductManager(prompt, stream, context, token);
+      case 'da':
+      case 'dev-assistant':
+      case 'development-assistant':
+        return await handleDevelopmentAssistant(prompt, stream, context, token);
 
       default:
         return await handleGeneral(prompt, stream, token);
@@ -109,59 +110,59 @@ async function handleTranslate(
   return { metadata: { command: 'translate' } };
 }
 
-// @contract: handleProductManager(prompt: string, stream: vscode.ChatResponseStream, context: vscode.ChatContext, token: vscode.CancellationToken) => Promise<vscode.ChatResult>
+// @contract: handleDevelopmentAssistant(prompt: string, stream: vscode.ChatResponseStream, context: vscode.ChatContext, token: vscode.CancellationToken) => Promise<vscode.ChatResult>
 // @step: [获取工作区] 获取当前工作区路径
-// @step: [加载会话] 加载或创建产品经理会话
-// @step: [调用产品经理] 调用 ProductManagerVM 处理对话
+// @step: [加载会话] 加载或创建开发助手会话
+// @step: [调用开发助手] 调用 DevelopmentAssistantVM 处理对话
 // @step: [输出响应] 将响应输出到 stream
 // @step: [保存会话] 保存会话状态
 // @step: [检查完成] 如果完成，显示文档路径
 // @boundary: 当工作区为空时，提示用户打开工作区
 // @boundary: 当 API 调用失败时，显示错误信息
-async function handleProductManager(
+async function handleDevelopmentAssistant(
   prompt: string,
   stream: vscode.ChatResponseStream,
   context: vscode.ChatContext,
   token: vscode.CancellationToken
 ): Promise<vscode.ChatResult> {
 
-  stream.markdown('💼 产品经理正在思考...\n\n');
+  stream.markdown('💼 开发助手正在思考...\n\n');
 
   // 获取工作区路径
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders || workspaceFolders.length === 0) {
     stream.markdown('❌ 请先打开一个工作区\n');
-    return { metadata: { command: 'product-manager' } };
+    return { metadata: { command: 'development-assistant' } };
   }
 
   const workspaceRoot = workspaceFolders[0].uri.fsPath;
 
   try {
     // 加载或创建会话
-    let session = await ProductManagerContextManager.loadSession(workspaceRoot);
+    let session = await DevelopmentAssistantContextManager.loadSession(workspaceRoot);
     if (!session) {
-      session = ProductManagerContextManager.createSession(workspaceRoot);
-      stream.markdown('👋 你好！我是产品经理。我会通过对话帮你将模糊的需求转化为清晰的需求文档。\n\n');
+      session = DevelopmentAssistantContextManager.createSession(workspaceRoot);
+      stream.markdown('👋 你好！我是开发助手。我会通过对话帮你将模糊的需求转化为清晰的需求文档。\n\n');
     }
 
     // 添加用户消息到会话
-    ProductManagerContextManager.addTurn(session, 'user', prompt);
+    DevelopmentAssistantContextManager.addTurn(session, 'user', prompt);
 
-    // 调用产品经理 VM
+    // 调用开发助手 VM
     const apiService = new ClaudeAPIService();
-    const vm = new ProductManagerVM(apiService);
+    const vm = new DevelopmentAssistantVM(apiService);
 
-    const pmContext: ProductManagerContext = {
+    const daContext: DevelopmentAssistantContext = {
       workspaceRoot,
       userMessage: prompt,
       conversationHistory: session.conversationHistory
     };
 
-    const result = await vm.execute(pmContext);
+    const result = await vm.execute(daContext);
 
     if (!result.success) {
-      stream.markdown(`❌ 产品经理响应失败: ${result.message}\n`);
-      return { metadata: { command: 'product-manager' } };
+      stream.markdown(`❌ 开发助手响应失败: ${result.message}\n`);
+      return { metadata: { command: 'development-assistant' } };
     }
 
     // 提取响应
@@ -169,15 +170,15 @@ async function handleProductManager(
     const phase = result.artifacts.phase;
 
     // 添加 AI 响应到会话
-    ProductManagerContextManager.addTurn(session, 'assistant', response);
+    DevelopmentAssistantContextManager.addTurn(session, 'assistant', response);
 
     // 更新阶段
     if (phase) {
-      ProductManagerContextManager.updatePhase(session, phase);
+      DevelopmentAssistantContextManager.updatePhase(session, phase);
     }
 
     // 保存会话
-    await ProductManagerContextManager.saveSession(session);
+    await DevelopmentAssistantContextManager.saveSession(session);
 
     // 输出响应
     stream.markdown(response);
@@ -201,18 +202,18 @@ async function handleProductManager(
       });
 
       stream.button({
-        command: 'cdd.clearProductManagerSession',
+        command: 'cdd.clearDevelopmentAssistantSession',
         title: '清除会话'
       });
     } else {
-      stream.markdown('💬 继续对话，或使用 `/pm clear` 清除会话\n');
+      stream.markdown('💬 继续对话，或使用 `/da clear` 清除会话\n');
     }
 
-    return { metadata: { command: 'product-manager', phase } };
+    return { metadata: { command: 'development-assistant', phase } };
 
   } catch (error: any) {
     stream.markdown(`❌ 错误: ${error.message}\n`);
-    return { metadata: { command: 'product-manager' } };
+    return { metadata: { command: 'development-assistant' } };
   }
 }
 
@@ -245,7 +246,7 @@ async function handleGeneral(
   stream.markdown('I can help you with:\n');
   stream.markdown('- `/plan` - Analyze project architecture\n');
   stream.markdown('- `/translate` - Translate requirements to CDD comments\n');
-  stream.markdown('- `/pm` - Product Manager conversation (collect requirements)\n\n');
+  stream.markdown('- `/da` - Development Assistant conversation (collect requirements)\n\n');
   stream.markdown('What would you like to do?\n');
 
   return { metadata: { command: 'general' } };
