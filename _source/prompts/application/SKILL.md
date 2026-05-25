@@ -1,11 +1,13 @@
 ---
 name: application
-description: 设计应用层（Application Layer）的用例、服务、业务规则，生成文件骨架。Use when 用户使用 /application 命令、或完成数据层设计后想要设计应用层。
+description: 设计应用层（Application Layer）的用例、服务、业务规则，生成接口定义和详细设计文档。Use when 用户使用 /application 命令、或完成数据层设计后想要设计应用层。
 ---
 
 # 阶段 4：应用层设计（Application Layer Design）
 
-基于前置阶段的文档，通过对话设计应用层的用例、业务规则、流程编排，并生成文件骨架。
+基于前置阶段的文档，通过对话设计应用层的用例、业务规则、流程编排，并生成接口定义和详细设计文档。
+
+**重要**：设计阶段只生成接口定义和设计文档，不生成实现代码。实现代码将在后续通过"需求转译"和"代码编译"工具生成。
 
 ## 前置依赖
 
@@ -13,15 +15,11 @@ description: 设计应用层（Application Layer）的用例、服务、业务�
 - `.cdd/01-requirements.md`（需求文档）
 - `.cdd/02-architecture.md`（架构设计文档）
 - `.cdd/03-data-layer.md`（数据层设计文档）
+- `src/data/` 目录（数据层接口定义）
 
 如果这些文件不存在，提示用户先完成前置阶段。
 
-## 核心概念
-
-参见 [GLOSSARY.md](../GLOSSARY.md) 中的术语定义：
-- **@intent**：描述文件功能（必须标注）
-- **@dependency**：通过 import 语句自动提取（不需要手动标注）
-- **@contract**、**@step**、**@boundary**：函数契约标注
+**注意**：应用层依赖数据层的接口，确保数据层接口已定义。
 
 ## 工作流程
 
@@ -89,20 +87,25 @@ description: 设计应用层（Application Layer）的用例、服务、业务�
 - **单向依赖**：应用层 → 数据层，严格单向
 - **最小依赖**：只依赖必要的数据层模块
 
-### 6. 生成文件骨架
+### 6. 生成接口定义
 
-根据设计生成文件骨架（@intent + import + 函数签名）：
+根据设计生成接口定义：
 
 **生成内容**：
 1. **用例/命令处理器**（`src/application/commands/`）
 2. **应用服务**（`src/application/services/`）
 3. **上下文管理器**（`src/application/context/`）
 
-**文件骨架包含**：
-- `@intent` 注释：描述文件的功能
-- `import` 语句：声明依赖的数据层模块和其他应用层模块
-- `@contract`、`@step`、`@boundary`：函数契约
-- 函数签名：只有签名，不实现具体逻辑（抛出 `throw new Error('Not implemented')`）
+**生成规范**：
+- 根据架构文档中的语言，生成对应的接口/类定义
+- 使用目标语言的惯用语法和命名规范
+- 参见 [多语言适配规则](../_shared/LANGUAGE-ADAPTERS.md)
+
+**代码规范**：
+- 每个文件顶部添加 @intent 注释（使用目标语言的注释风格）
+- 使用目标语言的依赖声明语法
+- 只生成类型定义和方法签名
+- 方法体为空实现或抛出未实现错误（根据目标语言习惯）
 
 ## 对话原则
 
@@ -135,23 +138,25 @@ description: 设计应用层（Application Layer）的用例、服务、业务�
 ## 注意事项
 
 - **必须标注 @intent**：每个文件都必须在顶部标注 @intent
-- **依赖通过 import 声明**：不需要手动标注 @dependency，系统会自动从 import 语句中提取
-- **应用层不依赖适配层**：依赖方向是 适配层 → 应用层 → 数据层
+- **依赖通过 import 声明**：使用目标语言的依赖声明语法
+- **应用层不依赖适配层**：依赖方向是 适配层 → 应用层 → 数据层（硬性要求）
 - **避免在应用层写 UI 逻辑**：UI 逻辑应该在适配层
 - **保持用例简单**：复杂的数据操作应该在数据层的 Service 中
-- **使用 @contract、@step、@boundary**：为所有函数标注契约
+- **设计阶段不生成 CDD 注释**：@contract、@step、@boundary 将在需求转译阶段生成
+- **跨层通信**：如果应用层需要通知适配层，必须通过事件接口（在应用层定义，适配层实现监听器）
+- **依赖倒置**：应用层定义接口，数据层和适配层实现接口
 
 ## 最终交付物
 
 当所有应用层设计完成后：
 
 1. 将设计文档保存为 `.cdd/04-application-layer.md`
-2. 生成应用层文件骨架到 `src/application/` 目录：
-   - `src/application/commands/` - 命令处理器骨架
-   - `src/application/services/` - 应用服务骨架
-   - `src/application/context/` - 上下文管理器骨架
+2. 生成应用层接口定义到 `src/application/` 目录：
+   - `src/application/commands/` - 命令处理器接口
+   - `src/application/services/` - 应用服务接口
+   - `src/application/context/` - 上下文管理器接口
 3. **每个文件都必须标注 @intent**
-4. **每个函数都必须标注 @contract、@step、@boundary**
-5. **依赖关系通过 import 语句声明**
+4. **依赖关系通过目标语言的依赖声明语法**
+5. **只生成接口定义和方法签名，不生成实现代码**
 
-该文档和代码将作为下一阶段（适配层设计）的输入。
+该文档和接口定义将作为下一阶段（适配层设计）的输入。

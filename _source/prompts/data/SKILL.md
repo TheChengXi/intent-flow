@@ -5,7 +5,9 @@ description: 设计数据模型、仓库、服务，并生成数据层（Data La
 
 # 阶段 3：数据层设计（Data Layer Design）
 
-基于需求文档和架构设计文档，通过对话设计数据实体、字段、关系，并生成数据层代码。
+基于需求文档和架构设计文档，通过对话设计数据实体、字段、关系，并生成数据层接口定义和详细设计文档。
+
+**重要**：设计阶段只生成接口定义和设计文档，不生成实现代码。实现代码将在后续通过"需求转译"和"代码编译"工具生成。
 
 ## 前置依赖
 
@@ -72,36 +74,69 @@ description: 设计数据模型、仓库、服务，并生成数据层（Data La
 
 **自定义查询**：根据业务需求设计自定义查询方法
 
-### 5. 设计业务服务
+**重要**：只设计接口签名，不设计实现细节。但需要在设计文档中详细描述每个方法的：
+- 输入参数的验证规则
+- 输出结果的格式
+- 可能的错误情况
+- 实现要点（如：使用参数化查询、需要事务支持等）
 
-为复杂的业务逻辑设计服务（Service）：
+### 5. 设计数据服务接口（可选）
+
+如果有跨实体的数据操作或复杂的数据转换逻辑，可以设计数据服务接口：
 
 **服务设计原则**：
-- **单一职责**：每个服务只负责一类业务逻辑
+- **单一职责**：每个服务只负责一类数据操作
 - **无状态**：服务不应该持有状态
-- **可测试**：服务应该易于单元测试
+- **接口优先**：先定义接口，实现留给后续阶段
 
 **常见服务类型**：
-- **计算服务**：例如统计、聚合、排序
-- **验证服务**：例如数据验证、业务规则验证
-- **转换服务**：例如数据格式转换、映射
-- **集成服务**：例如调用外部 API、文件操作
+- **聚合查询服务**：例如统计、报表数据
+- **批量操作服务**：例如批量导入、批量更新
+- **数据转换服务**：例如格式转换、数据映射
 
-### 6. 生成数据层代码
+### 6. 生成数据层接口定义
 
-根据设计生成 TypeScript 代码：
+根据设计生成 TypeScript 接口定义：
 
 **生成内容**：
-1. **实体定义**（`src/data/entities/`）：使用 `@entity` 标注
-2. **数据仓库接口和实现**（`src/data/repositories/`）：使用 `@contract`、`@step`、`@boundary` 标注
-3. **数据服务**（`src/data/services/`）：使用 `@contract`、`@step`、`@boundary` 标注
+1. **实体定义**（`src/data/entities/`）：使用 `@entity` 和 `@intent` 标注
+2. **数据仓库接口**（`src/data/repositories/`）：只有接口定义，使用 `@intent` 标注
+3. **数据服务接口**（`src/data/services/`，可选）：只有接口定义，使用 `@intent` 标注
 
 **代码规范**：
 - 使用 TypeScript 严格模式
-- 使用接口定义契约
-- 使用 JSDoc 注释说明用途
-- 遵循项目现有的代码风格
-- **数据层不需要标注 @intent**（因为是纯数据实体）
+- 使用 interface 定义所有契约
+- 每个文件顶部添加 `@intent` 注释，描述文件职责
+- 只生成类型定义和接口签名，不生成实现代码
+- 不生成 `@contract`、`@step`、`@boundary` 注释（这些将在需求转译阶段生成）
+
+**示例**：
+```typescript
+// src/data/entities/User.ts
+/**
+ * @intent 用户实体
+ * @entity
+ */
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: Date;
+}
+
+// src/data/repositories/UserRepository.ts
+/**
+ * @intent 用户数据仓库接口，定义用户数据的CRUD操作
+ */
+import { User } from '../entities/User';
+
+export interface UserRepository {
+  findById(id: string): Promise<User | null>;
+  create(user: User): Promise<User>;
+  update(id: string, user: Partial<User>): Promise<User>;
+  delete(id: string): Promise<void>;
+}
+```
 
 ## 对话原则
 
@@ -136,21 +171,35 @@ description: 设计数据模型、仓库、服务，并生成数据层（Data La
 
 ## 注意事项
 
-- **数据层不包含 Intent**：数据层是纯数据层，不需要标注 @intent
+- **设计阶段只生成接口**：不生成实现类，不生成具体代码
+- **@intent 是必须的**：每个文件都需要 @intent 描述职责
+- **不生成 CDD 注释**：@contract、@step、@boundary 将在需求转译阶段生成
 - **数据层是纯数据层**：不包含业务逻辑、不依赖应用层和适配层
-- **保持实体简单**：实体只包含数据字段和基本验证
-- **数据操作在仓库中**：数据的增删改查在 Repository 中实现
+- **保持实体简单**：实体只包含数据字段定义
+- **接口优先**：先定义接口契约，实现留给后续阶段
 - **遵循依赖方向**：数据层不依赖任何其他层（最底层）
-- **使用 @contract、@step、@boundary**：为所有函数标注契约
+- **详细的设计文档**：设计文档要足够详细，能支撑后续的需求转译和代码编译
+- **跨层通信**：如果数据层需要通知上层，必须通过回调接口（在应用层定义，数据层接受作为依赖）
 
 ## 最终交付物
 
 当所有数据模型设计完成后：
 
-1. 将设计文档保存为 `.cdd/03-data-layer.md`
-2. 生成数据层代码到 `src/data/` 目录：
-   - `src/data/entities/` - 实体定义（使用 @entity 标注）
-   - `src/data/repositories/` - 数据仓库（使用 @contract、@step、@boundary 标注）
-   - `src/data/services/` - 数据服务（使用 @contract、@step、@boundary 标注）
+1. 将设计文档保存为 `.cdd/03-data-layer.md`（详细描述每个接口的实现要点）
+2. 生成数据层接口定义到 `src/data/` 目录：
+   - `src/data/entities/` - 实体定义（interface + @entity + @intent）
+   - `src/data/repositories/` - 数据仓库接口（interface + @intent）
+   - `src/data/services/` - 数据服务接口（interface + @intent，可选）
 
-该文档和代码将作为下一阶段（应用层设计）的输入。
+## 后续流程
+
+设计完成后，用户可以通过以下步骤实现数据层：
+
+1. **需求转译**：选中接口文件 → 右键 → "CDD: 需求转译为注释"
+   - 基于设计文档生成实现类骨架
+   - 为每个方法添加 @contract、@step、@boundary 注释
+
+2. **代码编译**：选中带注释的文件 → 右键 → "CDD: 编译注释为代码"
+   - 根据 CDD 注释生成具体实现代码
+
+该文档和接口定义将作为下一阶段（应用层设计）的输入。
