@@ -1,0 +1,2 @@
+还没做完 CDD Framework — AI 时代的前端组件协议运行时。定义组件长什么样、怎么动、数据怎么流。五层架构，四维协议，约束驱动生成。 没错我是来吹牛逼的。
+DD Framework — the frontend component protocol runtime for the AI era — hasn't been completed yet. It defines how components look, how they behave, and how data flows. It features a five-layer architecture, a four-dimensional protocol, and constraint-driven generation. Yes, I'm here to brag.

@@ -1,0 +1,186 @@
+{
+  "name": "cdd-framework",
+  "displayName": "CDD Framework",
+  "description": "Comment-Driven Development Framework - 注释驱动开发框架",
+  "version": "0.2.0",
+  "publisher": "your-publisher-name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/CCD-framework.git"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "bin": {
+    "cdd": "./dist/cli/cdd.js"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "cdd.compile",
+        "title": "CDD: 编译注释为代码"
+      },
+      {
+        "command": "cdd.review",
+        "title": "CDD: 审查代码"
+      },
+      {
+        "command": "cdd.translate",
+        "title": "CDD: 转译代码为注释"
+      },
+      {
+        "command": "cdd.requirementTranslator",
+        "title": "CDD: 需求转译为注释"
+      },
+      {
+        "command": "cdd.checkFileSize",
+        "title": "CDD: 扫描项目大文件"
+      },
+      {
+        "command": "cdd.checkCurrentFileWithDeps",
+        "title": "CDD: 检查当前文件及依赖大小"
+      },
+      {
+        "command": "cdd.toggleDryRun",
+        "title": "CDD: Toggle Dry Run Mode"
+      },
+      {
+        "command": "cdd.openCapabilityMap",
+        "title": "CDD: 打开能力地图"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "cdd.compile",
+          "group": "cdd@1",
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+        },
+        {
+          "command": "cdd.review",
+          "group": "cdd@2",
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+        },
+        {
+          "command": "cdd.translate",
+          "group": "cdd@3",
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+        },
+        {
+          "command": "cdd.requirementTranslator",
+          "group": "cdd@4",
+          "when": "editorHasSelection"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "cdd.compile",
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+        },
+        {
+          "command": "cdd.review",
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+        },
+        {
+          "command": "cdd.translate",
+          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
+        },
+        {
+          "command": "cdd.requirementTranslator",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "cdd.checkFileSize"
+        },
+        {
+          "command": "cdd.checkCurrentFileWithDeps"
+        },
+        {
+          "command": "cdd.openCapabilityMap"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "CDD",
+      "properties": {
+        "cdd.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Claude API Key"
+        },
+        "cdd.apiBaseUrl": {
+          "type": "string",
+          "default": "https://api.anthropic.com",
+          "description": "API Base URL（使用中转时填写中转地址）"
+        },
+        "cdd.modelId": {
+          "type": "string",
+          "default": "claude-sonnet",
+          "description": "模型 ID（例如：claude-sonnet-4-20250514, claude-haiku-4-5-20251001）"
+        },
+        "cdd.targetLanguage": {
+          "type": "string",
+          "default": "",
+          "description": "目标语言（可选，默认从文件扩展名推断。例如：TypeScript, Python, C++, ArkTS）"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "postinstall": "node scripts/copy-wasm.js",
+    "copy-wasm": "node scripts/copy-wasm.js",
+    "vscode:prepublish": "npm run package",
+    "test:imports": "npx tsx test_multilang_imports.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "generate-prompts": "ts-node scripts/generatePrompts.ts",
+    "precompile": "npm run generate-prompts",
+    "compile": "npm run compile:vscode && npm run compile:mcp && npm run compile:cli && npm run compile:pi",
+    "watch": "npm run generate-prompts && set CDD_BUILD=extension && npx vite build --watch",
+    "package": "npm run generate-prompts && npx vite build && node -e \"fs.cpSync('parsers', 'dist/parsers', {recursive: true})\" && node -e \"fs.cpSync('parsers', 'dist/cli/parsers', {recursive: true})\" && cd src/adapter/vscode/ui/webview && npx vite build --config vite.config.mts",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "mcp": "node dist/mcp-server.js",
+    "mcp:dev": "ts-node src/adapter/mcp/MCPServer.ts",
+    "compile:vscode": "set CDD_BUILD=extension && npx vite build && node -e \"fs.cpSync('parsers', 'dist/parsers', {recursive: true})\" && cd src/adapter/vscode/ui/webview && npx vite build --config vite.config.mts",
+    "compile:mcp": "set CDD_BUILD=mcp-server && npx vite build",
+    "compile:cli": "set CDD_BUILD=cli/cdd && npx vite build && node -e \"fs.cpSync('parsers', 'dist/cli/parsers', {recursive: true})\"",
+    "compile:pi": "set CDD_BUILD=pi/extension && npx vite build",
+    "deploy:pi": "node scripts/deploy-pi.js"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^18.x",
+    "@types/vscode": "^1.80.0",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "ts-loader": "^9.5.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0",
+    "vite": "^5.4.21",
+    "vitest": "^4.1.9",
+    "vue": "^3.5.38",
+    "webpack": "^5.106.2",
+    "webpack-cli": "^7.0.2"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.1",
+    "@chenglou/pretext": "^0.0.8",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@types/resolve": "^1.20.6",
+    "@vscode/tree-sitter-wasm": "^0.3.1",
+    "@xstate/vue": "^5.0.0",
+    "js-yaml": "^4.2.0",
+    "leafer-ui": "^2.1.9",
+    "minimatch": "^10.2.5",
+    "openai": "^6.37.0",
+    "resolve": "^1.22.12",
+    "xstate": "^5.32.2",
+    "zod": "^4.4.3"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "capabilityList": {
+    "version": "1.0.0",
+    "generatedAt": 1781018408788,
+    "layers": [
+      {
+        "name": "Adapter",
+        "capabilities": [
+          {
+            "name": "MCPServer",
+            "intent": "MCP Server 主入口，处理 MCP 协议请求",
+            "entryIntent": {
+              "filePath": "D:/w_dev/CCD-framework/src/adapter/mcp/MCPServer.ts",
+              "fileName": "MCPServer",
+              "intent": "MCP Server 主入口，处理 MCP 协议请求",
+              "layer": "adapter",
+              "timestamp": 1781012304465.5034
+            },
+            "branchIntents": [
+              {
+                "filePath": "D:/w_dev/CCD-framework/src/adapter/mcp/DIContainer.ts",
+                "fileName": "DIContainer",
+                "intent": "MCP 适配器的依赖注入容器",
+                "layer": "adapter",
+                "timestamp": 1780905321621.1887
+              }
+            ],
+            "callGraph": {
+              "from": "D:\\w_dev\\CCD-framework\\src\\adapter\\mcp\\MCPServer.ts",
+              "to": [
+                "D:\\w_dev\\CCD-framework\\src\\adapter\\mcp\\DIContainer.ts"
+              ]
+            },
+            "branchCount": 1,
+            "depth": 2,
+            "status": "integrated"
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "totalFiles": 151,
+    "totalIntents": 151,
+    "totalCapabilities": 1,
+    "isolatedCapabilities": 0,
+    "generationTime": 884,
+    "layersDetected": [
+      "Data",
+      "Application",
+      "Adapter"
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+# WASM 编译产物 — 从 node_modules/tree-sitter-wasms 复制
+src/data/services/core/parsers/
+
+# VSCode
+.vscode/
+*.vsix
