@@ -9,7 +9,7 @@ import {
   REVIEWER_PROMPT,
   TRANSLATOR_PROMPT,
   REQUIREMENT_TRANSLATOR_PROMPT,
-} from '../../../../generated/prompts';
+} from '../../../prompts/prompts';
 
 /** 提示词构建函数类型：接收可选的 compileSpec，返回系统提示词字符串 */
 export type PromptBuilder = (compileSpec?: string) => string;

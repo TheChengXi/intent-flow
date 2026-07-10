@@ -11,6 +11,7 @@ import type { ConvertNode } from '../../converter'
 import { protocol as folderProtocol } from '../folder'
 import { protocol as groupProtocol } from '../group'
 import { protocol as fileProtocol } from '../file'
+import { prepare, measureNaturalWidth } from '@chenglou/pretext'
 
 /**
  * @contract
@@ -21,6 +22,7 @@ export function calcLayout(data: any, cw?: number, ch?: number) {
   if (!data.rootData) return { flatNodes: [], lineData: [] }
   const roots = buildTree(data.rootData, data.currentFolder, 'root')
   applyExpandState(roots, data.expanded, data.cache)
+  preprocessNodes(roots)
 
   if (cw && ch) {
     const allNodes: any[] = []
@@ -41,9 +43,10 @@ export function calcLayout(data: any, cw?: number, ch?: number) {
     for (const n of allNodes) {
       const px = pxMap.get(n.id)
       if (px) { n.w = px.width; n.h = px.height }
+      if (n._prepared && n.type === 'folder') {
+        n.w = measureNaturalWidth(n._prepared)
+      }
     }
-
-
   }
 
   roots.forEach(calcSubtreeWidth)
@@ -74,6 +77,7 @@ function buildTree(data: any, parentPath: string, prefix: string): any[] {
         children: [],
         expanded: false,
         protocol: { css: { ...folderProtocol.css } },
+        font: folderProtocol.font,
         data: dir,
       })
     })
@@ -90,6 +94,7 @@ function buildTree(data: any, parentPath: string, prefix: string): any[] {
         children: [],
         expanded: false,
         protocol: { css: { ...groupProtocol.css } },
+        font: groupProtocol.font,
         data: g,
       }
       if (g.files) {
@@ -103,6 +108,7 @@ function buildTree(data: any, parentPath: string, prefix: string): any[] {
             children: [],
             expanded: false,
             protocol: { css: { ...fileProtocol.css } },
+            font: fileProtocol.font,
             data: fileName,
           })
         })
@@ -122,6 +128,7 @@ function buildTree(data: any, parentPath: string, prefix: string): any[] {
         children: [],
         expanded: false,
         protocol: { css: { ...fileProtocol.css } },
+        font: fileProtocol.font,
         data: fileName,
       })
     })
@@ -143,10 +150,22 @@ function applyExpandState(nodes: any[], expanded: any, cache: any): void {
       if (childData) {
         const prefix = n.id
         n.children = buildTree(childData, n.path, prefix)
+        preprocessNodes(n.children)
         applyExpandState(n.children, expanded, cache)
       }
     }
   })
+}
+
+/**
+ * 对所有节点执行 pretext 预处理。
+ * 副作用：写入 node._prepared
+ */
+function preprocessNodes(nodes: any[]): void {
+  for (const n of nodes) {
+    n._prepared = prepare(n.label, n.font)
+    if (n.children?.length) preprocessNodes(n.children)
+  }
 }
 
 

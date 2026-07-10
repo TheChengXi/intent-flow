@@ -14,8 +14,41 @@ interface ComponentNode {
   css: CSSSkeleton       // CSS 骨架（百分比 + token）
   props: Props           // 组件接受的属性
   slots: Slot[]          // 子组件插槽列表
+  font?: string          // 文本标签的字体，与 render 层保持一致
 }
 ```
+
+### font（可选）
+
+`font` 字段声明组件文本标签使用的字体，格式与 CSS `font` 简写一致，例如 `'12px sans-serif'`、`'bold 13px sans-serif'`。
+
+#### 用途
+
+- **提供给 layout 层做文本预测量**：layout 层通过 `prepare(label, font)` 预处理后，用 `measureNaturalWidth()` 获取精确文本宽度，替代硬编码宽度猜测
+- **单一事实来源**：font 在 protocol 中集中定义，layout 和 render 共同引用，保证测量和渲染使用同一字体
+
+#### 示例
+
+```typescript
+// folder/protocol.ts
+export const protocol: ConvertNode = {
+  identity: 'component://folder',
+  css: { width: '8%', height: '10%' },
+  font: '12px sans-serif',  // 与 render 中 fontSize: 12 保持一致
+}
+
+// layout 层引用 font 做预处理
+const prepared = prepare(node.label, node.font)
+const textW = measureNaturalWidth(prepared)
+```
+
+#### 约束
+
+| # | 约束 | 违反后果 |
+|---|------|---------|
+| F1 | **font 必须与 render 层实际渲染字体一致** | 测量宽度 ≠ 渲染宽度，文本溢出或留白过多 |
+| F2 | **font 只用于文本标签**，不影响非文本元素的样式 | 引入无关字段 |
+| F3 | **font 为纯字符串**，不引用外部 token/变量 | 解析依赖 |
 
 ### identity
 

@@ -1,6 +1,9 @@
 # WASM 编译产物 — 从 node_modules/tree-sitter-wasms 复制
 src/data/services/core/parsers/
 
+# 防止 Git Bash 环境下误将 > nul 重定向为文件名
+nul
+
 # VSCode
 .vscode/
 *.vsix

@@ -146,6 +146,82 @@ Resource 解析（import 或 Resolver）
 运行时管理层 → 渲染执行层
 ```
 
+## 静态资源 vs 动态资源
+
+文本资源按来源分为两类：
+
+| 类别 | 来源 | 例子 | 存储位置 |
+|------|------|------|---------|
+| **静态资源** | 代码写死 | 按钮文案、标题、图例 | `resource/text/` |
+| **动态资源** | 后端运行时推送 | 文件名、组名、意图描述 | 不经过 `resource/text/` |
+
+动态资源（又称
+隐藏资源）是运行时从后端到达的文本，编译时不存在，不会经过 `resource/text/` 静态目录。它们同样需要文本测量（Canvas 渲染时需要精确宽度/高度），但预处理时机和静态资源不同。
+
+### 动态资源的 pretext 预处理管线
+
+```
+后端数据到达
+    ↓
+buildTree() 创建节点  ← 节点携带 protocol.font（单一事实来源）
+    ↓
+preprocessNodes()    ← 对每个 node.label 调 prepare(label, font)
+    ↓                  node._prepared = PreparedText
+布局计算
+    ↓                ← layout(node._prepared, width, lh) 纯算术
+渲染
+```
+
+关键点：
+
+1. **font 来自 protocol** — 组件协议中声明 `font: '12px sans-serif'`，与 render 层保持一致
+2. **预处理在 buildTree 后立即执行** — 数据到达时一次性 prepare，后续只调 layout()
+3. **缓存复用 `resource/text/index.ts` 的 prepareText()** — 相同文本+字体只 prepare 一次
+4. **render 层不需要 width 约束** — Leafer 的 `textWrap: false` 自动撑开，不设 width
+
+### 示例
+
+```typescript
+// ① protocol 定义 font
+// folder/protocol.ts
+export const protocol = {
+  identity: 'component://folder',
+  css: { width: '8%', height: '10%' },
+  font: '12px sans-serif',
+}
+
+// ② buildTree 时传递 font
+// layout.ts
+nodes.push({
+  type: 'folder',
+  label: dir,
+  font: folderProtocol.font,  // ← 引用 protocol 的 font
+})
+
+// ③ buildTree 后立即预处理
+// layout.ts
+function preprocessNodes(nodes: any[]): void {
+  for (const n of nodes) {
+    n._prepared = prepare(n.label, n.font)
+    if (n.children?.length) preprocessNodes(n.children)
+  }
+}
+
+// ④ 布局时用测量结果
+const textW = measureNaturalWidth(n._prepared)
+n.w = textW  // 精确宽度，不猜
+```
+
+### 与静态资源的区别
+
+| 维度 | 静态资源 | 动态资源 |
+|------|---------|---------|
+| 预处理时机 | 编译时（写在代码里） | 运行时（数据到达时） |
+| 存储位置 | `resource/text/` | 不存储，随数据流经过 |
+| prepare 调用方 | 组件或 resource/text 入口 | layout 层 preprocessNodes |
+| font 来源 | 组件代码写死 | protocol 声明 |
+| 典型场景 | 按钮文案、标题 | 文件名、组名、后端返回的任意文本 |
+
 ## Pretext 预处理（推荐）
 
 对于文本资源，推荐通过 `@chenglou/pretext` 统一预处理，将纯文本转为 PreparedText。

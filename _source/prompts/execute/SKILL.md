@@ -19,12 +19,7 @@ description: 三分阶段生成代码：主会话投射文件骨架，隔离 TDD
 
 ## 前置阅读（必须）
 
-先读取以下文档，作为 @intent 质量的评判依据：
-
-- [GLOSSARY.md](./GLOSSARY.md) — @intent 核心原则（只说 import 看不出来的信息）
-- [Tool.md](./intent_fmt/Tool.md) — Adapter工具类格式
-- [UseCase.md](./intent_fmt/UseCase.md) — Application/UseCase 格式
-- [EntityOrRepository.md](./intent_fmt/EntityOrRepository.md) — Data/Entity或者Repository的格式
+先读取 [GLOSSARY.md](./GLOSSARY.md) 作为 @intent 质量的评判依据。
 
 读两份设计文档：
 - `.cdd/02-arch-design.part-to-finish.md`

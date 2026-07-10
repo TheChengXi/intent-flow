@@ -18,11 +18,11 @@ export function render(ctx: RenderContext): void {
     text: '📁', fontSize: 24, textAlign: 'center',
   }))
 
-  // @step: 文件夹名称
+  // @step: 文件夹名称（textWrap: false 让 Leafer 自动撑开，x:0 与图标同一中心）
   g.add(new Text({
-    x: -10, y: 28,
+    x: 0, y: 28,
     text: node.label, fontSize: 12, fill: tokens.text,
-    textAlign: 'center', width: node.w ?? 66,
+    textAlign: 'center',
     textWrap: false,
   }))
 

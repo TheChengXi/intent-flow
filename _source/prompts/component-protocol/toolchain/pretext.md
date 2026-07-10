@@ -43,5 +43,7 @@ const prepared = prepareText('能力地图', '14px sans-serif')
 | 组件 | 使用方式 | 作用 |
 |------|---------|------|
 | resource/text/index.ts | 统一 prepare 缓存 | 所有文本资源的预处理入口 |
+| capability-map/layout.ts | `preprocessNodes()` + `measureNaturalWidth()` | 动态文本（文件名/组名）的精确宽度测量 |
 | connection-line（待接入） | `prepareText` + `layoutWithLines` | 线上浮动文本排版 |
-| folder/file（当前用 Leafer 原生） | 暂不接入 | 简单文本无需 Pretext |
+| folder（render） | `textWrap: false` Leafer 自撑 | 文件夹标签无需约束宽度 |
+| file（render） | `textWrap: false` Leafer 自撑 | 文件标签无需约束宽度 |
