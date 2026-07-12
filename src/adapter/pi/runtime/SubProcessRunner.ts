@@ -10,7 +10,7 @@ import { spawn } from 'node:child_process';
 import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { homedir, platform } from 'node:os';
+import { tmpdir, platform } from 'node:os';
 import { SCOPE_SKIP_ENV } from '../../../data/services/scope/policy';
 import type { ISubProcessRunner, SubProcessRunParams, SubProcessChainStep, SubProcessChainResult } from '../../../data/repositories/ISubProcessRunner';
 import type { AgentRunResult } from '../../../data/entities/AgentRunResult';
@@ -102,7 +102,7 @@ export class SubProcessRunner implements ISubProcessRunner {
       promptParts.push(`\n\n## 上下文\n${params.context}`);
     }
 
-    const tmpDir = await mkdtemp(join(homedir(), 'agent-'));
+    const tmpDir = await mkdtemp(join(tmpdir(), 'cdd-agent-'));
     const systemFile = join(tmpDir, 'system.md');
     const taskFile = join(tmpDir, 'task.md');
 

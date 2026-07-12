@@ -351,7 +351,7 @@ ${params.context}`;
     if (!agentDef) {
       throw new Error(`未找到 agent 定义: "${agentName}"`);
     }
-    const tmpDir = await promises.mkdtemp(node_path.join(node_os.homedir(), "rpc-pool-"));
+    const tmpDir = await promises.mkdtemp(node_path.join(node_os.tmpdir(), "cdd-rpc-"));
     const sysPromptFile = node_path.join(tmpDir, "system.md");
     await promises.writeFile(sysPromptFile, agentDef.systemPrompt, "utf-8");
     const args = [
@@ -579,7 +579,7 @@ class SubProcessRunner {
 ## 上下文
 ${params.context}`);
     }
-    const tmpDir = await promises.mkdtemp(node_path.join(node_os.homedir(), "agent-"));
+    const tmpDir = await promises.mkdtemp(node_path.join(node_os.tmpdir(), "cdd-agent-"));
     const systemFile = node_path.join(tmpDir, "system.md");
     const taskFile = node_path.join(tmpDir, "task.md");
     try {
@@ -914,16 +914,21 @@ ${theme.fg("dim", usageStr)}`;
       },
       // ── execute ──────────────────────────────────
       execute: async (toolCallId, params, _signal, onUpdate, ctx) => {
+        var _a, _b;
         const agentName = params.agent;
         const tracker = this.tracker;
+        const sessionFile = ((_b = (_a = ctx.sessionManager) == null ? void 0 : _a.getSessionFile) == null ? void 0 : _b.call(_a)) || "";
+        const sessionLabel = sessionFile ? sessionFile.replace(/\.[^.]+$/, "").replace(/^.*[/\\]/, "").replace(/-\d{4}-\d{2}-\d{2}.*$/, "") : "";
+        const displayAgent = sessionLabel ? `${sessionLabel}-${agentName}` : agentName;
         tracker == null ? void 0 : tracker.startRun({
           toolCallId,
           toolName: "spawn_agent",
-          agent: agentName,
+          agent: displayAgent,
           task: params.task,
           mode: "single"
         });
         let lastUpdateText = "";
+        const skipExts = [...params.skipExts || [], "confirm-edit"];
         try {
           const result = await this.useCase.execute({
             agent: agentName,
@@ -931,10 +936,10 @@ ${theme.fg("dim", usageStr)}`;
             context: params.context,
             model: params.model,
             timeoutMs: params.timeoutMs,
-            skipExts: params.skipExts,
+            skipExts,
             cwd: ctx.cwd,
             onEvent: (event) => {
-              var _a, _b;
+              var _a2, _b2;
               if (event.type === "tool_execution_start") {
                 const ev = event;
                 const argsStr = ev.args ? JSON.stringify(ev.args).slice(0, 80) : "";
@@ -973,7 +978,7 @@ ${theme.fg("dim", usageStr)}`;
                     });
                   }
                   tracker == null ? void 0 : tracker.updateRun(toolCallId, {
-                    turns: (((_a = tracker.getRun(toolCallId)) == null ? void 0 : _a.turns) ?? 0) + 1,
+                    turns: (((_a2 = tracker.getRun(toolCallId)) == null ? void 0 : _a2.turns) ?? 0) + 1,
                     model: msg.model
                   });
                 }
@@ -981,7 +986,7 @@ ${theme.fg("dim", usageStr)}`;
                 const ev = event;
                 const status2 = ev.isError ? "error" : "tool_result";
                 let preview = `${ev.toolName} 完成`;
-                if ((_b = ev.result) == null ? void 0 : _b.content) {
+                if ((_b2 = ev.result) == null ? void 0 : _b2.content) {
                   const textContent = extractContentText({ content: ev.result.content });
                   if (textContent) {
                     preview = `${ev.toolName} → ${textContent.slice(0, 80)}`;
@@ -1129,6 +1134,14 @@ class AgentRunTracker {
   startRun(params) {
     const prev = this.runs.get(params.toolCallId);
     if (prev) return;
+    for (const [id, run] of this.runs) {
+      if (run.agent === params.agent && run.status !== "running") {
+        this.runs.delete(id);
+        const idx = this.runOrder.indexOf(id);
+        if (idx >= 0) this.runOrder.splice(idx, 1);
+        break;
+      }
+    }
     const state = {
       toolCallId: params.toolCallId,
       toolName: params.toolName,

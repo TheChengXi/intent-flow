@@ -238,6 +238,9 @@ export class SpawnAgentTool {
         // message_update 防刷：同一段文本只推一次
         let lastUpdateText = '';
 
+        // 子 agent 自动跳过 confirm-edit 拦截（子进程无 TUI，弹不了确认框）
+        const skipExts = [...(params.skipExts || []), 'confirm-edit'];
+
         try {
           const result = await this.useCase.execute({
             agent: agentName,
@@ -245,7 +248,7 @@ export class SpawnAgentTool {
             context: params.context,
             model: params.model,
             timeoutMs: params.timeoutMs,
-            skipExts: params.skipExts,
+            skipExts,
             cwd: ctx.cwd,
             onEvent: (event) => {
               // ── 推送到 tracker（实时日志） ──

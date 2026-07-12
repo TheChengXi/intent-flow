@@ -10,7 +10,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { homedir, platform } from 'node:os';
+import { tmpdir, platform } from 'node:os';
 import type { IAgentRepository } from '../../../data/repositories/IAgentRepository';
 import type { AgentRunResult } from '../../../data/entities/AgentRunResult';
 import type { AgentUsage } from '../../../data/entities/AgentUsage';
@@ -238,7 +238,7 @@ export class RpcProcessPool {
     }
 
     // 写 system prompt 到临时文件
-    const tmpDir = await mkdtemp(join(homedir(), 'rpc-pool-'));
+    const tmpDir = await mkdtemp(join(tmpdir(), 'cdd-rpc-'));
     const sysPromptFile = join(tmpDir, 'system.md');
     await writeFile(sysPromptFile, agentDef.systemPrompt, 'utf-8');
 
@@ -305,6 +305,9 @@ export class RpcProcessPool {
 
     // 进程退出处理
     child.on('exit', (code, signal) => {
+      // 清理临时目录
+      rm(managed.tmpDir, { recursive: true, force: true }).catch(() => {});
+
       // 如果有 pending 任务，resolve 为失败
       const pending = this.pending.get(agentName);
       if (pending) {
