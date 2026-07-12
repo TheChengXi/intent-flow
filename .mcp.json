@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "ccd-framework": {
+      "command": "node",
+      "args": [
+        "dist/mcp-server.js"
+      ],
+      "directTools": [
+        "trace_dependency_chain",
+        "project_intent",
+        "list_intent_packages"
+      ]
+    }
+  }
+}

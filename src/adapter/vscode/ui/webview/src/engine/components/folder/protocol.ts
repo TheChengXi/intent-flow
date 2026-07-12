@@ -13,7 +13,7 @@ export const protocol: ConvertNode = {
     height: '10%',
   },
   /** 文件夹名称的字体，与 render 保持一致 */
-  font: '12px sans-serif',
+  textFont: '12px sans-serif',
 }
 
 export function createNode(overrides?: Partial<ConvertNode>): ConvertNode {

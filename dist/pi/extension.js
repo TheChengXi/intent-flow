@@ -778,6 +778,14 @@ function getDisplayItems(messages) {
   }
   return items;
 }
+function extractContentText(msg) {
+  if (!(msg == null ? void 0 : msg.content)) return "";
+  if (typeof msg.content === "string") return msg.content.trim();
+  if (Array.isArray(msg.content)) {
+    return msg.content.filter((p) => p.type === "text").map((p) => p.text || "").join(" ").trim();
+  }
+  return "";
+}
 function getFinalOutput(messages) {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
@@ -790,8 +798,9 @@ function getFinalOutput(messages) {
   return "";
 }
 class SpawnAgentTool {
-  constructor(useCase) {
+  constructor(useCase, tracker) {
     this.useCase = useCase;
+    this.tracker = tracker;
   }
   register(pi) {
     pi.registerTool({
@@ -904,14 +913,17 @@ ${theme.fg("dim", usageStr)}`;
         return new piTui.Text(text, 0, 0);
       },
       // ── execute ──────────────────────────────────
-      execute: async (_toolCallId, params, _signal, onUpdate, ctx) => {
+      execute: async (toolCallId, params, _signal, onUpdate, ctx) => {
         const agentName = params.agent;
-        ctx.ui.setStatus("subagent", `${agentName} 运行中...`);
-        ctx.ui.setWidget("subagent", [
-          `── 子进程: ${agentName} ──`,
-          "⏳ 启动中...",
-          `任务: ${params.task.slice(0, 80)}${params.task.length > 80 ? "..." : ""}`
-        ], { placement: "aboveEditor" });
+        const tracker = this.tracker;
+        tracker == null ? void 0 : tracker.startRun({
+          toolCallId,
+          toolName: "spawn_agent",
+          agent: agentName,
+          task: params.task,
+          mode: "single"
+        });
+        let lastUpdateText = "";
         try {
           const result = await this.useCase.execute({
             agent: agentName,
@@ -922,37 +934,86 @@ ${theme.fg("dim", usageStr)}`;
             skipExts: params.skipExts,
             cwd: ctx.cwd,
             onEvent: (event) => {
+              var _a, _b;
               if (event.type === "tool_execution_start") {
                 const ev = event;
-                const args = ev.args ? JSON.stringify(ev.args).slice(0, 60) : "";
-                ctx.ui.setWidget("subagent", [
-                  `── 子进程: ${agentName} ──`,
-                  `🔧 ${ev.toolName} ${args}`
-                ]);
+                const argsStr = ev.args ? JSON.stringify(ev.args).slice(0, 80) : "";
+                tracker == null ? void 0 : tracker.addLog(toolCallId, {
+                  level: "tool_call",
+                  text: `${ev.toolName} ${argsStr}`,
+                  toolName: ev.toolName,
+                  toolArgs: ev.args
+                });
                 onUpdate == null ? void 0 : onUpdate({
                   content: [{ type: "text", text: `[${agentName}] 调用工具: ${ev.toolName}` }],
                   details: {}
                 });
-              } else if (event.type === "message_start") {
-                ctx.ui.setWidget("subagent", [
-                  `── 子进程: ${agentName} ──`,
-                  "🤔 思考中..."
-                ]);
+              } else if (event.type === "message_update") {
+                const ev = event;
+                const msg = ev.message;
+                if ((msg == null ? void 0 : msg.role) === "assistant") {
+                  const text = extractContentText(msg);
+                  if (text && text.length > lastUpdateText.length + 30) {
+                    lastUpdateText = text;
+                    tracker == null ? void 0 : tracker.addLog(toolCallId, {
+                      level: "output",
+                      text: text.slice(0, 200)
+                    });
+                  }
+                }
+              } else if (event.type === "message_end") {
+                const ev = event;
+                const msg = ev.message;
+                if ((msg == null ? void 0 : msg.role) === "assistant") {
+                  const text = extractContentText(msg);
+                  if (text) {
+                    tracker == null ? void 0 : tracker.addLog(toolCallId, {
+                      level: "output",
+                      text: text.slice(0, 200)
+                    });
+                  }
+                  tracker == null ? void 0 : tracker.updateRun(toolCallId, {
+                    turns: (((_a = tracker.getRun(toolCallId)) == null ? void 0 : _a.turns) ?? 0) + 1,
+                    model: msg.model
+                  });
+                }
+              } else if (event.type === "tool_execution_end") {
+                const ev = event;
+                const status2 = ev.isError ? "error" : "tool_result";
+                let preview = `${ev.toolName} 完成`;
+                if ((_b = ev.result) == null ? void 0 : _b.content) {
+                  const textContent = extractContentText({ content: ev.result.content });
+                  if (textContent) {
+                    preview = `${ev.toolName} → ${textContent.slice(0, 80)}`;
+                  }
+                }
+                tracker == null ? void 0 : tracker.addLog(toolCallId, {
+                  level: status2,
+                  text: preview
+                });
               }
             }
           });
           const r = result.result;
+          const status = r.exitCode === 0 ? "completed" : "failed";
+          tracker == null ? void 0 : tracker.completeRun(toolCallId, {
+            status,
+            output: r.output,
+            error: r.error,
+            turns: r.usage.turns,
+            cost: r.usage.cost,
+            model: r.model
+          });
+          tracker == null ? void 0 : tracker.addLog(toolCallId, {
+            level: "done",
+            text: `${r.agent} ${status === "completed" ? "完成" : "失败"} (${r.durationMs}ms, ${r.usage.turns} 轮)`
+          });
           const icon = r.exitCode === 0 ? "✅" : "❌";
           const statusLabel = r.exitCode === 0 ? "完成" : `失败(code=${r.exitCode})`;
           const cost = r.usage.cost > 0 ? ` | $${r.usage.cost.toFixed(4)}` : "";
           const header = `${icon} ${r.agent} ${statusLabel} (${r.durationMs}ms, ${r.usage.turns} 轮${cost})`;
           const modelLine = r.model ? `模型: ${r.model}` : "";
           const errorLine = r.error ? `错误: ${r.error}` : "";
-          ctx.ui.setStatus("subagent", `${agentName} ${statusLabel}`);
-          ctx.ui.setWidget("subagent", [
-            `── 子进程: ${agentName} ──`,
-            `${icon} ${statusLabel} (${r.durationMs}ms, ${r.usage.turns} 轮${cost})`
-          ]);
           return {
             content: [
               {
@@ -963,11 +1024,16 @@ ${theme.fg("dim", usageStr)}`;
             details: { result: r }
           };
         } catch (err) {
-          ctx.ui.setStatus("subagent", `${agentName} ❌ 异常`);
-          ctx.ui.setWidget("subagent", [
-            `── 子进程: ${agentName} ──`,
-            `❌ ${err.message || err}`
-          ]);
+          tracker == null ? void 0 : tracker.completeRun(toolCallId, {
+            status: "failed",
+            error: err.message || String(err),
+            turns: 0,
+            cost: 0
+          });
+          tracker == null ? void 0 : tracker.addLog(toolCallId, {
+            level: "error",
+            text: `异常: ${err.message || err}`
+          });
           return {
             content: [{ type: "text", text: `spawn_agent 异常: ${err.message || err}` }],
             details: {},
@@ -978,142 +1044,220 @@ ${theme.fg("dim", usageStr)}`;
     });
   }
 }
-class SubagentTool {
-  constructor(useCase, agentRepo, runner) {
-    this.useCase = useCase;
+class ListAgentsTool {
+  constructor(agentRepo) {
     this.agentRepo = agentRepo;
-    this.runner = runner;
   }
   register(pi) {
     pi.registerTool({
-      name: "subagent",
-      label: "Subagent",
-      description: [
-        "Delegate tasks to specialized subagents with isolated context.",
-        "Modes: single (agent + task), parallel (tasks array) - Phase 1 only single mode.",
-        "Agents discovered from skills/<skill>/sub-skill/<agent>/SUB-SKILL.md"
-      ].join(" "),
+      name: "list_agents",
+      label: "List Agents",
+      description: "列出所有可用的 sub-agent。按 skill 分组，返回名称、描述和可用工具。",
       parameters: typebox.Type.Object({
-        agent: typebox.Type.Optional(
-          typebox.Type.String({ description: "Name of the agent to invoke (for single mode)" })
-        ),
-        task: typebox.Type.Optional(
-          typebox.Type.String({ description: "Task to delegate (for single mode)" })
-        ),
-        skipExts: typebox.Type.Optional(
-          typebox.Type.Array(typebox.Type.String(), {
-            description: '子 agent 中跳过拦截的扩展名列表，如 ["confirm-edit"]'
-          })
-        ),
-        tasks: typebox.Type.Optional(
-          typebox.Type.Array(
-            typebox.Type.Object({
-              agent: typebox.Type.String(),
-              task: typebox.Type.String()
-            }),
-            { description: "Phase 2+: Array of {agent, task} for parallel execution" }
-          )
-        ),
-        chain: typebox.Type.Optional(
-          typebox.Type.Array(
-            typebox.Type.Object({
-              agent: typebox.Type.String(),
-              task: typebox.Type.String({ description: "Task with optional {previous} placeholder" })
-            }),
-            { description: "Chain mode: Array of {agent, task} for sequential execution. {previous} is replaced with the previous step's output." }
-          )
+        skill: typebox.Type.Optional(
+          typebox.Type.String({ description: "可选，按 skill 名称过滤" })
         )
       }),
-      execute: async (_toolCallId, params, _signal, onUpdate, ctx) => {
-        if (params.chain && params.chain.length > 0) {
-          try {
-            const result = await this.runner.runChain(
-              params.chain.map((step) => ({
-                agent: step.agent,
-                task: step.task
-              }))
-            );
-            const report = this.formatChainReport(result);
+      execute: async (_toolCallId, params, _signal, _onUpdate, _ctx) => {
+        const { agents } = await this.agentRepo.discoverAll("sub_skill");
+        if (agents.length === 0) {
+          return {
+            content: [{ type: "text", text: "当前没有可用的 sub-agent。" }],
+            details: {}
+          };
+        }
+        const filter = (params.skill || "").trim().toLowerCase();
+        let matched = agents;
+        if (filter) {
+          matched = agents.filter((a) => a.skillName === filter);
+          if (matched.length === 0) {
             return {
-              content: [{ type: "text", text: report }],
-              details: { chainResult: result }
-            };
-          } catch (err) {
-            return {
-              content: [{ type: "text", text: `chain 执行失败: ${err.message}` }],
-              details: {},
-              isError: true
+              content: [{ type: "text", text: `skill "${filter}" 下没有 sub-agent。` }],
+              details: {}
             };
           }
         }
-        if (params.agent && params.task) {
-          try {
-            const result = await this.useCase.execute({
-              agent: params.agent,
-              task: params.task,
-              skipExts: params.skipExts,
-              cwd: ctx.cwd
-            });
-            return {
-              content: [{ type: "text", text: result.result.output || "(no output)" }],
-              details: { result: result.result }
-            };
-          } catch (err) {
-            return {
-              content: [{ type: "text", text: `subagent failed: ${err.message}` }],
-              details: {},
-              isError: true
-            };
+        const groups = /* @__PURE__ */ new Map();
+        for (const a of matched) {
+          const skill = a.skillName || "(无分组)";
+          if (!groups.has(skill)) groups.set(skill, []);
+          groups.get(skill).push(a);
+        }
+        const parts = [];
+        for (const [skill, list] of groups) {
+          parts.push(`[${skill}]`);
+          for (const a of list) {
+            const tools = a.tools && a.tools.length > 0 ? `工具: ${a.tools.join(", ")}` : "";
+            parts.push(`  ${a.name} — ${a.description}${tools ? ` (${tools})` : ""}`);
           }
         }
         return {
-          content: [{ type: "text", text: "请指定执行模式：single (agent + task) 或 chain (chain[])。" }],
-          details: {},
-          isError: true
+          content: [{ type: "text", text: parts.join("\n") }],
+          details: { count: matched.length, agents: matched.map((a) => a.name) }
         };
       }
     });
   }
-  // ==================== 报告格式化 ====================
-  formatChainReport(result) {
-    const parts = [];
-    parts.push(`Chain 执行完成 (${result.results.length} 步)`);
-    parts.push("");
-    for (let i = 0; i < result.results.length; i++) {
-      const r = result.results[i];
-      const icon = r.exitCode === 0 ? "✓" : "✗";
-      const status = r.exitCode === 0 ? "通过" : `失败(code=${r.exitCode})`;
-      const cost = r.usage.cost > 0 ? ` | $${r.usage.cost.toFixed(4)}` : "";
-      parts.push(`  ${i + 1}. ${icon} ${r.agent} — ${status} (${r.usage.turns} 轮${cost})`);
+}
+class AgentRunTracker {
+  constructor() {
+    this.runs = /* @__PURE__ */ new Map();
+    this.runOrder = [];
+    this.listeners = /* @__PURE__ */ new Set();
+    this.notifyTimer = null;
+    this.NOTIFY_DEBOUNCE_MS = 50;
+  }
+  // ==================== 监听者管理 ====================
+  subscribe(listener) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+  notify() {
+    if (this.notifyTimer) return;
+    this.notifyTimer = setTimeout(() => {
+      this.notifyTimer = null;
+      for (const listener of this.listeners) {
+        try {
+          listener();
+        } catch {
+        }
+      }
+    }, this.NOTIFY_DEBOUNCE_MS);
+  }
+  // ==================== 运行管理 ====================
+  /** 开始一个新的子 agent 运行 */
+  startRun(params) {
+    const prev = this.runs.get(params.toolCallId);
+    if (prev) return;
+    const state = {
+      toolCallId: params.toolCallId,
+      toolName: params.toolName,
+      agent: params.agent,
+      task: params.task,
+      mode: params.mode,
+      status: "running",
+      startedAt: Date.now(),
+      logs: [],
+      turns: 0,
+      cost: 0
+    };
+    this.runs.set(params.toolCallId, state);
+    this.runOrder.push(params.toolCallId);
+    this.notify();
+  }
+  /** 追加日志 */
+  addLog(toolCallId, entry) {
+    const run = this.runs.get(toolCallId);
+    if (!run) return;
+    run.logs.push({ ...entry, timestamp: Date.now() });
+    if (run.logs.length > 500) {
+      run.logs.splice(0, run.logs.length - 500);
     }
-    if (result.failedIndex !== null) {
-      parts.push("");
-      parts.push(`❌ 第 ${result.failedIndex + 1} 步失败，chain 终止`);
-      parts.push("");
-      parts.push(`失败步骤输出:`);
-      parts.push(result.results[result.failedIndex].output.slice(0, 2e3));
-    } else {
-      parts.push("");
-      parts.push("✅ 全部通过");
-      const last = result.results[result.results.length - 1];
-      if (last.output) {
-        parts.push("");
-        parts.push(`最终输出:`);
-        parts.push(last.output.slice(0, 2e3));
+    this.notify();
+  }
+  /** 更新运行状态（中间进度） */
+  updateRun(toolCallId, partial) {
+    const run = this.runs.get(toolCallId);
+    if (!run) return;
+    Object.assign(run, partial);
+    this.notify();
+  }
+  /** 完成一次运行 */
+  completeRun(toolCallId, result) {
+    const run = this.runs.get(toolCallId);
+    if (!run) return;
+    run.status = result.status;
+    run.output = result.output;
+    run.error = result.error;
+    run.turns = result.turns;
+    run.cost = result.cost;
+    run.model = result.model;
+    run.completedAt = Date.now();
+    run.durationMs = run.completedAt - run.startedAt;
+    this.notify();
+  }
+  // ==================== Chain 模式支持 ====================
+  /** Chain 模式下，开始一个步骤 */
+  startChainStep(toolCallId, step) {
+    const run = this.runs.get(toolCallId);
+    if (!run) return;
+    if (!run.steps) run.steps = [];
+    run.steps.push({
+      ...step,
+      status: "running",
+      logs: [],
+      turns: 0
+    });
+    this.notify();
+  }
+  /** Chain 模式下，步骤追加日志 */
+  addChainStepLog(toolCallId, stepIndex, entry) {
+    const run = this.runs.get(toolCallId);
+    if (!(run == null ? void 0 : run.steps)) return;
+    const step = run.steps.find((s) => s.index === stepIndex);
+    if (!step) return;
+    step.logs.push({ ...entry, timestamp: Date.now() });
+    if (step.logs.length > 200) step.logs.splice(0, step.logs.length - 200);
+    this.notify();
+  }
+  /** Chain 模式下，完成一个步骤 */
+  completeChainStep(toolCallId, stepIndex, result) {
+    const run = this.runs.get(toolCallId);
+    if (!(run == null ? void 0 : run.steps)) return;
+    const step = run.steps.find((s) => s.index === stepIndex);
+    if (!step) return;
+    step.status = result.status;
+    step.output = result.output;
+    step.turns = result.turns;
+    step.durationMs = result.durationMs;
+    this.notify();
+  }
+  // ==================== 查询 ====================
+  /** 获取所有运行记录（按启动顺序） */
+  getAllRuns() {
+    return this.runOrder.map((id) => this.runs.get(id)).filter((r) => r !== void 0);
+  }
+  /** 获取正在运行的记录 */
+  getRunningRuns() {
+    return this.getAllRuns().filter((r) => r.status === "running");
+  }
+  /** 获取单条运行记录 */
+  getRun(toolCallId) {
+    return this.runs.get(toolCallId);
+  }
+  /** 获取统计摘要 */
+  getSummary() {
+    const runs = this.getAllRuns();
+    return {
+      total: runs.length,
+      running: runs.filter((r) => r.status === "running").length,
+      completed: runs.filter((r) => r.status === "completed").length,
+      failed: runs.filter((r) => r.status === "failed").length,
+      aborted: runs.filter((r) => r.status === "aborted").length
+    };
+  }
+  /** 清除所有已完成/失败的历史记录 */
+  clearCompleted() {
+    for (const [id, run] of this.runs) {
+      if (run.status !== "running") {
+        this.runs.delete(id);
+        const idx = this.runOrder.indexOf(id);
+        if (idx >= 0) this.runOrder.splice(idx, 1);
       }
     }
-    return parts.join("\n");
+    this.notify();
   }
 }
 class DIContainer {
   constructor() {
+    this.agentTracker = new AgentRunTracker();
     this.agentRepo = new SubSkillRepository();
     this.rpcPool = new RpcProcessPool(this.agentRepo);
     this.subProcessRunner = new SubProcessRunner(this.rpcPool);
     this.discoverAgentsUseCase = new DiscoverAgentsUseCase(this.agentRepo);
     this.spawnAgentUseCase = new SpawnAgentUseCase(this.agentRepo, this.subProcessRunner);
-    this.spawnAgentTool = new SpawnAgentTool(this.spawnAgentUseCase);
-    this.subagentTool = new SubagentTool(this.spawnAgentUseCase, this.agentRepo, this.subProcessRunner);
+    this.spawnAgentTool = new SpawnAgentTool(this.spawnAgentUseCase, this.agentTracker);
+    this.listAgentsTool = new ListAgentsTool(this.agentRepo);
   }
   static getInstance() {
     if (!DIContainer.instance) {
@@ -1153,77 +1297,392 @@ class StopTimeCommand {
     });
   }
 }
-class SubSkillCommand {
-  register(pi, container) {
-    pi.registerCommand("sub-skill", {
-      description: "列出 sub-agent。/sub-skill 查看全部，/sub-skill <skill> 只看该 skill 下的",
-      handler: async (args, ctx) => {
-        const { agents, errors } = await container.agentRepo.discoverAll("sub_skill");
-        if (agents.length === 0) {
-          ctx.ui.notify("未发现任何 sub-agent", "warn");
-          return;
+const MAX_VISIBLE_AGENTS = 12;
+const MAX_VISIBLE_LOGS = 15;
+const MIN_LOG_LINES = 5;
+const MIN_TERM_WIDTH = 60;
+function fmtDuration(ms) {
+  if (ms < 1e3) return `${ms}ms`;
+  if (ms < 6e4) return `${(ms / 1e3).toFixed(1)}s`;
+  const m = Math.floor(ms / 6e4);
+  const s = Math.floor(ms % 6e4 / 1e3);
+  return `${m}m${s}s`;
+}
+function fmtTime(ts) {
+  const d = new Date(ts);
+  return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d.getSeconds().toString().padStart(2, "0")}`;
+}
+function fmtCost(cost) {
+  if (cost <= 0) return "-";
+  if (cost < 0.01) return "<$0.01";
+  return `$${cost.toFixed(4)}`;
+}
+function statusIcon(status, themeFg) {
+  switch (status) {
+    case "running":
+      return themeFg("warning", "▶");
+    case "completed":
+      return themeFg("success", "✓");
+    case "failed":
+      return themeFg("error", "✗");
+    case "aborted":
+      return themeFg("muted", "⊘");
+    default:
+      return themeFg("dim", "○");
+  }
+}
+function logIcon(level, themeFg) {
+  switch (level) {
+    case "thinking":
+      return themeFg("mdQuote", "🤔");
+    case "tool_call":
+      return themeFg("accent", "🔧");
+    case "tool_result":
+      return themeFg("mdCode", "📦");
+    case "output":
+      return themeFg("toolOutput", "💬");
+    case "error":
+      return themeFg("error", "❌");
+    case "done":
+      return themeFg("success", "✅");
+    case "info":
+      return themeFg("dim", "ℹ");
+    default:
+      return " ";
+  }
+}
+function trunc(text, max) {
+  return piTui.truncateToWidth(text, max);
+}
+class SubAgentView {
+  constructor(config) {
+    this.selectedIndex = 0;
+    this.scrollOffset = 0;
+    this.focusMode = "list";
+    this.logScrollOffset = 0;
+    this.tracker = config.tracker;
+    this.onClose = config.onClose;
+    this.onKill = config.onKill;
+    this.onRetry = config.onRetry;
+  }
+  invalidate() {
+    this.cachedWidth = void 0;
+    this.cachedLines = void 0;
+  }
+  handleInput(data) {
+    if (piTui.matchesKey(data, piTui.Key.escape) || piTui.matchesKey(data, "q")) {
+      this.onClose();
+      return;
+    }
+    const runs = this.tracker.getAllRuns();
+    if (runs.length === 0) return;
+    if (piTui.matchesKey(data, piTui.Key.tab)) {
+      this.focusMode = this.focusMode === "list" ? "logs" : "list";
+      this.invalidate();
+      return;
+    }
+    if (this.focusMode === "list") {
+      if (piTui.matchesKey(data, piTui.Key.up)) {
+        this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+        this.ensureVisible(runs.length);
+        this.invalidate();
+      } else if (piTui.matchesKey(data, piTui.Key.down)) {
+        this.selectedIndex = Math.min(runs.length - 1, this.selectedIndex + 1);
+        this.ensureVisible(runs.length);
+        this.invalidate();
+      } else if (piTui.matchesKey(data, piTui.Key.enter)) {
+        this.focusMode = "logs";
+        this.logScrollOffset = 0;
+        this.invalidate();
+      } else if (piTui.matchesKey(data, "k") || piTui.matchesKey(data, "K")) {
+        const run = runs[this.selectedIndex];
+        if (run && run.status === "running" && this.onKill) {
+          this.onKill(run.toolCallId);
         }
-        const filter = (args || "").trim().toLowerCase();
-        let msg;
-        if (filter) {
-          const matched = agents.filter((a) => a.skillName === filter);
-          if (matched.length === 0) {
-            ctx.ui.notify(`skill "${filter}" 下没有 sub-agent`, "warn");
-            return;
-          }
-          msg = `[${filter}] sub-agent (${matched.length}):
-${formatAgentList(matched)}`;
-        } else {
-          const grouped = groupBySkill(agents);
-          const parts = [];
-          for (const [skill, list] of grouped) {
-            parts.push(`[${skill}] (${list.length}):
-${formatAgentList(list)}`);
-          }
-          msg = `全部 sub-agent (${agents.length}):
-
-${parts.join("\n\n")}`;
+      } else if (piTui.matchesKey(data, "r") || piTui.matchesKey(data, "R")) {
+        const run = runs[this.selectedIndex];
+        if (run && (run.status === "failed" || run.status === "aborted") && this.onRetry) {
+          this.onRetry(run.toolCallId);
         }
-        if (errors.length > 0) {
-          msg += `
-
-发现错误:
-${errors.join("\n")}`;
-        }
-        ctx.ui.notify(msg, "info");
       }
-    });
+    } else {
+      if (piTui.matchesKey(data, piTui.Key.up)) {
+        this.logScrollOffset = Math.min(
+          this.logScrollOffset + 1,
+          this.getMaxLogScroll(runs[this.selectedIndex])
+        );
+        this.invalidate();
+      } else if (piTui.matchesKey(data, piTui.Key.down)) {
+        this.logScrollOffset = Math.max(0, this.logScrollOffset - 1);
+        this.invalidate();
+      } else if (piTui.matchesKey(data, piTui.Key.enter) || piTui.matchesKey(data, piTui.Key.escape)) {
+        this.focusMode = "list";
+        this.logScrollOffset = 0;
+        this.invalidate();
+      }
+    }
+  }
+  ensureVisible(total) {
+    if (this.selectedIndex < this.scrollOffset) {
+      this.scrollOffset = this.selectedIndex;
+    } else if (this.selectedIndex >= this.scrollOffset + MAX_VISIBLE_AGENTS) {
+      this.scrollOffset = this.selectedIndex - MAX_VISIBLE_AGENTS + 1;
+    }
+  }
+  getMaxLogScroll(run) {
+    if (!run) return 0;
+    const logs = this.getDisplayLogs(run);
+    return Math.max(0, logs.length - MAX_VISIBLE_LOGS);
+  }
+  getDisplayLogs(run) {
+    if (run.mode === "chain" && run.steps && run.steps.length > 0) {
+      const allLogs = [];
+      for (const step of run.steps) {
+        allLogs.push({
+          timestamp: 0,
+          level: "info",
+          text: `── Step ${step.index}: ${step.agent} (${step.status}) ──`
+        });
+        allLogs.push(...step.logs);
+      }
+      return allLogs;
+    }
+    return run.logs;
+  }
+  /** 构建 agent 列表行 */
+  buildAgentLines(runs, width, themeFg) {
+    const lines = [];
+    const visible = runs.slice(this.scrollOffset, this.scrollOffset + MAX_VISIBLE_AGENTS);
+    const headerWidth = width - 2;
+    const header = themeFg("muted", "# Agent".padEnd(headerWidth));
+    lines.push(header);
+    for (let i = 0; i < visible.length; i++) {
+      const globalIndex = this.scrollOffset + i;
+      const run = visible[i];
+      const isSelected = globalIndex === this.selectedIndex && this.focusMode === "list";
+      const icon = statusIcon(run.status, themeFg);
+      const agentName = trunc(run.agent, 20);
+      const statusText = run.status === "running" ? "运行中" : run.status === "completed" ? "完成" : run.status === "failed" ? "失败" : "终止";
+      const turnsStr = `${run.turns}轮`;
+      const costStr = fmtCost(run.cost);
+      const modelStr = run.model ? trunc(run.model, 12) : "";
+      const durStr = run.durationMs ? fmtDuration(run.durationMs) : run.status === "running" ? "..." : "";
+      const prefix = isSelected ? themeFg("accent", "▸") : " ";
+      const parts = [
+        prefix,
+        icon,
+        " ",
+        themeFg(isSelected ? "accent" : "text", agentName.padEnd(20)),
+        " ",
+        themeFg(
+          run.status === "completed" ? "success" : run.status === "failed" ? "error" : run.status === "running" ? "warning" : "muted",
+          statusText.padEnd(6)
+        ),
+        " ",
+        themeFg("dim", turnsStr.padEnd(5)),
+        " ",
+        themeFg("dim", costStr.padEnd(8)),
+        " ",
+        themeFg("dim", modelStr.padEnd(12)),
+        " ",
+        themeFg("muted", durStr.padEnd(8))
+      ];
+      let line = parts.join("");
+      line = piTui.truncateToWidth(line, width - 2);
+      if (isSelected) {
+        const vw = piTui.visibleWidth(line);
+        const padded = line + " ".repeat(Math.max(0, width - 2 - vw));
+        line = padded;
+      }
+      lines.push((isSelected ? "" : " ") + line);
+    }
+    return lines;
+  }
+  /** 构建日志行 */
+  buildLogLines(run, width, themeFg) {
+    if (!run) {
+      return ["", themeFg("dim", "  没有选中的 agent")];
+    }
+    const logs = this.getDisplayLogs(run);
+    if (logs.length === 0) {
+      if (run.status === "running") {
+        return ["", themeFg("dim", "  等待子 agent 输出...")];
+      }
+      return ["", themeFg("dim", "  无日志")];
+    }
+    const visibleLogs = logs.slice(
+      Math.max(0, logs.length - MAX_VISIBLE_LOGS - this.logScrollOffset),
+      logs.length - this.logScrollOffset
+    );
+    if (visibleLogs.length === 0) {
+      return ["", themeFg("dim", "  (已到顶部)")];
+    }
+    const lines = [""];
+    for (const log of visibleLogs) {
+      const time = log.timestamp > 0 ? themeFg("dim", fmtTime(log.timestamp)) : "";
+      const icon = logIcon(log.level, themeFg);
+      let coloredText;
+      switch (log.level) {
+        case "error":
+          coloredText = themeFg("error", log.text);
+          break;
+        case "tool_call":
+          coloredText = themeFg("accent", trunc(log.text, width - 12));
+          break;
+        case "thinking":
+          coloredText = themeFg("mdQuote", trunc(log.text, width - 12));
+          break;
+        case "output":
+          coloredText = themeFg("toolOutput", trunc(log.text, width - 12));
+          break;
+        case "done":
+          coloredText = themeFg("success", log.text);
+          break;
+        default:
+          coloredText = trunc(log.text, width - 12);
+      }
+      const wrapped = piTui.wrapTextWithAnsi(`  ${time} ${icon} ${coloredText}`, width - 2);
+      for (const wl of wrapped) {
+        lines.push(wl);
+      }
+    }
+    return lines;
+  }
+  render(width, themeFg, themeBold) {
+    if (width < MIN_TERM_WIDTH) {
+      return [
+        themeFg("error", `终端太窄 (${width} < ${MIN_TERM_WIDTH})，无法显示仪表盘`)
+      ];
+    }
+    const runs = this.tracker.getAllRuns();
+    const summary = this.tracker.getSummary();
+    const selectedRun = runs[this.selectedIndex];
+    const innerW = width - 2;
+    const title = themeBold ? themeBold("SubAgent Monitor") : "SubAgent Monitor";
+    const titlePad = Math.max(0, innerW - piTui.visibleWidth(title));
+    const topBorder = themeFg("border", `┌ ${title}${"─".repeat(titlePad > 0 ? titlePad - 1 : 0)}┐`);
+    const sepBar = themeFg("border", `├${"─".repeat(innerW)}┤`);
+    const botBorder = themeFg("border", `└${"─".repeat(innerW)}┘`);
+    const cw = width - 2;
+    const borderLine = (content) => {
+      const trimmed = piTui.truncateToWidth(content, cw);
+      const pad = cw - piTui.visibleWidth(trimmed);
+      return `│${trimmed}${" ".repeat(Math.max(0, pad))}│`;
+    };
+    const lines = [topBorder];
+    if (runs.length === 0) {
+      lines.push(borderLine(themeFg("dim", "  暂无子 agent 运行记录")));
+      lines.push(borderLine(themeFg("dim", "  调用 spawn_agent 后自动出现")));
+    } else {
+      const agentLines = this.buildAgentLines(runs, width, themeFg);
+      for (const al of agentLines) {
+        lines.push(borderLine(al));
+      }
+    }
+    lines.push(sepBar);
+    const logHeader = this.focusMode === "logs" ? ` ${themeFg("accent", "▸")} ${themeFg("accent", (selectedRun == null ? void 0 : selectedRun.agent) ?? "")} 日志 ${themeFg("dim", "[↑↓滚动 Enter返回]")}` : ` ${(selectedRun == null ? void 0 : selectedRun.agent) ?? ""} 日志 ${themeFg("dim", "[Enter查看]")}`;
+    lines.push(borderLine(logHeader));
+    if (selectedRun) {
+      const logLines = this.buildLogLines(selectedRun, width, themeFg);
+      for (const ll of logLines) {
+        lines.push(borderLine(ll || ""));
+      }
+      for (let i = 0; i < MIN_LOG_LINES; i++) {
+        lines.push(`│${" ".repeat(cw)}│`);
+      }
+    } else {
+      lines.push(borderLine(themeFg("dim", "  暂无 agent 运行记录")));
+      for (let i = 0; i < MIN_LOG_LINES; i++) lines.push(`│${" ".repeat(cw)}│`);
+    }
+    let statusLine = "";
+    if (summary.total === 0) {
+      statusLine = themeFg("dim", "待命中");
+    } else {
+      const runningNames = runs.filter((r) => r.status === "running").map((r) => r.agent);
+      if (runningNames.length > 0) {
+        statusLine += `${statusIcon("running", themeFg)} ${runningNames.join(", ")}`;
+      }
+      if (summary.completed > 0 && runningNames.length === 0) {
+        statusLine += `${statusIcon("completed", themeFg)} 完成`;
+      }
+    }
+    const keybindings = themeFg("dim", "q关闭  ↑↓  Enter日志");
+    const statusBar = `${statusLine}${" ".repeat(Math.max(0, cw - piTui.visibleWidth(statusLine) - piTui.visibleWidth(keybindings)))}${keybindings}`;
+    lines.push(borderLine(statusBar));
+    lines.push(botBorder);
+    return lines;
   }
 }
-function formatAgentList(agents) {
-  return agents.map((a) => {
-    const tools = a.tools && a.tools.length > 0 ? `[${a.tools.join(", ")}]` : "无工具";
-    return `  ● ${a.name}  — ${a.description}
-    工具: ${tools}`;
-  }).join("\n");
-}
-function groupBySkill(agents) {
-  const map = /* @__PURE__ */ new Map();
-  for (const a of agents) {
-    const skill = a.skillName || "?";
-    if (!map.has(skill)) map.set(skill, []);
-    map.get(skill).push(a);
-  }
-  return map;
+async function openSubAgentView(ctx, tracker, options) {
+  await ctx.ui.custom(
+    (tui, theme, _kb, done) => {
+      const themeFg = theme.fg.bind(theme);
+      const view = new SubAgentView({
+        tracker,
+        onClose: () => done(void 0),
+        onKill: options == null ? void 0 : options.onKill,
+        onRetry: options == null ? void 0 : options.onRetry
+      });
+      tracker.subscribe(() => {
+        tui.requestRender();
+      });
+      return {
+        render: (w) => {
+          var _a;
+          const themeBold = ((_a = theme.bold) == null ? void 0 : _a.bind) ? theme.bold.bind(theme) : void 0;
+          return view.render(w, themeFg, themeBold);
+        },
+        handleInput: (data) => {
+          view.handleInput(data);
+          tui.requestRender();
+        },
+        invalidate: () => {
+          view.invalidate();
+        }
+      };
+    },
+    {
+      overlay: true,
+      overlayOptions: {
+        width: "90%",
+        minWidth: MIN_TERM_WIDTH,
+        maxHeight: "90%",
+        anchor: "center",
+        margin: 1
+      }
+    }
+  );
 }
 function extension(pi) {
   const container = DIContainer.getInstance();
+  const tracker = container.agentTracker;
+  let agentViewOpen = false;
   pi.on("session_start", async (_event, ctx) => {
-    ctx.ui.setWidget("subagent", ["── 子进程池 ──", "待命中 (暂无活跃子进程)"], { placement: "aboveEditor" });
+    tracker.subscribe(() => {
+      if (!agentViewOpen && tracker.getRunningRuns().length > 0 && ctx.mode === "tui") {
+        agentViewOpen = true;
+        openSubAgentView(ctx, tracker).finally(() => {
+          agentViewOpen = false;
+        });
+      }
+    });
   });
-  pi.on("session_shutdown", async (_event, ctx) => {
+  pi.on("session_shutdown", async (_event) => {
     await container.rpcPool.shutdown();
-    ctx.ui.setWidget("subagent", void 0);
   });
   container.spawnAgentTool.register(pi);
-  container.subagentTool.register(pi);
+  container.listAgentsTool.register(pi);
   new StopTimeCommand().register(pi, container);
-  new SubSkillCommand().register(pi, container);
+  pi.registerCommand("sub-agent", {
+    description: "打开子 agent 监控视图，查看运行状态、实时日志和详情",
+    handler: async (_args, ctx) => {
+      if (ctx.mode !== "tui") {
+        ctx.ui.notify("/sub-agent 仅在 TUI 模式可用", "error");
+        return;
+      }
+      await openSubAgentView(ctx, tracker);
+    }
+  });
 }
 module.exports = extension;
 //# sourceMappingURL=extension.js.map

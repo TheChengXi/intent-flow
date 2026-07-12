@@ -77,7 +77,7 @@ function buildTree(data: any, parentPath: string, prefix: string): any[] {
         children: [],
         expanded: false,
         protocol: { css: { ...folderProtocol.css } },
-        font: folderProtocol.font,
+        textFont: folderProtocol.textFont,
         data: dir,
       })
     })
@@ -94,7 +94,7 @@ function buildTree(data: any, parentPath: string, prefix: string): any[] {
         children: [],
         expanded: false,
         protocol: { css: { ...groupProtocol.css } },
-        font: groupProtocol.font,
+        textFont: groupProtocol.textFont,
         data: g,
       }
       if (g.files) {
@@ -108,7 +108,7 @@ function buildTree(data: any, parentPath: string, prefix: string): any[] {
             children: [],
             expanded: false,
             protocol: { css: { ...fileProtocol.css } },
-            font: fileProtocol.font,
+            textFont: fileProtocol.textFont,
             data: fileName,
           })
         })
@@ -128,7 +128,7 @@ function buildTree(data: any, parentPath: string, prefix: string): any[] {
         children: [],
         expanded: false,
         protocol: { css: { ...fileProtocol.css } },
-        font: fileProtocol.font,
+        textFont: fileProtocol.textFont,
         data: fileName,
       })
     })
@@ -163,7 +163,7 @@ function applyExpandState(nodes: any[], expanded: any, cache: any): void {
  */
 function preprocessNodes(nodes: any[]): void {
   for (const n of nodes) {
-    n._prepared = prepare(n.label, n.font)
+    n._prepared = prepare(n.label, n.textFont)
     if (n.children?.length) preprocessNodes(n.children)
   }
 }

@@ -1,7 +1,7 @@
 # Pi 适配层
 
 将 CCD 框架的 agent 发现与子进程调度能力暴露为 pi 扩展工具。
-支持 `spawn_agent` 工具、`subagent` 工具（单次/链式）和 `/sub-skill` 命令。
+支持 `spawn_agent` 工具（调用子 agent）、`list_agents` 工具（查询可用子 agent）和 `/sub-agent` 命令（查看实时状态）。
 
 ## 架构
 
@@ -11,14 +11,23 @@ src/adapter/pi/
 ├── DIContainer.ts            ← 依赖注入容器
 ├── index.ts                  ← 统一导出
 ├── README.md                 ← 本文件
-├── agents/
-│   ├── SubSkillRepository.ts ← Agent 发现（sub-skill 递归扫描）
+├── tools/
+│   ├── index.ts              ← 工具统一导出
+│   ├── SpawnAgentTool.ts     ← spawn_agent 工具（含实时可视化）
+
+├── tui/
+│   ├── index.ts              ← TUI 组件统一导出
+│   ├── AgentRunTracker.ts    ← 子 agent 状态管理中心（数据源）
+│   └── SubAgentView.ts     ← 监控视图 overlay（列表+日志+操作）
+├── runtime/
 │   ├── RpcProcessPool.ts     ← 常驻进程池管理（按需初始化）
 │   └── SubProcessRunner.ts   ← 子进程运行器（RPC 池优先 → spawn 一次性回退）
-└── tools/
-    ├── index.ts              ← 工具统一导出
-    ├── SpawnAgentTool.ts     ← spawn_agent 工具（含实时可视化）
-    └── SubagentTool.ts       ← subagent 工具（单次/链式模式）
+├── repositories/
+│   └── SubSkillRepository.ts ← Agent 发现（sub-skill 递归扫描）
+├── commands/
+│   ├── index.ts
+│   └── StopTimeCommand.ts    ← /stop-time 命令
+└── DIContainer.ts
 ```
 
 ### 依赖关系（三层架构）
@@ -26,7 +35,7 @@ src/adapter/pi/
 ```
 extension.ts (adapter/pi)
   → DIContainer
-    → SpawnAgentTool / SubagentTool
+    → SpawnAgentTool
       → SpawnAgentUseCase / DiscoverAgentsUseCase (application/)
         → SubSkillRepository / SubProcessRunner / RpcProcessPool (adapter.pi.agents/)
           → IAgentRepository / ISubProcessRunner (data/repositories/)
@@ -39,7 +48,7 @@ extension.ts (adapter/pi)
 |---|------|
 | `@earendil-works/pi-coding-agent` | ExtensionAPI 类型、tool 注册 API |
 | `typebox` | Tool 参数 schema 定义 |
-| `@earendil-works/pi-tui` | TUI 组件（Container, Text, Markdown） |
+| `@earendil-works/pi-tui` | TUI 组件（Container, Text, Markdown, matchesKey, Key 等） |
 
 ## 构建与部署
 
@@ -75,10 +84,79 @@ npm run deploy:pi     # ≡ node scripts/deploy-pi.js → 复制到 ~/.pi/agent/
 | `mcp-server` | `dist/mcp-server.js` | MCP 服务器 |
 | `pi/extension` | `dist/pi/extension.js` | **Pi 扩展（this）** |
 
+## 子 agent TUI 监控视图
+
+命令 `/sub-agent` 打开子 agent 监控视图 overlay，
+提供类似「小型主 agent 界面」的体验：
+
+```
+┌─────────────────────────────────────────────────────┐
+│  SubAgent Monitor                    [q]关闭      │
+├─────────────────────────────────────────────────────┤
+│  # Agent               Status   Turns  Cost         │
+│  ▸ ▶ run-code          运行中    3     -            │
+│    ✓ review-code       完成      5     $0.02        │
+│    ✗ test-code         失败      2     $0.01        │
+├─────────────────────────────────────────────────────┤
+│  run-code 日志                            [Enter]   │
+│    14:23:01 🤔 思考中...                            │
+│    14:23:02 🔧 read src/index.ts                   │
+│    14:23:05 💬 代码重构完成                         │
+├─────────────────────────────────────────────────────┤
+│  ▶1运行中 ✓1完成 ✗1失败  共3个    ↑↓ k r q        │
+└─────────────────────────────────────────────────────┘
+```
+
+### 自动弹出
+
+调用 `spawn_agent` 工具时，监控视图**自动弹出**，实时显示子 agent 运行状态。
+无需手动操作——观察子 agent 执行过程零额外成本。
+
+监控视图关闭后，下次工具调用仍然会自动弹出。
+
+### 键盘操作
+
+| 按键 | 功能 |
+|------|------|
+| `↑` `↓` | 在 agent 列表中导航 |
+| `Enter` | 查看选中 agent 的详细日志 |
+| `Tab` | 在 agent 列表和日志区之间切换焦点 |
+| `q` / `Esc` | 关闭监控视图 |
+| `k` | 终止运行中的 agent（预留） |
+| `r` | 重试失败的 agent（预留） |
+| `/sub-agent` | 命令打开监控视图 |
+
+### 数据流
+
+```
+工具调用 tracker.startRun()
+  ↓ tracker.notify()（经 50ms 防抖合并）
+tracker 订阅者（extension.ts）
+  → SubAgentView 自动弹出（overlay）
+  ↓
+子 agent 执行中 → tool_call/thinking/output 事件
+  ↓
+tracker.addLog() → notify() → 视图实时更新
+```
+
+关键设计：
+- **fire-and-forget**：视图弹出不阻塞工具执行
+- **50ms 防抖**：高频工具调用不会打爆 TUI re-render
+- **不绑定工具名**：任何工具注入 tracker 并调 startRun() 即可触发
+不阻塞工具执行流程。用户关闭监控视图后，下次工具调用自动再打开。
+
+### AgentRunTracker
+
+单例状态中心，所有工具在执行中自动推送事件。屏蔽了工具内部实现差异：
+
+- **spawn_agent**: tool_call、thinking、output、done 全链路推送
+
+视图订阅 tracker 变更自动刷新（经 50ms 防抖合并），无需手动轮询。
+
 ## 进程池生命周期
 
 ```
-session_start  ──→ 注册 widget 占位，不启动任何进程
+session_start  ──→ 不启动任何进程
                      │
 第一次 runTask ──→ ensureProcess → 按需 spawn 子进程
                      │
@@ -95,26 +173,20 @@ session_start  ──→ 注册 widget 占位，不启动任何进程
 - **不强制预热**：`session_start` 不启动任何进程，全按需初始化
 - **幂等预热**：`warmUp()` 已存在进程跳过，不会重复创建
 
-## 子进程可视化
+## 实时监控
 
-子进程运行时，`spawn_agent` 工具会自动：
+子 agent 运行时，监控视图（SubAgentView）自动弹出 overlay，
+提供完整的 agent 列表、实时日志和键盘操作。
 
-| 展示方式 | 位置 | 内容 |
-|---------|------|------|
-| `setWidget` | 编辑器上方 | agent 名称、当前状态、当前调用的工具 |
-| `setStatus` | 底部状态栏 | `{agent} 运行中...` / `{agent} 完成` |
-| `onUpdate` | 对话上下文 | 关键节点推送（工具调用开始） |
-
-不会被刷屏——只有最终结果返回对话，中间状态通过 widget 实时更新。
+中间状态通过 tracker 实时推送到视图，只有最终结果返回对话上下文。
 
 ## 可用工具
 
 | 工具名 | pi 注册名 | 说明 |
 |---|---|---|
 | `spawn_agent` | `spawn_agent` | 隔离子进程运行 agent，返回结构化结果，含实时可视化 |
-| `subagent` | `subagent` | 单次模式 + 链式模式（chain[]） |
-| `/sub-skill` | `sub-skill` | 列出所有可用 agent |
-| `/sub-skill <skill>` | `sub-skill` | 只看该 skill 下的 agent |
+| `list_agents` | `list_agents` | 查询可用 sub-agent 列表，LLM 主动调用 |
+| `/sub-agent` | `sub-agent` | 打开子 agent 监控视图（自动弹出 / /sub-agent命令） |
 
 ### spawn_agent 参数
 
@@ -126,12 +198,7 @@ session_start  ──→ 注册 widget 占位，不启动任何进程
 | `model` | string | ❌ | agent 定义值 | 模型覆盖 |
 | `timeoutMs` | number | ❌ | 600000 | 子进程超时（10 分钟） |
 
-### subagent 参数
 
-| 参数 | 类型 | 说明 |
-|---|---|---|
-| `agent` + `task` | string + string | 单次模式 |
-| `chain[]` | `{agent, task}[]` | 链式模式，`{previous}` 自动替换为上一步输出 |
 
 ## Agent 发现机制
 
@@ -190,6 +257,28 @@ npx vitest run src/application/useCases/*Agent*
 3. 在 `tools/index.ts` 导出
 4. 在 `DIContainer.ts` 实例化
 5. 在 `extension.ts` 调用 `register()`
+
+### 集成监控视图
+
+新工具要出现在监控视图中只需两步：
+
+1. 构造函数接收 `AgentRunTracker`（可选参数）
+2. 在 `execute()` 中调用 `tracker.startRun()` / `tracker.addLog()` / `tracker.completeRun()`
+
+```typescript
+execute: async (toolCallId, params, signal, onUpdate, ctx) => {
+  this.tracker?.startRun({ toolCallId, toolName: 'my_tool', agent, task, mode: 'single' });
+  // ... 执行中 this.tracker?.addLog(toolCallId, { level: 'tool_call', text: '...' });
+  this.tracker?.completeRun(toolCallId, { status: 'completed', output, turns, cost });
+}
+```
+
+### 添加新 TUI 组件
+
+1. 在 `tui/` 下新建组件文件
+2. 组件实现 `render(width)` / `handleInput(data)` / `invalidate()` 三方法
+3. 在 `tui/index.ts` 导出
+4. 被 `SubAgentView` 引用或用于其他 overlay
 
 ### 添加新 sub-agent
 

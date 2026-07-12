@@ -6,7 +6,7 @@
 export const text = {
   // 工具栏
   selectFolder: '📂 选择文件夹',
-  inputPlaceholder: '或输入路径（如 src/adapter/vscode）',
+  inputPlaceholder: '或输入路径（请从根目录开始输入）',
   loadBtn: '加载',
 
   // 状态

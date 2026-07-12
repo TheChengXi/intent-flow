@@ -11,10 +11,14 @@ import { SubProcessRunner } from './runtime/SubProcessRunner';
 import { DiscoverAgentsUseCase } from '../../application/useCases/DiscoverAgentsUseCase';
 import { SpawnAgentUseCase } from '../../application/useCases/SpawnAgentUseCase';
 import { SpawnAgentTool } from './tools/SpawnAgentTool';
-import { SubagentTool } from './tools/SubagentTool';
+import { ListAgentsTool } from './tools/ListAgentsTool';
+import { AgentRunTracker } from './tui/AgentRunTracker';
 
 export class DIContainer {
   private static instance: DIContainer;
+
+  // ==================== 状态管理 ====================
+  public agentTracker: AgentRunTracker;
 
   // ==================== 仓库 ====================
   public agentRepo: SubSkillRepository;
@@ -31,9 +35,12 @@ export class DIContainer {
 
   // ==================== 工具 ====================
   public spawnAgentTool: SpawnAgentTool;
-  public subagentTool: SubagentTool;
+  public listAgentsTool: ListAgentsTool;
 
   private constructor() {
+    // 初始化状态管理
+    this.agentTracker = new AgentRunTracker();
+
     // 初始化仓库
     this.agentRepo = new SubSkillRepository();
 
@@ -48,8 +55,8 @@ export class DIContainer {
     this.spawnAgentUseCase = new SpawnAgentUseCase(this.agentRepo, this.subProcessRunner);
 
     // 初始化工具
-    this.spawnAgentTool = new SpawnAgentTool(this.spawnAgentUseCase);
-    this.subagentTool = new SubagentTool(this.spawnAgentUseCase, this.agentRepo, this.subProcessRunner);
+    this.spawnAgentTool = new SpawnAgentTool(this.spawnAgentUseCase, this.agentTracker);
+    this.listAgentsTool = new ListAgentsTool(this.agentRepo);
   }
 
   static getInstance(): DIContainer {

@@ -2,6 +2,7 @@
  * @intent spawn_agent 工具。封装 SpawnAgentUseCase，向 pi 注册
  * 名为 spawn_agent 的工具。Phase 1 完整实现，含 TUI 渲染。
  * Phase 1.5 新增：子进程中间事件实时可视化（widget + onUpdate 流式推送）。
+ * Phase 2 新增：AgentRunTracker 集成——实时推送事件到仪表盘。
  */
 
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
@@ -10,6 +11,7 @@ import { Container, Markdown, Spacer, Text } from '@earendil-works/pi-tui';
 import { getMarkdownTheme } from '@earendil-works/pi-coding-agent';
 import type { ISpawnAgentUseCase } from '../../../application/useCases/SpawnAgentUseCase';
 import type { AgentRunResult } from '../../../data/entities/AgentRunResult';
+import type { AgentRunTracker } from '../tui/AgentRunTracker';
 
 // ==================== 渲染辅助函数 ====================
 
@@ -59,6 +61,20 @@ function getDisplayItems(messages: unknown[]): DisplayItem[] {
   return items;
 }
 
+/** 从消息中提取文本内容 */
+function extractContentText(msg: any): string {
+  if (!msg?.content) return '';
+  if (typeof msg.content === 'string') return msg.content.trim();
+  if (Array.isArray(msg.content)) {
+    return msg.content
+      .filter((p: any) => p.type === 'text')
+      .map((p: any) => p.text || '')
+      .join(' ')
+      .trim();
+  }
+  return '';
+}
+
 function getFinalOutput(messages: unknown[]): string {
   for (let i = (messages as any[]).length - 1; i >= 0; i--) {
     const msg = (messages as any[])[i];
@@ -74,7 +90,10 @@ function getFinalOutput(messages: unknown[]): string {
 // ==================== 工具注册 ====================
 
 export class SpawnAgentTool {
-  constructor(private useCase: ISpawnAgentUseCase) {}
+  constructor(
+    private useCase: ISpawnAgentUseCase,
+    private tracker?: AgentRunTracker,
+  ) {}
 
   register(pi: ExtensionAPI): void {
     pi.registerTool({
@@ -149,7 +168,6 @@ export class SpawnAgentTool {
         const finalOutput = r.messages ? getFinalOutput(r.messages) : r.output;
 
         if (expanded) {
-          // ── 展开视图 ──
           const container = new Container();
           let header = `${icon} ${theme.fg('toolTitle', theme.bold(r.agent))}`;
           if (r.error) header += ` ${theme.fg('error', `[${r.error}]`)}`;
@@ -177,13 +195,11 @@ export class SpawnAgentTool {
           return container;
         }
 
-        // ── 折叠视图 ──
         let text = `${icon} ${theme.fg('toolTitle', theme.bold(r.agent))}`;
         if (r.error) text += ` ${theme.fg('error', `[${r.error}]`)}`;
         if (displayItems.length === 0 && !finalOutput) {
           text += `\n${theme.fg('muted', '(no output)')}`;
         } else {
-          // 显示最后 5 个工具调用
           const lastItems = displayItems.slice(-5);
           for (const item of lastItems) {
             if (item.type === 'toolCall') {
@@ -199,16 +215,28 @@ export class SpawnAgentTool {
 
       // ── execute ──────────────────────────────────
 
-      execute: async (_toolCallId, params, _signal, onUpdate, ctx) => {
+      execute: async (toolCallId, params, _signal, onUpdate, ctx) => {
         const agentName = params.agent;
+        const tracker = this.tracker;
 
-        // ── 实时状态：widget + 状态栏 ──
-        ctx.ui.setStatus('subagent', `${agentName} 运行中...`);
-        ctx.ui.setWidget('subagent', [
-          `── 子进程: ${agentName} ──`,
-          '⏳ 启动中...',
-          `任务: ${params.task.slice(0, 80)}${params.task.length > 80 ? '...' : ''}`,
-        ], { placement: 'aboveEditor' });
+        // 从 session 文件名提取标记，用于区分不同主 session 的子 agent 调用
+        const sessionFile = ctx.sessionManager?.getSessionFile?.() || '';
+        const sessionLabel = sessionFile
+          ? sessionFile.replace(/\.[^.]+$/, '').replace(/^.*[/\\]/, '').replace(/-\d{4}-\d{2}-\d{2}.*$/, '')
+          : '';
+        const displayAgent = sessionLabel ? `${sessionLabel}-${agentName}` : agentName;
+
+        // ── 推送到仪表盘 tracker ──
+        tracker?.startRun({
+          toolCallId,
+          toolName: 'spawn_agent',
+          agent: displayAgent,
+          task: params.task,
+          mode: 'single',
+        });
+
+        // message_update 防刷：同一段文本只推一次
+        let lastUpdateText = '';
 
         try {
           const result = await this.useCase.execute({
@@ -220,41 +248,92 @@ export class SpawnAgentTool {
             skipExts: params.skipExts,
             cwd: ctx.cwd,
             onEvent: (event) => {
-              // 工具调用事件 → 更新 widget
+              // ── 推送到 tracker（实时日志） ──
               if (event.type === 'tool_execution_start') {
                 const ev = event as any;
-                const args = ev.args ? JSON.stringify(ev.args).slice(0, 60) : '';
-                ctx.ui.setWidget('subagent', [
-                  `── 子进程: ${agentName} ──`,
-                  `🔧 ${ev.toolName} ${args}`,
-                ]);
-                // 关键节点也推到 onUpdate（让 LLM 感知进度）
+                const argsStr = ev.args ? JSON.stringify(ev.args).slice(0, 80) : '';
+                tracker?.addLog(toolCallId, {
+                  level: 'tool_call',
+                  text: `${ev.toolName} ${argsStr}`,
+                  toolName: ev.toolName,
+                  toolArgs: ev.args,
+                });
                 onUpdate?.({
                   content: [{ type: 'text' as const, text: `[${agentName}] 调用工具: ${ev.toolName}` }],
                   details: {} as any,
                 });
-              } else if (event.type === 'message_start') {
-                ctx.ui.setWidget('subagent', [
-                  `── 子进程: ${agentName} ──`,
-                  '🤔 思考中...',
-                ]);
+              } else if (event.type === 'message_update') {
+                const ev = event as any;
+                const msg = ev.message;
+                if (msg?.role === 'assistant') {
+                  const text = extractContentText(msg);
+                  // 防刷：文本累积超过 30 字才推一次，不截断不省略
+                  if (text && text.length > lastUpdateText.length + 30) {
+                    lastUpdateText = text;
+                    tracker?.addLog(toolCallId, {
+                      level: 'output',
+                      text: text.slice(0, 200),
+                    });
+                  }
+                }
+              } else if (event.type === 'message_end') {
+                const ev = event as any;
+                const msg = ev.message;
+                if (msg?.role === 'assistant') {
+                  const text = extractContentText(msg);
+                  if (text) {
+                    tracker?.addLog(toolCallId, {
+                      level: 'output',
+                      text: text.slice(0, 200),
+                    });
+                  }
+                  tracker?.updateRun(toolCallId, {
+                    turns: (tracker.getRun(toolCallId)?.turns ?? 0) + 1,
+                    model: msg.model,
+                  });
+                }
+              } else if (event.type === 'tool_execution_end') {
+                const ev = event as any;
+                const status = (ev as any).isError ? 'error' : 'tool_result';
+                // 提取工具执行的实际输出预览
+                let preview = `${ev.toolName} 完成`;
+                if (ev.result?.content) {
+                  const textContent = extractContentText({ content: ev.result.content });
+                  if (textContent) {
+                    preview = `${ev.toolName} → ${textContent.slice(0, 80)}`;
+                  }
+                }
+                tracker?.addLog(toolCallId, {
+                  level: status,
+                  text: preview,
+                });
               }
             },
           });
 
           const r = result.result;
+          const status = r.exitCode === 0 ? 'completed' : 'failed';
+
+          // ── 完成 → 推送到 tracker ──
+          tracker?.completeRun(toolCallId, {
+            status,
+            output: r.output,
+            error: r.error,
+            turns: r.usage.turns,
+            cost: r.usage.cost,
+            model: r.model,
+          });
+          tracker?.addLog(toolCallId, {
+            level: 'done',
+            text: `${r.agent} ${status === 'completed' ? '完成' : '失败'} (${r.durationMs}ms, ${r.usage.turns} 轮)`,
+          });
+
           const icon = r.exitCode === 0 ? '✅' : '❌';
           const statusLabel = r.exitCode === 0 ? '完成' : `失败(code=${r.exitCode})`;
           const cost = r.usage.cost > 0 ? ` | $${r.usage.cost.toFixed(4)}` : '';
           const header = `${icon} ${r.agent} ${statusLabel} (${r.durationMs}ms, ${r.usage.turns} 轮${cost})`;
           const modelLine = r.model ? `模型: ${r.model}` : '';
           const errorLine = r.error ? `错误: ${r.error}` : '';
-
-          ctx.ui.setStatus('subagent', `${agentName} ${statusLabel}`);
-          ctx.ui.setWidget('subagent', [
-            `── 子进程: ${agentName} ──`,
-            `${icon} ${statusLabel} (${r.durationMs}ms, ${r.usage.turns} 轮${cost})`,
-          ]);
 
           return {
             content: [
@@ -266,11 +345,18 @@ export class SpawnAgentTool {
             details: { result: r },
           };
         } catch (err: any) {
-          ctx.ui.setStatus('subagent', `${agentName} ❌ 异常`);
-          ctx.ui.setWidget('subagent', [
-            `── 子进程: ${agentName} ──`,
-            `❌ ${err.message || err}`,
-          ]);
+          // ── 异常 → 推送到 tracker ──
+          tracker?.completeRun(toolCallId, {
+            status: 'failed',
+            error: err.message || String(err),
+            turns: 0,
+            cost: 0,
+          });
+          tracker?.addLog(toolCallId, {
+            level: 'error',
+            text: `异常: ${err.message || err}`,
+          });
+
           return {
             content: [{ type: 'text' as const, text: `spawn_agent 异常: ${err.message || err}` }],
             details: {},

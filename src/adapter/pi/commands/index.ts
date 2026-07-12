@@ -3,4 +3,3 @@
  */
 
 export { StopTimeCommand } from './StopTimeCommand';
-export { SubSkillCommand } from './SubSkillCommand';
