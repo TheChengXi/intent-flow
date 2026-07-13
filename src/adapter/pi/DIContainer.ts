@@ -11,8 +11,11 @@ import { SubProcessRunner } from './runtime/SubProcessRunner';
 import { DiscoverAgentsUseCase } from '../../application/useCases/DiscoverAgentsUseCase';
 import { SpawnAgentUseCase } from '../../application/useCases/SpawnAgentUseCase';
 import { SpawnAgentTool } from './tools/SpawnAgentTool';
+import { ToolAccessGuard } from './tools/ToolAccessGuard';
 import { ListAgentsTool } from './tools/ListAgentsTool';
 import { AgentRunTracker } from './tui/AgentRunTracker';
+import { ScopePolicy } from './services/ScopePolicy';
+import type { IAccessPolicy } from '../../application/services/IAccessPolicy';
 
 export class DIContainer {
   private static instance: DIContainer;
@@ -37,6 +40,10 @@ export class DIContainer {
   public spawnAgentTool: SpawnAgentTool;
   public listAgentsTool: ListAgentsTool;
 
+  // ==================== 访问策略 ====================
+  public accessPolicy: IAccessPolicy;
+  public toolAccessGuard: ToolAccessGuard;
+
   private constructor() {
     // 初始化状态管理
     this.agentTracker = new AgentRunTracker();
@@ -57,6 +64,10 @@ export class DIContainer {
     // 初始化工具
     this.spawnAgentTool = new SpawnAgentTool(this.spawnAgentUseCase, this.agentTracker);
     this.listAgentsTool = new ListAgentsTool(this.agentRepo);
+
+    // 初始化访问策略
+    this.accessPolicy = new ScopePolicy();
+    this.toolAccessGuard = new ToolAccessGuard(this.accessPolicy);
   }
 
   static getInstance(): DIContainer {

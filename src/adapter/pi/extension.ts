@@ -8,6 +8,7 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 import { DIContainer } from './DIContainer';
 import { StopTimeCommand } from './commands/StopTimeCommand';
+import { ClearSubagentCacheCommand } from './commands/ClearSubagentCacheCommand';
 import { openSubAgentView } from './tui/SubAgentView';
 
 export default function (pi: ExtensionAPI) {
@@ -35,9 +36,11 @@ export default function (pi: ExtensionAPI) {
   // ── 工具注册 ──
   container.spawnAgentTool.register(pi);
   container.listAgentsTool.register(pi);
+  container.toolAccessGuard.register(pi);
 
   // ── 斜杠命令注册 ──
   new StopTimeCommand().register(pi, container);
+  new ClearSubagentCacheCommand().register(pi);
 
   // ── /sub-agent 命令 ──
   pi.registerCommand('sub-agent', {
