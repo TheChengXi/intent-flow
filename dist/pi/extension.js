@@ -200,6 +200,11 @@ class SubSkillRepository {
   }
 }
 const SCOPE_SKIP_ENV = "PI_EXT_SKIP";
+function shouldSkip(extensionName) {
+  const raw = process.env[SCOPE_SKIP_ENV];
+  if (!raw) return false;
+  return raw.split(",").map((s) => s.trim()).includes(extensionName);
+}
 class RpcProcessPool {
   constructor(agentRepo, baseModel) {
     this.processes = /* @__PURE__ */ new Map();
@@ -405,6 +410,8 @@ ${params.context}`;
       process.stderr.write(`[rpc:${agentName}] ${data}`);
     });
     child.on("exit", (code, signal) => {
+      promises.rm(managed.tmpDir, { recursive: true, force: true }).catch(() => {
+      });
       const pending = this.pending.get(agentName);
       if (pending) {
         clearTimeout(pending.timer);
@@ -1049,6 +1056,107 @@ ${theme.fg("dim", usageStr)}`;
     });
   }
 }
+class ToolAccessGuard {
+  constructor(accessPolicy) {
+    this.accessPolicy = accessPolicy;
+  }
+  /**
+   * @contract
+   * 注册 tool_call 事件监听器，在工具调用前进行安全拦截。
+   * 输入：pi - ExtensionAPI 实例
+   * 副作用：注册 pi.on("tool_call", handler) 监听
+   */
+  register(pi) {
+    pi.on("tool_call", async (event, ctx) => {
+      if (this.accessPolicy.shouldSkip("confirm-edit")) {
+        return;
+      }
+      if (event.toolName === "edit" || event.toolName === "write") {
+        const path = event.input.path ?? "未知文件";
+        const ok = await ctx.ui.confirm(
+          "⚠️ 确认修改",
+          `要修改文件: ${String(path)}
+
+确定允许修改吗？`
+        );
+        if (!ok) {
+          const reason = await ctx.ui.input(
+            "驳回原因",
+            "为什么取消这次修改？（可选）"
+          );
+          const reasonMsg = reason ? `: ${reason}` : "";
+          return { block: true, reason: `用户拒绝了修改${reasonMsg}` };
+        }
+      }
+      if (event.toolName === "bash") {
+        const cmd = event.input.command ?? "";
+        if (this.isDangerousBash(cmd)) {
+          const ok = await ctx.ui.confirm(
+            "⚠️ 危险 bash 命令",
+            `命令: ${cmd.substring(0, 120)}
+
+确定允许执行吗？`
+          );
+          if (!ok) {
+            const reason = await ctx.ui.input(
+              "驳回原因",
+              "为什么取消这次操作？（可选）"
+            );
+            const reasonMsg = reason ? `: ${reason}` : "";
+            return { block: true, reason: `用户拒绝了 bash 命令${reasonMsg}` };
+          }
+        }
+      }
+    });
+  }
+  /**
+   * @contract
+   * 检测 bash 命令是否涉及文件写入/删除等危险操作。
+   * 输入：cmd - bash 命令字符串
+   * 输出：boolean - true表示危险命令
+   * 规则与原始 confirm-edit.ts 完全一致
+   */
+  isDangerousBash(cmd) {
+    const stripped = cmd.replace(/['"][^'"]*['"]/g, "");
+    const patterns = [
+      /\brm\s+-r[f]?\b/,
+      // rm -rf
+      /\brm\s+-\w*r\w*/,
+      // rm -r 递归删除
+      /\brmdir\b/,
+      // 删除目录
+      /\bdel\s+/i,
+      // del 删除文件
+      /\bremove\s+/i,
+      // remove
+      /\bmv\s+/i,
+      // mv 移动/重命名
+      /\bcp\s+/i,
+      // cp 复制
+      /[>]/,
+      // > 重定向写入
+      /[|]\s*tee\b/,
+      // | tee 写入
+      /\bdd\s+if=/,
+      // dd 磁盘操作
+      /\bchmod\s+/i,
+      // 改权限
+      /\bchown\s+/i,
+      // 改所有者
+      /\bmkfs\b/i,
+      // 格式化
+      /\bformat\b/i,
+      // 格式化
+      /\bfdisk\b/i,
+      // 分区
+      /\bsudo\s+rm\b/i,
+      // sudo rm
+      /:\s*rm\b/i
+      // :; rm 形式
+    ];
+    return patterns.some((p) => p.test(stripped));
+  }
+}
 class ListAgentsTool {
   constructor(agentRepo) {
     this.agentRepo = agentRepo;
@@ -1261,6 +1369,25 @@ class AgentRunTracker {
     this.notify();
   }
 }
+class ScopePolicy {
+  constructor() {
+  }
+  /**
+   * @contract
+   * 委托 data/services/scope/policy.shouldSkip() 判断扩展是否应跳过拦截。
+   * 输入：extensionName - 扩展注册名
+   * 输出：boolean - true=放行（不拦截），false=正常拦截
+   * 副作用：无
+   */
+  /**
+   * @step
+   * 1. 直接调用 data 层纯函数 shouldSkip(extensionName)
+   * 2. 原样返回其结果
+   */
+  shouldSkip(extensionName) {
+    return shouldSkip(extensionName);
+  }
+}
 class DIContainer {
   constructor() {
     this.agentTracker = new AgentRunTracker();
@@ -1271,6 +1398,8 @@ class DIContainer {
     this.spawnAgentUseCase = new SpawnAgentUseCase(this.agentRepo, this.subProcessRunner);
     this.spawnAgentTool = new SpawnAgentTool(this.spawnAgentUseCase, this.agentTracker);
     this.listAgentsTool = new ListAgentsTool(this.agentRepo);
+    this.accessPolicy = new ScopePolicy();
+    this.toolAccessGuard = new ToolAccessGuard(this.accessPolicy);
   }
   static getInstance() {
     if (!DIContainer.instance) {
@@ -1310,11 +1439,44 @@ class StopTimeCommand {
     });
   }
 }
-const MAX_VISIBLE_AGENTS = 12;
-const MAX_VISIBLE_LOGS = 15;
-const MIN_LOG_LINES = 5;
-const MIN_TERM_WIDTH = 60;
+class ClearSubagentCacheCommand {
+  register(pi) {
+    pi.registerCommand("clear-subagent-cache", {
+      description: "清理子 agent 残留的临时目录（cdd-agent-* / cdd-rpc-*）",
+      handler: async (_args, ctx) => {
+        const tmpBase = node_os.tmpdir();
+        let entries;
+        try {
+          entries = await promises.readdir(tmpBase);
+        } catch {
+          ctx.ui.notify("无法读取临时目录", "error");
+          return;
+        }
+        const targets = entries.filter(
+          (name) => name.startsWith("cdd-agent-") || name.startsWith("cdd-rpc-")
+        );
+        if (targets.length === 0) {
+          ctx.ui.notify("没有需要清理的子 agent 缓存", "info");
+          return;
+        }
+        let deleted = 0;
+        let failed = 0;
+        for (const name of targets) {
+          try {
+            await promises.rm(node_path.join(tmpBase, name), { recursive: true, force: true });
+            deleted++;
+          } catch {
+            failed++;
+          }
+        }
+        const msg = `清理了 ${deleted} 个子 agent 临时目录` + (failed > 0 ? `，${failed} 个无法删除（可能正在使用）` : "");
+        ctx.ui.notify(msg, deleted > 0 ? "info" : "warn");
+      }
+    });
+  }
+}
 function fmtDuration(ms) {
+  if (ms === void 0 || ms < 0) return "...";
   if (ms < 1e3) return `${ms}ms`;
   if (ms < 6e4) return `${(ms / 1e3).toFixed(1)}s`;
   const m = Math.floor(ms / 6e4);
@@ -1322,6 +1484,7 @@ function fmtDuration(ms) {
   return `${m}m${s}s`;
 }
 function fmtTime(ts) {
+  if (ts <= 0) return "";
   const d = new Date(ts);
   return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d.getSeconds().toString().padStart(2, "0")}`;
 }
@@ -1367,112 +1530,91 @@ function logIcon(level, themeFg) {
 function trunc(text, max) {
   return piTui.truncateToWidth(text, max);
 }
-class SubAgentView {
-  constructor(config) {
+const MAX_VISIBLE_AGENTS = 12;
+class AgentListPanel {
+  constructor(config = {}) {
+    this.config = config;
     this.selectedIndex = 0;
     this.scrollOffset = 0;
-    this.focusMode = "list";
-    this.logScrollOffset = 0;
-    this.tracker = config.tracker;
-    this.onClose = config.onClose;
-    this.onKill = config.onKill;
-    this.onRetry = config.onRetry;
   }
-  invalidate() {
-    this.cachedWidth = void 0;
-    this.cachedLines = void 0;
+  /** 重置选中到第一项（在 runs 变更时调用） */
+  resetSelection() {
+    this.selectedIndex = 0;
+    this.scrollOffset = 0;
   }
-  handleInput(data) {
-    if (piTui.matchesKey(data, piTui.Key.escape) || piTui.matchesKey(data, "q")) {
-      this.onClose();
-      return;
+  /** 选中最后一项（新 agent 加入时跳到它） */
+  selectLast(total) {
+    if (total === 0) return;
+    this.selectedIndex = total - 1;
+    this.ensureVisible(total);
+  }
+  // ==================== 键盘事件 ====================
+  /**
+   * 处理列表键盘事件。
+   * @returns 是否需要切换到日志视图（enter 按下时）
+   */
+  handleInput(data, total) {
+    if (total === 0) return false;
+    if (piTui.matchesKey(data, piTui.Key.up)) {
+      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+      this.ensureVisible(total);
+    } else if (piTui.matchesKey(data, piTui.Key.down)) {
+      this.selectedIndex = Math.min(total - 1, this.selectedIndex + 1);
+      this.ensureVisible(total);
+    } else if (piTui.matchesKey(data, piTui.Key.enter)) {
+      return true;
+    } else if (piTui.matchesKey(data, "k") || piTui.matchesKey(data, "K")) {
+      return false;
+    } else if (piTui.matchesKey(data, "r") || piTui.matchesKey(data, "R")) {
+      return false;
     }
-    const runs = this.tracker.getAllRuns();
-    if (runs.length === 0) return;
-    if (piTui.matchesKey(data, piTui.Key.tab)) {
-      this.focusMode = this.focusMode === "list" ? "logs" : "list";
-      this.invalidate();
-      return;
-    }
-    if (this.focusMode === "list") {
-      if (piTui.matchesKey(data, piTui.Key.up)) {
-        this.selectedIndex = Math.max(0, this.selectedIndex - 1);
-        this.ensureVisible(runs.length);
-        this.invalidate();
-      } else if (piTui.matchesKey(data, piTui.Key.down)) {
-        this.selectedIndex = Math.min(runs.length - 1, this.selectedIndex + 1);
-        this.ensureVisible(runs.length);
-        this.invalidate();
-      } else if (piTui.matchesKey(data, piTui.Key.enter)) {
-        this.focusMode = "logs";
-        this.logScrollOffset = 0;
-        this.invalidate();
-      } else if (piTui.matchesKey(data, "k") || piTui.matchesKey(data, "K")) {
-        const run = runs[this.selectedIndex];
-        if (run && run.status === "running" && this.onKill) {
-          this.onKill(run.toolCallId);
-        }
-      } else if (piTui.matchesKey(data, "r") || piTui.matchesKey(data, "R")) {
-        const run = runs[this.selectedIndex];
-        if (run && (run.status === "failed" || run.status === "aborted") && this.onRetry) {
-          this.onRetry(run.toolCallId);
-        }
-      }
-    } else {
-      if (piTui.matchesKey(data, piTui.Key.up)) {
-        this.logScrollOffset = Math.min(
-          this.logScrollOffset + 1,
-          this.getMaxLogScroll(runs[this.selectedIndex])
-        );
-        this.invalidate();
-      } else if (piTui.matchesKey(data, piTui.Key.down)) {
-        this.logScrollOffset = Math.max(0, this.logScrollOffset - 1);
-        this.invalidate();
-      } else if (piTui.matchesKey(data, piTui.Key.enter) || piTui.matchesKey(data, piTui.Key.escape)) {
-        this.focusMode = "list";
-        this.logScrollOffset = 0;
-        this.invalidate();
-      }
-    }
+    return false;
   }
-  ensureVisible(total) {
-    if (this.selectedIndex < this.scrollOffset) {
-      this.scrollOffset = this.selectedIndex;
-    } else if (this.selectedIndex >= this.scrollOffset + MAX_VISIBLE_AGENTS) {
-      this.scrollOffset = this.selectedIndex - MAX_VISIBLE_AGENTS + 1;
+  /** 获取当前选中的索引（外部需要据此获取对应的 run） */
+  getSelectedIndex() {
+    return this.selectedIndex;
+  }
+  /** 外部触发 kill 操作时调用，返回被操作的 toolCallId */
+  handleKill(runs) {
+    if (runs.length === 0) return null;
+    const run = runs[this.selectedIndex];
+    if (run && run.status === "running" && this.config.onKill) {
+      this.config.onKill(run.toolCallId);
     }
+    return (run == null ? void 0 : run.toolCallId) ?? null;
   }
-  getMaxLogScroll(run) {
-    if (!run) return 0;
-    const logs = this.getDisplayLogs(run);
-    return Math.max(0, logs.length - MAX_VISIBLE_LOGS);
-  }
-  getDisplayLogs(run) {
-    if (run.mode === "chain" && run.steps && run.steps.length > 0) {
-      const allLogs = [];
-      for (const step of run.steps) {
-        allLogs.push({
-          timestamp: 0,
-          level: "info",
-          text: `── Step ${step.index}: ${step.agent} (${step.status}) ──`
-        });
-        allLogs.push(...step.logs);
-      }
-      return allLogs;
+  /** 外部触发 retry 操作时调用，返回被操作的 toolCallId */
+  handleRetry(runs) {
+    if (runs.length === 0) return null;
+    const run = runs[this.selectedIndex];
+    if (run && (run.status === "failed" || run.status === "aborted") && this.config.onRetry) {
+      this.config.onRetry(run.toolCallId);
     }
-    return run.logs;
+    return (run == null ? void 0 : run.toolCallId) ?? null;
   }
-  /** 构建 agent 列表行 */
-  buildAgentLines(runs, width, themeFg) {
+  // ==================== 渲染 ====================
+  /**
+   * 渲染 agent 列表行。
+   * @param runs 所有运行记录
+   * @param innerWidth 内部可用宽度（不含边框）
+   * @param isFocused 列表是否处于焦点状态
+   * @param themeFg 主题着色函数
+   * @returns 行数组（不含边框包裹，由调用方包裹）
+   */
+  render(runs, innerWidth, isFocused, themeFg) {
     const lines = [];
+    if (runs.length === 0) {
+      lines.push(themeFg("dim", "  暂无子 agent 运行记录"));
+      lines.push(themeFg("dim", "  调用 spawn_agent 后自动出现"));
+      return lines;
+    }
+    const headerText = "# Agent".padEnd(innerWidth);
+    lines.push(themeFg("muted", headerText));
     const visible = runs.slice(this.scrollOffset, this.scrollOffset + MAX_VISIBLE_AGENTS);
-    const headerWidth = width - 2;
-    const header = themeFg("muted", "# Agent".padEnd(headerWidth));
-    lines.push(header);
     for (let i = 0; i < visible.length; i++) {
       const globalIndex = this.scrollOffset + i;
       const run = visible[i];
-      const isSelected = globalIndex === this.selectedIndex && this.focusMode === "list";
+      const isSelected = globalIndex === this.selectedIndex && isFocused;
       const icon = statusIcon(run.status, themeFg);
       const agentName = trunc(run.agent, 20);
       const statusText = run.status === "running" ? "运行中" : run.status === "completed" ? "完成" : run.status === "failed" ? "失败" : "终止";
@@ -1501,37 +1643,134 @@ class SubAgentView {
         themeFg("muted", durStr.padEnd(8))
       ];
       let line = parts.join("");
-      line = piTui.truncateToWidth(line, width - 2);
-      if (isSelected) {
-        const vw = piTui.visibleWidth(line);
-        const padded = line + " ".repeat(Math.max(0, width - 2 - vw));
-        line = padded;
-      }
-      lines.push((isSelected ? "" : " ") + line);
+      line = piTui.truncateToWidth(line, innerWidth);
+      lines.push(" " + line);
     }
     return lines;
   }
-  /** 构建日志行 */
-  buildLogLines(run, width, themeFg) {
-    if (!run) {
-      return ["", themeFg("dim", "  没有选中的 agent")];
+  // ==================== 内部 ====================
+  ensureVisible(total) {
+    if (this.selectedIndex < this.scrollOffset) {
+      this.scrollOffset = this.selectedIndex;
+    } else if (this.selectedIndex >= this.scrollOffset + MAX_VISIBLE_AGENTS) {
+      this.scrollOffset = this.selectedIndex - MAX_VISIBLE_AGENTS + 1;
     }
-    const logs = this.getDisplayLogs(run);
-    if (logs.length === 0) {
-      if (run.status === "running") {
-        return ["", themeFg("dim", "  等待子 agent 输出...")];
-      }
-      return ["", themeFg("dim", "  无日志")];
+  }
+}
+const LOG_AREA_HEIGHT = 12;
+class LogPanel {
+  constructor() {
+    this.logScrollOffset = 0;
+    this.lastFingerprint = "";
+    this.cachedLines = null;
+  }
+  // ==================== 键盘事件 ====================
+  handleInput(data, logs) {
+    const maxScroll = this.getMaxScroll(logs);
+    if (piTui.matchesKey(data, piTui.Key.up)) {
+      this.logScrollOffset = Math.min(maxScroll, this.logScrollOffset + 1);
+      this.cachedLines = null;
+    } else if (piTui.matchesKey(data, piTui.Key.down)) {
+      this.logScrollOffset = Math.max(0, this.logScrollOffset - 1);
+      this.cachedLines = null;
+    } else if (piTui.matchesKey(data, piTui.Key.enter) || piTui.matchesKey(data, piTui.Key.escape)) {
+      return true;
     }
-    const visibleLogs = logs.slice(
-      Math.max(0, logs.length - MAX_VISIBLE_LOGS - this.logScrollOffset),
-      logs.length - this.logScrollOffset
+    return false;
+  }
+  /** 重置滚动到底部（新日志追加时调用） */
+  scrollToBottom() {
+    this.logScrollOffset = 0;
+  }
+  /** 重置状态（切换 agent 时调用） */
+  reset() {
+    this.logScrollOffset = 0;
+    this.lastFingerprint = "";
+    this.cachedLines = null;
+  }
+  // ==================== 渲染 ====================
+  /**
+   * 渲染日志区域。
+   * 始终返回 LOG_AREA_HEIGHT 行，固定行高保证整体布局稳定。
+   *
+   * @param run 当前选中的 agent 运行状态
+   * @param innerWidth 内部可用宽度
+   * @param isFocused 日志面板是否在焦点
+   * @param themeFg 主题着色函数
+   * @returns 固定 LOG_AREA_HEIGHT 行的数组
+   */
+  render(run, innerWidth, isFocused, themeFg) {
+    const displayLogs = this.getDisplayLogs(run);
+    const fingerprint = this.computeFingerprint(displayLogs);
+    if (fingerprint === this.lastFingerprint && this.cachedLines) {
+      return this.cachedLines;
+    }
+    this.lastFingerprint = fingerprint;
+    const logLines = this.buildLogLines(displayLogs, innerWidth, themeFg);
+    const result = new Array(LOG_AREA_HEIGHT);
+    const visibleLogs = logLines.slice(
+      Math.max(0, logLines.length - LOG_AREA_HEIGHT - this.logScrollOffset),
+      Math.max(0, logLines.length - this.logScrollOffset)
     );
-    if (visibleLogs.length === 0) {
-      return ["", themeFg("dim", "  (已到顶部)")];
+    for (let i = 0; i < LOG_AREA_HEIGHT; i++) {
+      if (i < visibleLogs.length) {
+        result[i] = visibleLogs[i];
+      } else {
+        result[i] = "";
+      }
     }
-    const lines = [""];
-    for (const log of visibleLogs) {
+    this.cachedLines = result;
+    return result;
+  }
+  // ==================== 内部：日志提取 ====================
+  /** 获取展示用的日志列表（chain 模式展平处理） */
+  getDisplayLogs(run) {
+    if (!run) return [];
+    if (run.mode === "chain" && run.steps && run.steps.length > 0) {
+      const allLogs = [];
+      for (const step of run.steps) {
+        allLogs.push({
+          timestamp: 0,
+          level: "info",
+          text: `── Step ${step.index}: ${step.agent} (${step.status}) ──`
+        });
+        const deduped = this.dedupeLogs(step.logs);
+        allLogs.push(...deduped);
+      }
+      return allLogs;
+    }
+    return this.dedupeLogs(run.logs);
+  }
+  /** 日志去重：连续相同 text + level 的日志只保留一条 */
+  dedupeLogs(logs) {
+    if (logs.length <= 1) return logs;
+    const result = [logs[0]];
+    for (let i = 1; i < logs.length; i++) {
+      const prev = result[result.length - 1];
+      const curr = logs[i];
+      if (prev.text === curr.text && prev.level === curr.level) {
+        continue;
+      }
+      result.push(curr);
+    }
+    return result;
+  }
+  /** 计算日志指纹（用于去重判断） */
+  computeFingerprint(logs) {
+    if (logs.length === 0) return "empty";
+    const last = logs[logs.length - 1];
+    return `${logs.length}:${last.level}:${last.text.slice(0, 60)}`;
+  }
+  /** 获取最大可滚动偏移 */
+  getMaxScroll(logs) {
+    return Math.max(0, logs.length - LOG_AREA_HEIGHT);
+  }
+  // ==================== 内部：行构建 ====================
+  /** 构建日志展示行 */
+  buildLogLines(logs, innerWidth, themeFg) {
+    if (logs.length === 0) return [];
+    const lines = [];
+    for (const log of logs) {
       const time = log.timestamp > 0 ? themeFg("dim", fmtTime(log.timestamp)) : "";
       const icon = logIcon(log.level, themeFg);
       let coloredText;
@@ -1540,73 +1779,35 @@ class SubAgentView {
           coloredText = themeFg("error", log.text);
           break;
         case "tool_call":
-          coloredText = themeFg("accent", trunc(log.text, width - 12));
+          coloredText = themeFg("accent", trunc(log.text, innerWidth - 12));
           break;
         case "thinking":
-          coloredText = themeFg("mdQuote", trunc(log.text, width - 12));
+          coloredText = themeFg("mdQuote", trunc(log.text, innerWidth - 12));
           break;
         case "output":
-          coloredText = themeFg("toolOutput", trunc(log.text, width - 12));
+          coloredText = themeFg("toolOutput", trunc(log.text, innerWidth - 12));
           break;
         case "done":
           coloredText = themeFg("success", log.text);
           break;
         default:
-          coloredText = trunc(log.text, width - 12);
+          coloredText = trunc(log.text, innerWidth - 12);
       }
-      const wrapped = piTui.wrapTextWithAnsi(`  ${time} ${icon} ${coloredText}`, width - 2);
+      const rawLine = `  ${time} ${icon} ${coloredText}`;
+      const wrapped = piTui.wrapTextWithAnsi(rawLine, innerWidth);
       for (const wl of wrapped) {
         lines.push(wl);
       }
     }
     return lines;
   }
-  render(width, themeFg, themeBold) {
-    if (width < MIN_TERM_WIDTH) {
-      return [
-        themeFg("error", `终端太窄 (${width} < ${MIN_TERM_WIDTH})，无法显示仪表盘`)
-      ];
-    }
-    const runs = this.tracker.getAllRuns();
-    const summary = this.tracker.getSummary();
-    const selectedRun = runs[this.selectedIndex];
-    const innerW = width - 2;
-    const title = themeBold ? themeBold("SubAgent Monitor") : "SubAgent Monitor";
-    const titlePad = Math.max(0, innerW - piTui.visibleWidth(title));
-    const topBorder = themeFg("border", `┌ ${title}${"─".repeat(titlePad > 0 ? titlePad - 1 : 0)}┐`);
-    const sepBar = themeFg("border", `├${"─".repeat(innerW)}┤`);
-    const botBorder = themeFg("border", `└${"─".repeat(innerW)}┘`);
-    const cw = width - 2;
-    const borderLine = (content) => {
-      const trimmed = piTui.truncateToWidth(content, cw);
-      const pad = cw - piTui.visibleWidth(trimmed);
-      return `│${trimmed}${" ".repeat(Math.max(0, pad))}│`;
-    };
-    const lines = [topBorder];
-    if (runs.length === 0) {
-      lines.push(borderLine(themeFg("dim", "  暂无子 agent 运行记录")));
-      lines.push(borderLine(themeFg("dim", "  调用 spawn_agent 后自动出现")));
-    } else {
-      const agentLines = this.buildAgentLines(runs, width, themeFg);
-      for (const al of agentLines) {
-        lines.push(borderLine(al));
-      }
-    }
-    lines.push(sepBar);
-    const logHeader = this.focusMode === "logs" ? ` ${themeFg("accent", "▸")} ${themeFg("accent", (selectedRun == null ? void 0 : selectedRun.agent) ?? "")} 日志 ${themeFg("dim", "[↑↓滚动 Enter返回]")}` : ` ${(selectedRun == null ? void 0 : selectedRun.agent) ?? ""} 日志 ${themeFg("dim", "[Enter查看]")}`;
-    lines.push(borderLine(logHeader));
-    if (selectedRun) {
-      const logLines = this.buildLogLines(selectedRun, width, themeFg);
-      for (const ll of logLines) {
-        lines.push(borderLine(ll || ""));
-      }
-      for (let i = 0; i < MIN_LOG_LINES; i++) {
-        lines.push(`│${" ".repeat(cw)}│`);
-      }
-    } else {
-      lines.push(borderLine(themeFg("dim", "  暂无 agent 运行记录")));
-      for (let i = 0; i < MIN_LOG_LINES; i++) lines.push(`│${" ".repeat(cw)}│`);
-    }
+}
+class StatusBar {
+  /**
+   * 渲染底部状态栏。
+   * @returns 单行字符串（不含边框，由调用方包裹 │ │）
+   */
+  render(runs, summary, innerWidth, themeFg) {
     let statusLine = "";
     if (summary.total === 0) {
       statusLine = themeFg("dim", "待命中");
@@ -1619,23 +1820,132 @@ class SubAgentView {
         statusLine += `${statusIcon("completed", themeFg)} 完成`;
       }
     }
-    const keybindings = themeFg("dim", "q关闭  ↑↓  Enter日志");
-    const statusBar = `${statusLine}${" ".repeat(Math.max(0, cw - piTui.visibleWidth(statusLine) - piTui.visibleWidth(keybindings)))}${keybindings}`;
-    lines.push(borderLine(statusBar));
-    lines.push(botBorder);
-    return lines;
+    const keybindings = themeFg("dim", "q关闭  ↑↓  Enter日志  Tab切换");
+    const content = `${statusLine}${" ".repeat(Math.max(0, innerWidth - piTui.visibleWidth(statusLine) - piTui.visibleWidth(keybindings)))}${keybindings}`;
+    return content;
+  }
+}
+const MIN_TERM_WIDTH = 60;
+class SubAgentView {
+  constructor(config) {
+    this.focusMode = "list";
+    this.tracker = config.tracker;
+    this.onClose = config.onClose;
+    this.onKill = config.onKill;
+    this.onRetry = config.onRetry;
+    this.agentList = new AgentListPanel({
+      onKill: config.onKill,
+      onRetry: config.onRetry
+    });
+    this.logPanel = new LogPanel();
+    this.statusBar = new StatusBar();
+  }
+  // ==================== 键盘事件路由 ====================
+  handleInput(data) {
+    if (piTui.matchesKey(data, piTui.Key.escape) || piTui.matchesKey(data, "q")) {
+      this.onClose();
+      return;
+    }
+    const runs = this.tracker.getAllRuns();
+    if (runs.length === 0) return;
+    if (piTui.matchesKey(data, piTui.Key.tab)) {
+      this.focusMode = this.focusMode === "list" ? "logs" : "list";
+      return;
+    }
+    if (this.focusMode === "list") {
+      if (piTui.matchesKey(data, "k") || piTui.matchesKey(data, "K")) {
+        const run = runs[this.agentList.getSelectedIndex()];
+        if (run && run.status === "running" && this.onKill) {
+          this.onKill(run.toolCallId);
+        }
+        return;
+      }
+      if (piTui.matchesKey(data, "r") || piTui.matchesKey(data, "R")) {
+        const run = runs[this.agentList.getSelectedIndex()];
+        if (run && (run.status === "failed" || run.status === "aborted") && this.onRetry) {
+          this.onRetry(run.toolCallId);
+        }
+        return;
+      }
+      const shouldSwitch = this.agentList.handleInput(data, runs.length);
+      if (shouldSwitch) {
+        this.focusMode = "logs";
+        this.logPanel.reset();
+      }
+    } else {
+      if (piTui.matchesKey(data, piTui.Key.up) || piTui.matchesKey(data, piTui.Key.down)) {
+        const selectedRun = runs[this.agentList.getSelectedIndex()];
+        if (selectedRun) {
+          this.logPanel.handleInput(data, selectedRun.logs);
+        }
+        return;
+      }
+      if (piTui.matchesKey(data, piTui.Key.enter) || piTui.matchesKey(data, piTui.Key.escape)) {
+        this.focusMode = "list";
+        return;
+      }
+    }
+  }
+  // ==================== 渲染 ====================
+  render(width, themeFg, themeBold) {
+    if (width < MIN_TERM_WIDTH) {
+      return [
+        themeFg("error", `终端太窄 (${width} < ${MIN_TERM_WIDTH})，无法显示仪表盘`)
+      ];
+    }
+    const runs = this.tracker.getAllRuns();
+    const summary = this.tracker.getSummary();
+    const selectedRun = runs[this.agentList.getSelectedIndex()] ?? void 0;
+    const innerW = width - 2;
+    const border = (c) => themeFg("border", c);
+    const agentLines = this.agentList.render(
+      runs,
+      innerW,
+      this.focusMode === "list",
+      themeFg
+    );
+    const logLines = this.logPanel.render(
+      selectedRun,
+      innerW,
+      this.focusMode === "logs",
+      themeFg
+    );
+    const statusText = this.statusBar.render(runs, summary, innerW, themeFg);
+    const title = themeBold ? themeBold("SubAgent Monitor") : "SubAgent Monitor";
+    const titleWidth = piTui.visibleWidth(title);
+    const topPad = Math.max(0, innerW - titleWidth);
+    const result = [];
+    result.push(border(`┌ ${title}${"─".repeat(topPad > 0 ? topPad : 0)}┐`));
+    for (const al of agentLines) {
+      result.push(this.wrapLine(al, innerW, themeFg));
+    }
+    result.push(border(`├${"─".repeat(innerW)}┤`));
+    for (const ll of logLines) {
+      result.push(this.wrapLine(ll, innerW, themeFg));
+    }
+    result.push(border(`├${"─".repeat(innerW)}┤`));
+    result.push(this.wrapLine(statusText, innerW, themeFg));
+    result.push(border(`└${"─".repeat(innerW)}┘`));
+    return result;
+  }
+  /** 用 │ │ 包裹一行内容，自动补齐右空格 */
+  wrapLine(content, innerWidth, themeFg) {
+    const trimmed = piTui.truncateToWidth(content, innerWidth);
+    const pad = innerWidth - piTui.visibleWidth(trimmed);
+    return `│${trimmed}${" ".repeat(Math.max(0, pad))}│`;
   }
 }
 async function openSubAgentView(ctx, tracker, options) {
   await ctx.ui.custom(
     (tui, theme, _kb, done) => {
       const themeFg = theme.fg.bind(theme);
-      const view = new SubAgentView({
+      const config = {
         tracker,
         onClose: () => done(void 0),
         onKill: options == null ? void 0 : options.onKill,
         onRetry: options == null ? void 0 : options.onRetry
-      });
+      };
+      const view = new SubAgentView(config);
       tracker.subscribe(() => {
         tui.requestRender();
       });
@@ -1650,7 +1960,6 @@ async function openSubAgentView(ctx, tracker, options) {
           tui.requestRender();
         },
         invalidate: () => {
-          view.invalidate();
         }
       };
     },
@@ -1685,7 +1994,9 @@ function extension(pi) {
   });
   container.spawnAgentTool.register(pi);
   container.listAgentsTool.register(pi);
+  container.toolAccessGuard.register(pi);
   new StopTimeCommand().register(pi, container);
+  new ClearSubagentCacheCommand().register(pi);
   pi.registerCommand("sub-agent", {
     description: "打开子 agent 监控视图，查看运行状态、实时日志和详情",
     handler: async (_args, ctx) => {

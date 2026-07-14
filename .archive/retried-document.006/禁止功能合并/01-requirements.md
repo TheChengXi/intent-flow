@@ -9,7 +9,7 @@
 ### 新增文件
 | 文件 | 职责 |
 |------|------|
-| `src/application/services/IAccessPolicy.ts` | 访问策略接口，定义 `shouldSkip(name): boolean` |
+| `src/data/services/scope/IAccessPolicy.ts` | 访问策略接口，定义 `shouldSkip(name): boolean`，与 `policy.ts` 实现同域 |
 | `src/adapter/pi/tools/ToolAccessGuard.ts` | 工具访问守卫，注册 `tool_call` 拦截，依赖 `IAccessPolicy` 接口 |
 
 ### 修改文件
@@ -29,9 +29,10 @@
 
 ```
 ToolAccessGuard (adapter)
-  └─ 依赖 IAccessPolicy (application 接口)
-       └─ 实现: ScopePolicy / shouldSkip (data/services/scope)
-            └─ DIContainer 负责组装注入
+  └─ 依赖 IAccessPolicy (data/services/scope 接口)
+       └─ 实现: ScopePolicy (adapter/pi/services)
+            └─ 委托 shouldSkip (data/services/scope/policy 纯函数)
+                 └─ DIContainer 负责组装
 ```
 
 ### 核心业务规则

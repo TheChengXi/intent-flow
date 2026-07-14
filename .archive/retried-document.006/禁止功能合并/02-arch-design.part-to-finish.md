@@ -27,13 +27,13 @@ pi session 启动
 
 ```
 adapter/pi/tools/ToolAccessGuard
-  → application/services/IAccessPolicy (接口，无实现细节)
+  → data/services/scope/IAccessPolicy (data 层接口)
 
-adapter/pi/services/ScopePolicy (桥接类)
-  → application/services/IAccessPolicy (接口)
-  → data/services/scope/policy (纯函数，被 adapter 层显式引用)
+adapter/pi/services/ScopePolicy (实现类)
+  → data/services/scope/IAccessPolicy (data 层接口)
+  → data/services/scope/policy (同域引用)
 
-adapter/pi/DIContainer (组合根，跨层引用唯独在此允许)
+adapter/pi/DIContainer (组合根)
   → adapter/pi/services/ScopePolicy
   → adapter/pi/tools/ToolAccessGuard
 

@@ -14,7 +14,9 @@ src/adapter/pi/
 ├── tools/
 │   ├── index.ts              ← 工具统一导出
 │   ├── SpawnAgentTool.ts     ← spawn_agent 工具（含实时可视化）
-
+│   ├── ToolAccessGuard.ts    ← 工具访问守卫（拦截确认）
+├── services/
+│   ├── ScopePolicy.ts        ← 访问策略桥接（IAccessPolicy 实现）
 ├── tui/
 │   ├── index.ts              ← TUI 组件统一导出
 │   ├── AgentRunTracker.ts    ← 子 agent 状态管理中心（数据源）
@@ -40,6 +42,10 @@ extension.ts (adapter/pi)
         → SubSkillRepository / SubProcessRunner / RpcProcessPool (adapter.pi.agents/)
           → IAgentRepository / ISubProcessRunner (data/repositories/)
             → AgentDefinition / AgentRunResult / AgentUsage (data/entities/)
+    → ToolAccessGuard
+      → IAccessPolicy (data/services/scope/)
+        → ScopePolicy (adapter/pi/services/ 实现)
+          → shouldSkip() (data/services/scope/ 同域引用)
 ```
 
 ### 外部依赖（pi 运行时提供，不打包进产物）
@@ -173,6 +179,24 @@ session_start  ──→ 不启动任何进程
 - **不强制预热**：`session_start` 不启动任何进程，全按需初始化
 - **幂等预热**：`warmUp()` 已存在进程跳过，不会重复创建
 
+### 临时目录清理
+
+每次 `spawn_agent` 调用会在系统临时目录（`os.tmpdir()`）下创建
+`cdd-agent-XXXXX/` 或 `cdd-rpc-XXXXX/` 文件夹，内含 `system.md` 文件。
+
+清理策略：
+
+| 场景 | 清理方式 |
+|------|---------|
+| 子进程正常退出 | `exit` 事件 → `rm(tmpDir)` |
+| 子进程崩溃 | `exit` 事件 → `rm(tmpDir)` |
+| 用户 Ctrl+C | `session_shutdown` → `pool.shutdown()` → 逐进程终止 → `rm(tmpDir)` |
+| `/new` / `/resume` / `/reload` | 同上，走 `session_shutdown` |
+| 断电 / `taskkill /F` | ❌ 不触发任何 handler，会残留
+
+残留目录以 `cdd-agent-` 或 `cdd-rpc-` 开头，位于系统临时目录下，
+可手动删除，下次重启系统也会自动清空。
+
 ## 实时监控
 
 子 agent 运行时，监控视图（SubAgentView）自动弹出 overlay，
@@ -187,6 +211,47 @@ session_start  ──→ 不启动任何进程
 | `spawn_agent` | `spawn_agent` | 隔离子进程运行 agent，返回结构化结果，含实时可视化 |
 | `list_agents` | `list_agents` | 查询可用 sub-agent 列表，LLM 主动调用 |
 | `/sub-agent` | `sub-agent` | 打开子 agent 监控视图（自动弹出 / /sub-agent命令） |
+
+## 工具访问守卫
+
+`ToolAccessGuard` 监听所有 `tool_call` 事件，在危险操作前弹出确认框，
+防止误修改文件或执行破坏性 bash 命令。
+
+### 拦截规则
+
+| 规则 | 触发条件 | 行为 |
+|---|---|---|
+| **confirm-edit** | `edit` / `write` 工具调用 | 弹确认框，取消则询问原因并 block |
+| **confirm-bash** | `bash` 工具 + 匹配危险模式 | 弹确认框，取消则询问原因并 block |
+
+### 危险 bash 模式（17 条）
+
+`rm -rf`、`rm -r`、`rmdir`、`del`、`remove`、`mv`、`cp`、
+`>` 重定向、`| tee`、`dd`、`chmod`、`chown`、`mkfs`、`format`、`fdisk`、`sudo rm`、`:; rm`
+
+### 作用域跳过
+
+通过 `PI_EXT_SKIP` 环境变量控制：
+
+```bash
+# 子 agent 环境中跳过拦截（由主线程设置）
+export PI_EXT_SKIP="confirm-edit"
+```
+
+子 agent 环境下 `shouldSkip("confirm-edit")` 返回 `true`，所有拦截直接放行。
+策略定义在 `data/services/scope/policy.ts`，通过 `IAccessPolicy` 接口注入。
+
+### 架构
+
+```
+ToolAccessGuard (adapter/pi/tools/)
+  → IAccessPolicy (application/services/ 接口)
+    → ScopePolicy (adapter/pi/services/ 桥接)
+      → shouldSkip() (data/services/scope/ 纯函数)
+```
+
+严格按 DIP 分层：ToolAccessGuard 只依赖 application 层的接口，
+不直接引用 data 层的具体实现。
 
 ### spawn_agent 参数
 
@@ -242,10 +307,13 @@ npm test
 npx vitest run src/adapter/pi/
 npx vitest run src/application/useCases/*Agent*
 
-# 当前覆盖（11 文件 43 测试全绿）
+# 当前覆盖（14 文件 85 测试全绿）
 #   - SubSkillRepository 集成测试（11 条）
 #   - SpawnAgentUseCase 单元测试（4 条）
 #   - DiscoverAgentsUseCase 单元测试（1 条）
+#   - ScopePolicy 单元测试（8 条）
+#   - ToolAccessGuard 单元测试（30 条）
+#   - ToolAccessGuard 集成测试（3 条）
 ```
 
 ## 开发指南
@@ -257,6 +325,12 @@ npx vitest run src/application/useCases/*Agent*
 3. 在 `tools/index.ts` 导出
 4. 在 `DIContainer.ts` 实例化
 5. 在 `extension.ts` 调用 `register()`
+
+### 添加新拦截规则
+
+1. 在 `ToolAccessGuard.ts` 中新增私有方法（如 `isDangerousSql(cmd)`）
+2. 在 `register()` 的 handler 中增加对应 `toolName` 匹配分支
+3. 规则保持私有方法，不做插件化预留
 
 ### 集成监控视图
 

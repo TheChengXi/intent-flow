@@ -1,10 +1,10 @@
 /**
  * @intent
- * IAccessPolicy 的 adapter 层桥接实现。委托 data/services/scope/policy.shouldSkip() 执行实际环境变量判断。 存在的意义：满足 DIP 约束——data 层的纯函数不应被 adapter 层直接跨层 import，由本桥接层中转。 边界：纯委托，不含任何逻辑；shouldSkip 返回 boolean，不抛异常。 验收条件： - 实现 IAccessPolicy 接口 - 委托调用 data/services/scope/policy.shouldSkip() 结果一致
+ * IAccessPolicy 的 adapter 层实现。委托 data/services/scope/policy.shouldSkip() 执行实际环境变量判断。 接口 IAccessPolicy 与实现 policy.shouldSkip 同属 data/services/scope 子域，由本 adapter 实现完成依赖组装。 边界：纯委托，不含任何逻辑；shouldSkip 返回 boolean，不抛异常。 验收条件： - 实现 IAccessPolicy 接口 - 委托调用 data/services/scope/policy.shouldSkip() 结果一致
  */
 
 import { shouldSkip } from '../../../data/services/scope/policy';
-import type { IAccessPolicy } from '../../../application/services/IAccessPolicy';
+import type { IAccessPolicy } from '../../../data/services/scope/IAccessPolicy';
 
 export class ScopePolicy implements IAccessPolicy {
   constructor() {}

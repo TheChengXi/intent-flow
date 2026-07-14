@@ -15,7 +15,7 @@ import { ToolAccessGuard } from './tools/ToolAccessGuard';
 import { ListAgentsTool } from './tools/ListAgentsTool';
 import { AgentRunTracker } from './tui/AgentRunTracker';
 import { ScopePolicy } from './services/ScopePolicy';
-import type { IAccessPolicy } from '../../application/services/IAccessPolicy';
+import type { IAccessPolicy } from '../../data/services/scope/IAccessPolicy';
 
 export class DIContainer {
   private static instance: DIContainer;
