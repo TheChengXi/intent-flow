@@ -6,7 +6,7 @@
 
 import { matchesKey, Key, truncateToWidth, wrapTextWithAnsi } from '@earendil-works/pi-tui';
 import type { AgentRunState, LogEntry } from './AgentRunTracker';
-import { fmtTime, logIcon, trunc } from './tui-utils';
+import { fmtTime, logIcon, trunc, type ThemeFg } from './tui-utils';
 
 // ==================== 常量 ====================
 
@@ -70,7 +70,7 @@ export class LogPanel {
     run: AgentRunState | undefined,
     innerWidth: number,
     isFocused: boolean,
-    themeFg: (c: string, t: string) => string,
+    themeFg: ThemeFg,
   ): string[] {
     // 1. 提取展示日志
     const displayLogs = this.getDisplayLogs(run);
@@ -168,7 +168,7 @@ export class LogPanel {
   private buildLogLines(
     logs: LogEntry[],
     innerWidth: number,
-    themeFg: (c: string, t: string) => string,
+    themeFg: ThemeFg,
   ): string[] {
     if (logs.length === 0) return [];
 

@@ -1563,9 +1563,9 @@ class AgentListPanel {
       this.ensureVisible(total);
     } else if (piTui.matchesKey(data, piTui.Key.enter)) {
       return true;
-    } else if (piTui.matchesKey(data, "k") || piTui.matchesKey(data, "K")) {
+    } else if (piTui.matchesKey(data, "k") || data === "K") {
       return false;
-    } else if (piTui.matchesKey(data, "r") || piTui.matchesKey(data, "R")) {
+    } else if (piTui.matchesKey(data, "r") || data === "R") {
       return false;
     }
     return false;
@@ -1853,14 +1853,14 @@ class SubAgentView {
       return;
     }
     if (this.focusMode === "list") {
-      if (piTui.matchesKey(data, "k") || piTui.matchesKey(data, "K")) {
+      if (piTui.matchesKey(data, "k") || data === "K") {
         const run = runs[this.agentList.getSelectedIndex()];
         if (run && run.status === "running" && this.onKill) {
           this.onKill(run.toolCallId);
         }
         return;
       }
-      if (piTui.matchesKey(data, "r") || piTui.matchesKey(data, "R")) {
+      if (piTui.matchesKey(data, "r") || data === "R") {
         const run = runs[this.agentList.getSelectedIndex()];
         if (run && (run.status === "failed" || run.status === "aborted") && this.onRetry) {
           this.onRetry(run.toolCallId);

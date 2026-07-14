@@ -7,5 +7,4 @@ export { DIContainer } from './DIContainer';
 export { SubSkillRepository } from './repositories/SubSkillRepository';
 export { SubProcessRunner } from './runtime/SubProcessRunner';
 export { SpawnAgentTool } from './tools/SpawnAgentTool';
-export { SubagentTool } from './tools/SubagentTool';
 export { default as extension } from './extension';

@@ -2,14 +2,16 @@
  * @intent list_agents 工具。向 pi 注册名为 list_agents 的工具，
  * 允许 LLM 查询当前可用的 sub-agent 列表及其描述。
  * LLM 在调用 spawn_agent 前可先查一次，避免盲猜 agent 名称。
+ * 依赖 DiscoverAgentsUseCase，不走直接 repository 调用（防跨层）。
  */
 
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 import { Type } from 'typebox';
-import type { IAgentRepository } from '../../../data/repositories/IAgentRepository';
+import type { IDiscoverAgentsUseCase } from '../../../application/useCases/DiscoverAgentsUseCase';
+import type { AgentDefinition } from '../../../data/entities/AgentDefinition';
 
 export class ListAgentsTool {
-  constructor(private agentRepo: IAgentRepository) {}
+  constructor(private discoverAgents: IDiscoverAgentsUseCase) {}
 
   register(pi: ExtensionAPI): void {
     pi.registerTool({
@@ -23,7 +25,7 @@ export class ListAgentsTool {
       }),
 
       execute: async (_toolCallId, params, _signal, _onUpdate, _ctx) => {
-        const { agents } = await this.agentRepo.discoverAll('sub_skill');
+        const { agents } = await this.discoverAgents.execute({ scope: 'sub_skill' });
 
         if (agents.length === 0) {
           return {
@@ -35,7 +37,7 @@ export class ListAgentsTool {
         const filter = (params.skill || '').trim().toLowerCase();
         let matched = agents;
         if (filter) {
-          matched = agents.filter((a) => a.skillName === filter);
+          matched = agents.filter((a: AgentDefinition) => a.skillName === filter);
           if (matched.length === 0) {
             return {
               content: [{ type: 'text' as const, text: `skill "${filter}" 下没有 sub-agent。` }],
@@ -63,7 +65,7 @@ export class ListAgentsTool {
 
         return {
           content: [{ type: 'text' as const, text: parts.join('\n') }],
-          details: { count: matched.length, agents: matched.map((a) => a.name) },
+          details: { count: matched.length, agents: matched.map((a: AgentDefinition) => a.name) },
         };
       },
     });

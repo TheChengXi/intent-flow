@@ -10,6 +10,7 @@ import { AgentRunTracker } from './AgentRunTracker';
 import { AgentListPanel } from './AgentListPanel';
 import { LogPanel } from './LogPanel';
 import { StatusBar } from './StatusBar';
+import type { ThemeFg } from './tui-utils';
 
 // ==================== 常量 ====================
 
@@ -69,14 +70,14 @@ export class SubAgentView {
 
     if (this.focusMode === 'list') {
       // k/r: 由 SubAgentView 处理（涉及 agentList 的回调）
-      if (matchesKey(data, 'k') || matchesKey(data, 'K')) {
+      if (matchesKey(data, 'k') || data === 'K') {
         const run = runs[this.agentList.getSelectedIndex()];
         if (run && run.status === 'running' && this.onKill) {
           this.onKill(run.toolCallId);
         }
         return;
       }
-      if (matchesKey(data, 'r') || matchesKey(data, 'R')) {
+      if (matchesKey(data, 'r') || data === 'R') {
         const run = runs[this.agentList.getSelectedIndex()];
         if (run && (run.status === 'failed' || run.status === 'aborted') && this.onRetry) {
           this.onRetry(run.toolCallId);
@@ -109,7 +110,7 @@ export class SubAgentView {
 
   render(
     width: number,
-    themeFg: (c: string, t: string) => string,
+    themeFg: ThemeFg,
     themeBold?: (t: string) => string,
   ): string[] {
     if (width < MIN_TERM_WIDTH) {
@@ -186,7 +187,7 @@ export class SubAgentView {
   private wrapLine(
     content: string,
     innerWidth: number,
-    themeFg: (c: string, t: string) => string,
+    themeFg: ThemeFg,
   ): string {
     const trimmed = truncateToWidth(content, innerWidth);
     const pad = innerWidth - visibleWidth(trimmed);

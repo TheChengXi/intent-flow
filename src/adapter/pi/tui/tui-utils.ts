@@ -3,6 +3,10 @@
  */
 
 import { truncateToWidth, visibleWidth } from '@earendil-works/pi-tui';
+import type { ThemeColor } from '@earendil-works/pi-coding-agent';
+
+/** theme.fg 函数签名 — (color: ThemeColor, text: string) => string */
+export type ThemeFg = (color: ThemeColor, text: string) => string;
 
 // ==================== 格式化 ====================
 
@@ -33,7 +37,7 @@ export function fmtCost(cost: number): string {
 // ==================== 图标 ====================
 
 /** 获取状态图标 */
-export function statusIcon(status: string, themeFg: (c: string, t: string) => string): string {
+export function statusIcon(status: string, themeFg: ThemeFg): string {
   switch (status) {
     case 'running': return themeFg('warning', '▶');
     case 'completed': return themeFg('success', '✓');
@@ -44,7 +48,7 @@ export function statusIcon(status: string, themeFg: (c: string, t: string) => st
 }
 
 /** 获取日志级别图标 */
-export function logIcon(level: string, themeFg: (c: string, t: string) => string): string {
+export function logIcon(level: string, themeFg: ThemeFg): string {
   switch (level) {
     case 'thinking': return themeFg('mdQuote', '🤔');
     case 'tool_call': return themeFg('accent', '🔧');

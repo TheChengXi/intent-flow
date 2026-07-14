@@ -6,7 +6,7 @@
 
 import { matchesKey, Key, truncateToWidth, visibleWidth } from '@earendil-works/pi-tui';
 import type { AgentRunState } from './AgentRunTracker';
-import { fmtDuration, fmtCost, statusIcon, trunc } from './tui-utils';
+import { fmtDuration, fmtCost, statusIcon, trunc, type ThemeFg } from './tui-utils';
 
 // ==================== 常量 ====================
 
@@ -61,11 +61,11 @@ export class AgentListPanel {
       this.ensureVisible(total);
     } else if (matchesKey(data, Key.enter)) {
       return true; // 切换到日志视图
-    } else if (matchesKey(data, 'k') || matchesKey(data, 'K')) {
+    } else if (matchesKey(data, 'k') || data === 'K') {
       // 终止运行中的 agent
       // 不在这里获取 runs，通过事件发给外部处理
       return false; // kill 动作由外部回调处理
-    } else if (matchesKey(data, 'r') || matchesKey(data, 'R')) {
+    } else if (matchesKey(data, 'r') || data === 'R') {
       // 重试失败的 agent
       return false; // retry 动作由外部回调处理
     }
@@ -112,7 +112,7 @@ export class AgentListPanel {
     runs: AgentRunState[],
     innerWidth: number,
     isFocused: boolean,
-    themeFg: (c: string, t: string) => string,
+    themeFg: ThemeFg,
   ): string[] {
     const lines: string[] = [];
 

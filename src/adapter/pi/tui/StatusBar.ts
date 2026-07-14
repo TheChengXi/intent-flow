@@ -6,7 +6,7 @@
 
 import { visibleWidth } from '@earendil-works/pi-tui';
 import type { AgentRunState } from './AgentRunTracker';
-import { statusIcon } from './tui-utils';
+import { statusIcon, type ThemeFg } from './tui-utils';
 
 export class StatusBar {
   /**
@@ -17,7 +17,7 @@ export class StatusBar {
     runs: AgentRunState[],
     summary: { total: number; running: number; completed: number; failed: number; aborted: number },
     innerWidth: number,
-    themeFg: (c: string, t: string) => string,
+    themeFg: ThemeFg,
   ): string {
     // 左侧：状态文本
     let statusLine = '';

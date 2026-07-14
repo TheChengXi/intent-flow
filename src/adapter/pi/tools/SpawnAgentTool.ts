@@ -12,10 +12,11 @@ import { getMarkdownTheme } from '@earendil-works/pi-coding-agent';
 import type { ISpawnAgentUseCase } from '../../../application/useCases/SpawnAgentUseCase';
 import type { AgentRunResult } from '../../../data/entities/AgentRunResult';
 import type { AgentRunTracker } from '../tui/AgentRunTracker';
+import type { ThemeFg } from '../tui/tui-utils';
 
 // ==================== 渲染辅助函数 ====================
 
-function formatUsage(result: AgentRunResult, theme: { fg: (c: string, t: string) => string }): string {
+function formatUsage(result: AgentRunResult, theme: { fg: ThemeFg }): string {
   const parts: string[] = [];
   if (result.usage.turns) parts.push(`${result.usage.turns} 轮`);
   if (result.usage.input) parts.push(`↑${result.usage.input}`);
@@ -28,7 +29,7 @@ function formatUsage(result: AgentRunResult, theme: { fg: (c: string, t: string)
 function formatToolCall(
   toolName: string,
   args: Record<string, unknown>,
-  fg: (c: string, t: string) => string,
+  fg: ThemeFg,
 ): string {
   if (toolName === 'bash') {
     const cmd = (args.command as string) || '';
@@ -155,7 +156,7 @@ export class SpawnAgentTool {
       // ── renderResult：工具返回后在终端显示 ──────
 
       renderResult(result, { expanded }, theme, _context) {
-        const r = result.details?.result as AgentRunResult | undefined;
+        const r = (result.details as Record<string, unknown>)?.result as AgentRunResult | undefined;
         if (!r) {
           const content = result.content[0];
           return new Text(content?.type === 'text' ? content.text : '(no output)', 0, 0);

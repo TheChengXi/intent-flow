@@ -15,7 +15,7 @@ import { ToolAccessGuard } from './tools/ToolAccessGuard';
 import { ListAgentsTool } from './tools/ListAgentsTool';
 import { AgentRunTracker } from './tui/AgentRunTracker';
 import { ScopePolicy } from './services/ScopePolicy';
-import type { IAccessPolicy } from '../../data/services/scope/IAccessPolicy';
+import type { IAccessPolicyService } from '../../application/services/IAccessPolicyService';
 
 export class DIContainer {
   private static instance: DIContainer;
@@ -41,7 +41,7 @@ export class DIContainer {
   public listAgentsTool: ListAgentsTool;
 
   // ==================== 访问策略 ====================
-  public accessPolicy: IAccessPolicy;
+  public accessPolicy: IAccessPolicyService;
   public toolAccessGuard: ToolAccessGuard;
 
   private constructor() {
@@ -63,7 +63,7 @@ export class DIContainer {
 
     // 初始化工具
     this.spawnAgentTool = new SpawnAgentTool(this.spawnAgentUseCase, this.agentTracker);
-    this.listAgentsTool = new ListAgentsTool(this.agentRepo);
+    this.listAgentsTool = new ListAgentsTool(this.discoverAgentsUseCase);
 
     // 初始化访问策略
     this.accessPolicy = new ScopePolicy();
