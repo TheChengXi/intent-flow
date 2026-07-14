@@ -17,6 +17,8 @@
 
 当一个组件持有 `state.ts` 并协调其他组件的渲染流程时，它在当前上下文中扮演**编排**角色。
 
+> 注：编排角色不等于"页面"。能力地图的 core/capability-map 持有 state 并协调 folder/group/file 的渲染，它是编排角色；但 CapabilityMap.vue 只做页面组装，不持有 state，它只是编排角色的消费者。
+
 ## 协议 是一个概念
 
 当一个组件以 `protocol.ts` 定义自己的尺寸和接口并在多个场景中被引用时，它在扮演**协议**角色。
@@ -35,4 +37,4 @@
 
 如果跨层级较远，通过编排组件逐级传递，或在编排组件的 state.ts 中托管一个全局可读的数据副本。不跨级读写、不走事件总线。
 
-**示例**：`capability-map` 作为编排组件，其 `state.ts` 持有 `rootData`、`expanded`、`infoVisible` 等状态，folder / group / file 子组件全部通过 props + invokeAction 消费和触发。
+**当前示例**：`core/capability-map/state.ts` 持有 `rootData`、`expanded`、`infoVisible` 等状态，folder / group / file 子组件通过 `invokeAction` 消费和触发。

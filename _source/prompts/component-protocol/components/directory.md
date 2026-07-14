@@ -5,7 +5,7 @@
 ## 目录结构
 
 ```
-engine/components/<type-name>/
+components/<type-name>/
 ├── index.ts        # 统一出口，re-export
 ├── protocol.ts     # 01 静态结构：组件协议定义
 │                   #   identity / css / props / slots
@@ -13,7 +13,7 @@ engine/components/<type-name>/
 │                   #   可选：proportions 声明组件的自然比例
 │                   #     如 [4, 1] 即宽:高 = 4:1
 │                   #     支持 N 维（如 3D：[4, 1, 2]）
-│                   #   设定后对应维度不再独立计算
+│                   #     设定后对应维度不再独立计算
 ├── render.ts       # 04 渲染执行（可选，可膨胀为目录）
 │                   #   接受 RenderContext
 │                   #   只画自己的节点，不跨组件操作
@@ -63,12 +63,26 @@ button/behavior/
 ## 当前实际结构
 
 ```
-engine/components/
-├── capability-map/  # 编排组件：state + behavior + render
-├── folder/          # 协议组件：protocol + render
-├── group/           # 协议组件：protocol + render
-└── file/            # 协议组件：protocol + render
+src/
+├── core/                    # 引擎无关的核心逻辑
+│   └── capability-map/      #   state / behavior / types
+├── renderer/                # 渲染引擎实现
+│   └── leafer/              #   scene / layout / types + components/
+│       └── components/      #   folder / group / file / connection-line
+├── overlay/                 # Vue DOM 悬浮组件（可选层）
+│   ├── toolbar / map-tools / path-indicator /
+│   ├── empty-state / info-panel / toast /
+├── pages/                   # 页面编排（可选层，单页面可省略）
+│   └── capability-map/      #   CapabilityMap.vue + composable
+├── converter/               # 换算层（% → px 纯函数）
+├── layout/                  # 布局算法
+├── resource/                # 文本/主题资源
+├── pretext.ts               # 文本测量
+├── App.vue                  # 根组件分发
+└── main.js                  # 入口
 ```
+
+> overlay/ 和 pages/ 是推荐但不是强制。overlay 只是 Vue DOM 组件的收容层，不涉及渲染引擎耦合；pages 只在有多个页面时有价值。单页面项目完全可以把所有东西放在同一层。
 
 ## 与场景图的映射
 

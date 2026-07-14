@@ -5,7 +5,7 @@
 ## 1. 定义协议
 
 ```
-engine/components/button/protocol.ts
+components/button/protocol.ts
 
 export const css = {
   width: '15%',
@@ -17,10 +17,10 @@ export const css = {
 ## 2. 实现渲染
 
 ```
-engine/components/button/render.ts
+components/button/render.ts
 
 import { Rect } from 'leafer-ui'
-import type { RenderContext } from '../types'
+import type { RenderContext } from './types'
 
 export function render(ctx: RenderContext) {
   const { parent, node, tokens } = ctx
@@ -34,29 +34,31 @@ export function render(ctx: RenderContext) {
 }
 ```
 
-## 3. 挂载到 App.vue
+## 3. 页面集成
 
 ```
-src/adapter/vscode/ui/webview/src/App.vue
+pages/example/ExamplePage.vue
 
-onMounted(() => {
-  app = new Leafer({ view: canvasRef.value })
-  buildScene({ app, data, tokens: readToken(), cw: 800, ch: 600 })
-})
+import { createSceneManager } from '../../renderer/leafer'
+const scene = createSceneManager()
+scene.createScene(canvasRef.value)
+scene.buildScene(tokens, cw, ch)
 ```
 
-## 实际项目结构
+## 当前实际项目结构
 
 ```
-src/adapter/vscode/ui/webview/src/
-  ├── App.vue              # 100% 地基 + HMR + 生命周期
-  ├── main.js              # 入口
-  └── engine/              # 运行时
-      ├── converter/       # 02 换算层：% → px 纯函数
-      ├── layout/          # 纯布局算法
-      └── components/      # 组件目录，每个目录自洽
-          ├── capability-map/  # 编排组件：state + behavior + render
-          ├── folder/          # 协议组件：protocol + render
-          ├── group/           # 协议组件：protocol + render
-          └── file/            # 协议组件：protocol + render
+src/
+├── core/                    # 引擎无关核心逻辑
+│   └── capability-map/      #   state / behavior / types
+├── renderer/                # 渲染引擎（当前为 Leafer）
+│   └── leafer/              #   scene / layout + components/
+├── overlay/                 # Vue DOM 悬浮组件（可选层）
+├── pages/                   # 页面编排（可选层）
+│   └── capability-map/      #   CapabilityMap.vue + composable
+├── converter/               # 换算层（% → px 纯函数）
+├── layout/                  # 布局算法
+├── resource/                # 文本/主题资源
+├── App.vue                  # 根组件分发
+└── main.js                  # 入口
 ```

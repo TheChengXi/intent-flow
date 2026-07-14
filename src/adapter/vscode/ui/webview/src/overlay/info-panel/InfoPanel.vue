@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { text } from '../../../resource/text/info-panel'
+import { text } from '../../resource/text/info-panel'
 
 defineProps<{
   visible: boolean

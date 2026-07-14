@@ -1,6 +1,7 @@
 /**
  * @intent
- * 组件渲染上下文。一个组件 render() 需要的信息都装在这里。
+ * 渲染引擎通用类型定义。
+ * RenderContext 是 Leafer 渲染引擎中所有组件 render() 函数的统一入参格式。
  */
 
 export interface RenderContext {

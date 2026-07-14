@@ -3,7 +3,7 @@
  * 文件组件的协议定义。
  */
 
-import type { ConvertNode } from '../../converter'
+import type { ConvertNode } from '../../../../converter'
 
 export const protocol: ConvertNode = {
   identity: 'component://file',

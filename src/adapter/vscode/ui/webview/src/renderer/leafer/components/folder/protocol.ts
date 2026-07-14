@@ -4,7 +4,7 @@
  * 尺寸百分比参照画布容器，由 converter 运行时转为 px。
  */
 
-import type { ConvertNode } from '../../converter'
+import type { ConvertNode } from '../../../../converter'
 
 export const protocol: ConvertNode = {
   identity: 'component://folder',

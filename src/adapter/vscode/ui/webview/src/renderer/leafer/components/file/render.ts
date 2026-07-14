@@ -5,7 +5,7 @@
  */
 
 import { Group, Text } from 'leafer-ui'
-import type { RenderContext } from '../types'
+import type { RenderContext } from '../../types'
 
 export function render(ctx: RenderContext): void {
   const { parent, node, tokens, invokeAction } = ctx

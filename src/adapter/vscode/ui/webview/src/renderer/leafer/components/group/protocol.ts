@@ -3,7 +3,7 @@
  * 分组组件的协议定义（圆形节点）。
  */
 
-import type { ConvertNode } from '../../converter'
+import type { ConvertNode } from '../../../../converter'
 
 export const protocol: ConvertNode = {
   identity: 'component://group',

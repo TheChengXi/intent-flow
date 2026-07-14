@@ -8,9 +8,9 @@ import { calcSubtreeWidth, layoutNode, flattenTree,
   TREE_LEFT, TREE_TOP, NODE_GAP } from '../../layout'
 import { compileNode, convertTree } from '../../converter'
 import type { ConvertNode } from '../../converter'
-import { protocol as folderProtocol } from '../folder'
-import { protocol as groupProtocol } from '../group'
-import { protocol as fileProtocol } from '../file'
+import { protocol as folderProtocol } from './components/folder'
+import { protocol as groupProtocol } from './components/group'
+import { protocol as fileProtocol } from './components/file'
 import { prepare, measureNaturalWidth } from '@chenglou/pretext'
 
 /**

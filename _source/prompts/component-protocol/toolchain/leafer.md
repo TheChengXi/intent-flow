@@ -13,19 +13,22 @@
 
 ## 在架构中的角色
 
-render.ts 是整个架构中**唯一引用 Leafer 的地方**。协议层、换算层、behavior.ts、state.ts 都不 import Leafer。
+`renderer/leafer/` 是整个架构中**唯一引用 Leafer 的地方**。core、converter、layout 都不 import Leafer。
+
+替换引擎时只需替换 `renderer/` 目录下的实现，core 层和协议层完全不动。
 
 ## 替换为其他引擎
 
 将 Leafer 替换为 Three.js（3D）或原生 Canvas 时：
 
-| 文件 | 需要改 | 不需要改 |
-|------|--------|---------|
-| render.ts | ✅ 渲染逻辑完全重写 | — |
-| protocol.ts | ❌ | 协议定义不变 |
-| converter.ts | ❌ | 换算逻辑不变 |
-| behavior.ts | ❌ | 状态机不变 |
-| state.ts | ❌ | 数据通信不变 |
+| 目录/文件 | 需要改 | 不需要改 |
+|-----------|--------|---------|
+| renderer/leafer/scene.ts | ✅ 渲染逻辑完全重写 | — |
+| renderer/leafer/layout.ts | ⚠️ 布局算法可能需调整 | — |
+| renderer/leafer/components/ | ✅ 组件渲染逻辑重写 | — |
+| core/ | ❌ | 状态/行为不变 |
+| converter/ | ❌ | 换算逻辑不变 |
+| protocol/ | ❌ | 协议定义不变 |
 
 ## 常见坑点
 
