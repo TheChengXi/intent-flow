@@ -8,6 +8,13 @@ const outDir = path.resolve(__dirname, '../../../../../dist/webview')
 
 export default defineConfig({
   plugins: [vue()],
+  resolve: {
+    alias: {
+      '@core':     path.resolve(__dirname, 'src/core'),
+      '@overlay':  path.resolve(__dirname, 'src/overlay'),
+      '@resource': path.resolve(__dirname, 'src/resource'),
+    },
+  },
   root: '.',
   base: './',
   server: {

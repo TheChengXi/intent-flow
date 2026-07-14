@@ -6,7 +6,7 @@
  */
 
 import { watch, nextTick } from 'vue'
-import { state } from '../../core/capability-map'
+import { state } from '@core/capability-map'
 import { readToken } from '../../renderer/leafer'
 import type { SceneManager } from '../../renderer/leafer'
 

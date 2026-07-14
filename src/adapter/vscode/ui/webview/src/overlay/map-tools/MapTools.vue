@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import { state, invokeAction } from '../../core/capability-map'
+import { state, invokeAction } from '@core/capability-map'
 </script>
 
 <style scoped>

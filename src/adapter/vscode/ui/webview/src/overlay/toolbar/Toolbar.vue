@@ -17,8 +17,8 @@
 </template>
 
 <script setup lang="ts">
-import { state, invokeAction } from '../../core/capability-map'
-import { text as uiText } from '../../resource/text/ui'
+import { state, invokeAction } from '@core/capability-map'
+import { text as uiText } from '@resource/text/ui'
 </script>
 
 <style scoped>

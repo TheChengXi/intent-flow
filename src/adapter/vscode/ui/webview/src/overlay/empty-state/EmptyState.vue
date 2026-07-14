@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { text } from '../../resource/text/empty-state'
+import { text } from '@resource/text/empty-state'
 
 defineProps<{ invokeAction: (name: string, payload?: any) => void }>()
 

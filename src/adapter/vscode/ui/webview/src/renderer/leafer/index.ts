@@ -7,4 +7,4 @@
 
 export { createSceneManager } from './scene'
 export type { SceneManager } from './scene'
-export { readToken } from '../../resource/token'
+export { readToken } from '@resource/token'

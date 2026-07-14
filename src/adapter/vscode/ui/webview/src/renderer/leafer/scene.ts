@@ -6,13 +6,13 @@
  */
 
 import { Leafer, Group, Rect, Text } from 'leafer-ui'
-import { state, invokeAction as stateInvokeAction } from '../../core/capability-map'
+import { state, invokeAction as stateInvokeAction } from '@core/capability-map'
 import { render as renderFolder } from './components/folder'
 import { render as renderGroup } from './components/group'
 import { render as renderFile } from './components/file'
 import { render as renderConnectionLine } from './components/connection-line'
 import { calcLayout } from './layout'
-import { text as uiText } from '../../resource/text/ui'
+import { text as uiText } from '@resource/text/ui'
 import type { RenderContext } from './types'
 
 export interface SceneManager {

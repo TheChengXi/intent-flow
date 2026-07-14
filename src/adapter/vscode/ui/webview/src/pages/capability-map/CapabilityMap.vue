@@ -19,8 +19,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useActor } from '@xstate/vue'
 
 // ── Core: 引擎无关逻辑 ──
-import { state, invokeAction, initMessages } from '../../core/capability-map'
-import { dragMachine } from '../../core/capability-map'
+import { state, invokeAction, initMessages } from '@core/capability-map'
+import { dragMachine } from '@core/capability-map'
 
 // ── Renderer: 渲染引擎（工厂函数，每次返回新实例） ──
 import { createSceneManager } from '../../renderer/leafer'
@@ -29,12 +29,12 @@ import { createSceneManager } from '../../renderer/leafer'
 import { initWatcher, scheduleRender } from './composable'
 
 // ── Overlay: Vue DOM 组件 ──
-import Toolbar from '../../overlay/toolbar/Toolbar.vue'
-import EmptyState from '../../overlay/empty-state/EmptyState.vue'
-import InfoPanel from '../../overlay/info-panel/InfoPanel.vue'
-import Toast from '../../overlay/toast/Toast.vue'
-import MapTools from '../../overlay/map-tools/MapTools.vue'
-import PathIndicator from '../../overlay/path-indicator/PathIndicator.vue'
+import Toolbar from '@overlay/toolbar/Toolbar.vue'
+import EmptyState from '@overlay/empty-state/EmptyState.vue'
+import InfoPanel from '@overlay/info-panel/InfoPanel.vue'
+import Toast from '@overlay/toast/Toast.vue'
+import MapTools from '@overlay/map-tools/MapTools.vue'
+import PathIndicator from '@overlay/path-indicator/PathIndicator.vue'
 
 // ── 实例化 SceneManager（内部状态闭包在实例内，无模块级共享状态） ──
 const scene = createSceneManager()

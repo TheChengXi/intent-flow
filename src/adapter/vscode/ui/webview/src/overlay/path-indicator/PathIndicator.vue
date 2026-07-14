@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { state } from '../../core/capability-map'
+import { state } from '@core/capability-map'
 </script>
 
 <style scoped>
