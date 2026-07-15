@@ -53,7 +53,7 @@ test('toggleExpand 切换折叠状态', () => {
 })
 ```
 
-### pretext.ts（文本测量）
+### core/pretext.ts（文本测量）
 
 输入 label + font → 输出精确宽度。影响布局准确性。
 

@@ -7,9 +7,10 @@
 
 import {
   prepare as _prepare,
-  layout as _layout,
   prepareWithSegments,
+  layout as _layout,
   layoutWithLines,
+  measureNaturalWidth,
 } from '@chenglou/pretext'
 
 export interface LineInfo {
@@ -17,23 +18,15 @@ export interface LineInfo {
   width: number
 }
 
-export interface LayoutResult {
-  text: string
-  width: number
-  lineCount: number
-  truncated: boolean
-}
-
 /**
- * 单行文本排版：测量 + 撑满容器，超出不截断。
+ * 单行文本排版：测量文本宽度。
  * 用于 layout 阶段撑大节点宽度，确保文本完整显示。
  */
 export function measureWidth(text: string, fontSize: number, fontFamily = 'sans-serif'): number {
   const font = `${fontSize}px ${fontFamily}`
-  const prepared = _prepare(text, font)
-  const { height } = _layout(prepared, 99999, fontSize * 1.2)
-  return height > 0 ? prepared['width'] ?? 0 : 0
+  const prepared = prepareWithSegments(text, font)
+  return measureNaturalWidth(prepared)
 }
 
 // Re-export for advanced usage
-export { _prepare as prepare, _layout as layout, prepareWithSegments, layoutWithLines }
+export { _prepare as prepare, _layout as layout, prepareWithSegments, layoutWithLines, measureNaturalWidth }
