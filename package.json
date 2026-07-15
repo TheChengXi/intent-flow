@@ -2,7 +2,7 @@
   "name": "cdd-framework",
   "displayName": "CDD Framework",
   "description": "Comment-Driven Development Framework - 注释驱动开发框架",
-  "version": "0.2.0",
+  "version": "0.5.0",
   "publisher": "your-publisher-name",
   "license": "MIT",
   "repository": {

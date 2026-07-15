@@ -1,5 +1,7 @@
 # VSCode 适配层
 
+> v0.5 — 框选节点 / Ctrl+点单选 / B 键切换 / 复制地图联动
+
 VSCode 扩展适配层。将 CDD Framework 的核心能力集成到 VSCode IDE 中，
 提供命令面板、Dry Run、代码审查等功能。
 
