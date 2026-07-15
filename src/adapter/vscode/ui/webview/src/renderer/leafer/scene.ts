@@ -44,6 +44,7 @@ export function createSceneManager(): SceneManager {
   // ── 选择框 / 双击状态 ──
   let _selStart: { x: number; y: number } | null = null
   let _flatNodes: any[] = []
+  let _ctrlDown = false
   let _lastClickTarget: any = null
   let _lastClickTime = 0
 
@@ -80,6 +81,8 @@ export function createSceneManager(): SceneManager {
     _dragSend = dragSnd
     if (!_app) return
     _app.on('pointer.down', onPointerDown)
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
     window.addEventListener('wheel', onWheel, { passive: false })
@@ -88,6 +91,8 @@ export function createSceneManager(): SceneManager {
   function unbindEvents() {
     if (!_app) return
     _app.off('pointer.down', onPointerDown)
+    window.removeEventListener('keydown', onKeyDown)
+    window.removeEventListener('keyup', onKeyUp)
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
     window.removeEventListener('wheel', onWheel)
@@ -152,6 +157,14 @@ export function createSceneManager(): SceneManager {
     if (_dragSnapshot?.value?.matches('dragging')) {
       _dragSend?.({ type: 'DROP' })
     }
+  }
+
+  // ── Ctrl 键跟踪 ──
+  function onKeyDown(e: KeyboardEvent) {
+    _ctrlDown = e.ctrlKey || e.metaKey
+  }
+  function onKeyUp(e: KeyboardEvent) {
+    _ctrlDown = e.ctrlKey || e.metaKey
   }
 
   // ── 双击打开 ──
