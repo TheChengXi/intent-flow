@@ -30,10 +30,17 @@ export interface RenderContext {
 function getVisualAnchor(node: any): { cx: number; top: number; bottom: number } {
   switch (node.type) {
     case 'folder':
-      return { cx: node.x + 12, top: node.y, bottom: node.y + 24 }
+      // 📁 (0,0) fontSize:24, textAlign:'center' 文字居中于 x:0
+      // 整体视觉以文字宽度为准，文字中点 = node.x
+      return { cx: node.x, top: node.y, bottom: node.y + 24 }
     case 'file':
-      return { cx: node.x + 13, top: node.y + 3, bottom: node.y + 19 }
+      // 📄 (6,3) fontSize:13 ≈ 13px + 文件名 (26,3) fontSize:12 + padding [3,8]
+      // 组合视觉跨度：emoji 左 x:6 → 文字右 x:26+textWidth+8
+      // 中点 = node.x + (6 + 26 + textWidth + 8) / 2
+      const tw = node.textWidth || 80
+      return { cx: node.x + (40 + tw) / 2, top: node.y + 3, bottom: node.y + 19 }
     case 'intent-package':
+      // 圆 r=50, Group(node.x-r, node.y-r), 圆心在 (node.x, node.y)
       return { cx: node.x, top: node.y - 50, bottom: node.y + 50 }
     default:
       return { cx: node.x + (node.w || 60) / 2, top: node.y, bottom: node.y + (node.h || 30) }

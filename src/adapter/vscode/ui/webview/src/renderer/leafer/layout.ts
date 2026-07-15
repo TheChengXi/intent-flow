@@ -43,8 +43,9 @@ export function calcLayout(data: any, cw?: number, ch?: number) {
     for (const n of allNodes) {
       const px = pxMap.get(n.id)
       if (px) { n.w = px.width; n.h = px.height }
-      if (n._prepared && n.type === 'folder') {
-        n.w = measureNaturalWidth(n._prepared)
+      if (n._prepared) {
+        n.textWidth = measureNaturalWidth(n._prepared)
+        if (n.type === 'folder') n.w = n.textWidth
       }
     }
   }
