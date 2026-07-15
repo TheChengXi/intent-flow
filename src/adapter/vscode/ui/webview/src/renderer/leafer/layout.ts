@@ -45,11 +45,12 @@ export function calcLayout(data: any, cw?: number, ch?: number) {
       if (px) { n.w = px.width; n.h = px.height }
       if (n._prepared) {
         n.textWidth = measureNaturalWidth(n._prepared)
-        // folder 宽度取 百分比换算宽 与 文字宽 的较大值
         if (n.type === 'folder') n.w = Math.max(n.w, n.textWidth)
       }
-      // 视觉中心偏移（相对 node.x），layout 和 connection-line 共用
+      // 视觉总宽 = cxOffset * 2，使 calcSubtreeWidth 和 layoutNode 用同一套尺度
       n.cxOffset = getCxOffset(n)
+      const visualW = n.cxOffset * 2
+      if (visualW > 0) n.w = Math.max(n.w, visualW)
     }
   }
 
