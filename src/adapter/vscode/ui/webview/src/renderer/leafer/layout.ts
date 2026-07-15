@@ -46,10 +46,9 @@ export function calcLayout(data: any, cw?: number, ch?: number) {
       if (n._prepared) {
         n.textWidth = measureNaturalWidth(n._prepared)
         // folder 宽度取 百分比换算宽 与 文字宽 的较大值
+        // 避免短文字导致节点过窄、间距不均匀
         if (n.type === 'folder') n.w = Math.max(n.w, n.textWidth)
       }
-      // 视觉中心偏移（相对 node.x），layout 和 connection-line 共用
-      n.cxOffset = getCxOffset(n)
     }
   }
 
@@ -169,24 +168,6 @@ function preprocessNodes(nodes: any[]): void {
   for (const n of nodes) {
     n._prepared = prepare(n.label, n.textFont)
     if (n.children?.length) preprocessNodes(n.children)
-  }
-}
-
-/** 视觉中心偏移（相对 node.x），与各组件 render.ts 中的绘制位置对齐 */
-function getCxOffset(node: any): number {
-  switch (node.type) {
-    case 'folder':
-      // 文字 textAlign:'center' 居中于 x:0
-      return 0
-    case 'file':
-      // 📄 (6,3) ~13px + 文字 (26,3) fontSize:12 + padding [3,8]
-      // 组合中点 = (6 + 26 + textWidth + 8) / 2 = (40 + textWidth) / 2
-      return (40 + (node.textWidth || 80)) / 2
-    case 'intent-package':
-      // Group(node.x-50, node.y-50), 圆在 Group 内居中
-      return 0
-    default:
-      return node.w / 2
   }
 }
 

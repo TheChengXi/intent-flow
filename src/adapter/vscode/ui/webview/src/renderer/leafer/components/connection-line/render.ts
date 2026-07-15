@@ -58,10 +58,9 @@ function computeLines(nodes: any[]): any[] {
     if (!node.children?.length) return
 
     const parentAnchor = getVisualAnchor(node)
-    // 垂直落线 X = node.x + cxOffset，与 layoutNode 的居中计算一致
-    const px = node.x + (node.cxOffset ?? node.w / 2)
+    const px = parentAnchor.cx
     const py = parentAnchor.bottom
-    const lineY = py + 10
+    const lineY = py + 10 // 水平线在父节点底部以下 10px
 
     const first = node.children[0]
     const last  = node.children[node.children.length - 1]
