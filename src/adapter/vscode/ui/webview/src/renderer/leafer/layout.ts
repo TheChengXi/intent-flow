@@ -45,7 +45,9 @@ export function calcLayout(data: any, cw?: number, ch?: number) {
       if (px) { n.w = px.width; n.h = px.height }
       if (n._prepared) {
         n.textWidth = measureNaturalWidth(n._prepared)
-        if (n.type === 'folder') n.w = n.textWidth
+        // folder 宽度取 百分比换算宽 与 文字宽 的较大值
+        // 避免短文字导致节点过窄、间距不均匀
+        if (n.type === 'folder') n.w = Math.max(n.w, n.textWidth)
       }
     }
   }
