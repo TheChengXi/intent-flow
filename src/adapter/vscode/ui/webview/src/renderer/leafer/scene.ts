@@ -43,6 +43,7 @@ export function createSceneManager(): SceneManager {
   function createScene(container: HTMLElement) {
     _canvasRef = container
     _app = new Leafer({ view: container })
+    _app.zoom = 1  // 显式初始化，防止首次读 zoom 时 undefined → NaN
     _mapLayer = new Group()
     _overlayLayer = new Group()
     _app.add(_mapLayer)
