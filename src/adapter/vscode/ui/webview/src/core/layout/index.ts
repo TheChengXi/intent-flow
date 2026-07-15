@@ -51,8 +51,11 @@ export function layoutNode(node: any, x: number, y: number): void {
     }
     const first = node.children[0]
     const last  = node.children[node.children.length - 1]
-    const cx = (first.x + first.w / 2 + last.x + last.w / 2) / 2
-    node.x = cx - node.w / 2
+    // 居中：用子节点的视觉中心 cxOffset，与 connection-line 的 px 一致
+    const fc = first.x + (first.cxOffset ?? first.w / 2)
+    const lc = last.x + (last.cxOffset ?? last.w / 2)
+    const cx = (fc + lc) / 2
+    node.x = cx - (node.cxOffset ?? node.w / 2)
     node.y = y
   } else {
     node.x = x
