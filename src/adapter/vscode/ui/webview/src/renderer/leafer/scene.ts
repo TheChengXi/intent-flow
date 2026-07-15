@@ -23,6 +23,8 @@ export interface SceneManager {
   bindEvents(dragSnap: any, dragSend: any): void
   unbindEvents(): void
   resetView(): void
+  zoomIn(): void
+  zoomOut(): void
   buildScene(tokens: Record<string, string>, cw: number, ch: number): void
 }
 
@@ -119,6 +121,18 @@ export function createSceneManager(): SceneManager {
     state.zoom = 1
   }
 
+  function zoomIn() {
+    if (!_app) return
+    _app.zoom = Math.min(5, _app.zoom * 1.14)
+    state.zoom = _app.zoom
+  }
+
+  function zoomOut() {
+    if (!_app) return
+    _app.zoom = Math.max(0.15, _app.zoom * 0.88)
+    state.zoom = _app.zoom
+  }
+
   // ── 场景图构建 ──
   function localInvokeAction(name: string, payload: any = {}) {
     if (name === 'resetView') { resetView(); return { x: 0, y: 0, scale: 1 } }
@@ -180,6 +194,8 @@ export function createSceneManager(): SceneManager {
     bindEvents,
     unbindEvents,
     resetView,
+    zoomIn,
+    zoomOut,
     buildScene,
   }
 }

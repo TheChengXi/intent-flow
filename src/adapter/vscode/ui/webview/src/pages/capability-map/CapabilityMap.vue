@@ -5,7 +5,7 @@
     <div class="canvas-wrap" :class="{ 'canvas-hidden': !state.rootData || state.loading }">
       <div ref="canvasRef" class="canvas" />
       <PathIndicator />
-      <MapTools />
+      <MapTools @zoom-in="scene.zoomIn()" @zoom-out="scene.zoomOut()" @reset-view="scene.resetView()" />
     </div>
     <!-- DOM 渲染：空状态引导 -->
     <EmptyState v-if="!state.rootData && !state.loading" :invokeAction="invokeAction" />

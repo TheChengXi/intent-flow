@@ -1,13 +1,22 @@
 <template>
   <div class="map-tools">
+    <button class="tool-btn" @click="$emit('zoomOut')" title="缩小">−</button>
     <span class="zoom-label">{{ Math.round(state.zoom * 100) }}%</span>
-    <button class="tool-btn" @click="invokeAction('resetView')" title="重置视图">⟲</button>
+    <button class="tool-btn" @click="$emit('zoomIn')" title="放大">+</button>
+    <span class="sep" />
+    <button class="tool-btn" @click="$emit('resetView')" title="重置视图">⟲</button>
     <button class="tool-btn" @click="invokeAction('copyMap')" title="复制地图">📋</button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { state, invokeAction } from '@core/capability-map'
+
+defineEmits<{
+  zoomIn: []
+  zoomOut: []
+  resetView: []
+}>()
 </script>
 
 <style scoped>
@@ -18,9 +27,8 @@ import { state, invokeAction } from '@core/capability-map'
   z-index: 5;
 }
 .zoom-label {
-  font-size: 0.75rem;
+  font-size: 0.75rem; min-width: 3em; text-align: center;
   color: var(--vscode-descriptionForeground);
-  margin-right: 0.2rem;
 }
 .tool-btn {
   pointer-events: auto;
@@ -36,4 +44,5 @@ import { state, invokeAction } from '@core/capability-map'
   background: var(--vscode-button-hoverBackground);
   color: var(--vscode-button-foreground);
 }
+.sep { width: 1px; height: 1.2em; background: var(--vscode-panel-border); }
 </style>
