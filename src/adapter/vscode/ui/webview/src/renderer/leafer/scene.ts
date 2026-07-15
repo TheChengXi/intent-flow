@@ -8,7 +8,7 @@
 import { Leafer, Group, Rect, Text } from 'leafer-ui'
 import { state, invokeAction as stateInvokeAction } from '@core/capability-map'
 import { render as renderFolder } from './components/folder'
-import { render as renderGroup } from './components/group'
+import { render as renderIntentPackage } from './components/intent-package'
 import { render as renderFile } from './components/file'
 import { render as renderConnectionLine } from './components/connection-line'
 import { calcLayout } from './layout'
@@ -167,7 +167,7 @@ export function createSceneManager(): SceneManager {
         invokeAction: localInvokeAction,
       }
       if (n.type === 'folder') renderFolder(renderCtx)
-      else if (n.type === 'group') renderGroup(renderCtx)
+      else if (n.type === 'intent-package') renderIntentPackage(renderCtx)
       else if (n.type === 'file') renderFile(renderCtx)
     })
   }

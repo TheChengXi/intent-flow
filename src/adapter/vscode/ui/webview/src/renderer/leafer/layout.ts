@@ -88,13 +88,13 @@ function buildTree(data: any, parentPath: string, prefix: string): any[] {
       const gid = prefix + '|group|' + g.name
       const n: any = {
         id: gid,
-        type: 'group',
+        type: 'intent-package',
         label: g.name,
         path: gid,
         children: [],
         expanded: false,
-        protocol: { css: { ...groupProtocol.css } },
-        textFont: groupProtocol.textFont,
+        protocol: { css: { ...intentPackageProtocol.css } },
+        textFont: intentPackageProtocol.textFont,
         data: g,
       }
       if (g.files) {

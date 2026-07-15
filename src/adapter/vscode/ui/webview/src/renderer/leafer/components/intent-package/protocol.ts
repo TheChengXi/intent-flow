@@ -1,17 +1,18 @@
 /**
  * @intent
- * 分组组件的协议定义（圆形节点）。
+ * 意图包组件协议定义（圆形节点）。
+ * 代表一个能力单元（如一个 Go 包、一个模块），
+ * 即 CDD 框架的核心抽象单元。
  */
 
 import type { ConvertNode } from '../../../../converter'
 
 export const protocol: ConvertNode = {
-  identity: 'component://group',
+  identity: 'component://intent-package',
   css: {
     width: '13%',
     height: '17%',
   },
-  /** 分组名称的字体，与 render 保持一致 */
   textFont: 'bold 13px sans-serif',
 }
 
