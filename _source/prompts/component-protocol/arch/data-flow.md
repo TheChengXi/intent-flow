@@ -41,6 +41,36 @@ Leafer 渲染
 - Render 只消费 px 值，不关心来源是百分比还是固定值
 - Converter 无渲染上下文依赖，可在 Node / Worker / 浏览器任意环境运行
 
+## overlay ↔ renderer 通信规则
+
+overlay（Vue DOM 组件）和 renderer（Canvas 场景图）之间**不直接通信**。
+两者都通过同一通道：`invokeAction → behavior → state`。
+
+```
+overlay/ (Vue 按钮点击)
+  → invokeAction('toggleExpand', { identity })
+  → behavior.ts (状态机 transitions)
+  → state.ts (响应式数据变更)
+  → composable watcher 检测变化
+  → scheduleRender()
+  → renderer/leafer/ (Canvas 重绘)
+
+─── 反向同理 ───
+
+renderer/ (Canvas 拖拽)
+  → events.ts → invokeAction('drag', { x, y })
+  → behavior.ts (状态机 transitions)
+  → state.ts (响应式数据变更)
+  → Vue 组件自动响应 (reactive)
+  → overlay UI 更新
+```
+
+**核心规则：**
+- overlay 不直接调 renderer 的方法
+- renderer 不直接操作 Vue 的响应式数据
+- 两者只通过 state 这个中介交流
+- 事件源无所谓，state 变更后的响应方式由监听者自己决定（Vue 用 reactive，Canvas 用 scheduleRender）
+
 ## 一次 resize 的代码映射
 
 ```

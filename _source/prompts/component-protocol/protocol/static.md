@@ -18,6 +18,13 @@ interface ComponentNode {
 }
 ```
 
+> **font → pretext → layout → render 是一条完整管线**：
+> ① protocol 的 `font` 字符串传给 pretext 做文本预测量
+> ② pretext 返回 `measureNaturalWidth()` 精确文本宽度
+> ③ layout 根据测量结果分配节点位置
+> ④ render 按相同 font 参数绘制到 Canvas
+> 当前协议只定义 font 值，测量和布局逻辑分别在 `toolchain/pretext.md` 和 `toolchain/layout.md`（项目中为 `renderer/leafer/layout.ts`）中实现。
+
 ### font（可选）
 
 `font` 字段声明组件文本标签使用的字体，格式与 CSS `font` 简写一致，例如 `'12px sans-serif'`、`'bold 13px sans-serif'`。
