@@ -49,12 +49,12 @@ export function layoutNode(node: any, x: number, y: number): void {
       layoutNode(node.children[i], childX, childY)
       childX += node.children[i].subtreeW + NODE_GAP
     }
-    const first = node.children[0]
-    const last  = node.children[node.children.length - 1]
-    // 居中：用子节点的视觉中心 cxOffset，与 connection-line 的 px 一致
-    const fc = first.x + (first.cxOffset ?? first.w / 2)
-    const lc = last.x + (last.cxOffset ?? last.w / 2)
-    const cx = (fc + lc) / 2
+    // 居中：用所有子节点视觉中心的均值（避免被首尾极端值拉偏）
+    let sumCx = 0
+    for (const c of node.children) {
+      sumCx += c.x + (c.cxOffset ?? c.w / 2)
+    }
+    const cx = sumCx / node.children.length
     node.x = cx - (node.cxOffset ?? node.w / 2)
     node.y = y
   } else {
