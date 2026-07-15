@@ -5,6 +5,6 @@
  * 渲染相关功能在 renderer/ 中，页面编排在 pages/ 中。
  */
 
-export { state, dryRun, invokeAction, initMessages } from './state'
+export { state, dryRun, invokeAction, initMessages, toggleSelectionMode, setSelectedIds } from './state'
 export { dragMachine, calcZoom } from './behavior'
 export type { SceneManager } from './types'

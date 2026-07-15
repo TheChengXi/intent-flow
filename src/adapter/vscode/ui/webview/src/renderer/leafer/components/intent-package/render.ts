@@ -8,11 +8,22 @@ import { Group, Rect, Text } from 'leafer-ui'
 import type { RenderContext } from '../../types'
 
 export function render(ctx: RenderContext): void {
-  const { parent, node, tokens, invokeAction } = ctx
+  const { parent, node, tokens, data, invokeAction } = ctx
   const r = 50
 
   const g = new Group({ x: node.x - r, y: node.y - r })
   g.__isInteractive = true
+
+  // @step: 选中高亮（蓝色外环）
+  const isSelected = Array.isArray(data.selectedIds) && data.selectedIds.includes(node.id || node.label)
+  if (isSelected) {
+    g.add(new Rect({
+      x: -6, y: -6,
+      width: r * 2 + 12, height: r * 2 + 12, cornerRadius: r + 6,
+      stroke: '#007acc', strokeWidth: 3,
+      fill: 'rgba(0, 122, 204, 0.06)',
+    }))
+  }
 
   const circle = new Rect({
     x: 0, y: 0, width: r * 2, height: r * 2, cornerRadius: r,

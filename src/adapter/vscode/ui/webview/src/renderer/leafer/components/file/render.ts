@@ -4,14 +4,26 @@
  * textWrap: false 禁止换行，背景挂在 Text 上自动跟随文本宽度。
  */
 
-import { Group, Text } from 'leafer-ui'
+import { Group, Text, Rect } from 'leafer-ui'
 import type { RenderContext } from '../../types'
 
 export function render(ctx: RenderContext): void {
-  const { parent, node, tokens, invokeAction } = ctx
+  const { parent, node, tokens, data, invokeAction } = ctx
 
   const g = new Group({ x: node.x, y: node.y })
   g.__isInteractive = true
+
+  // @step: 选中高亮
+  const isSelected = Array.isArray(data.selectedIds) && data.selectedIds.includes(node.id || node.label)
+  if (isSelected) {
+    const rw = 42 + (node.textWidth || 80)
+    g.add(new Rect({
+      x: 2, y: -1,
+      width: rw, height: 26,
+      stroke: '#007acc', strokeWidth: 2, cornerRadius: 6,
+      fill: 'rgba(0, 122, 204, 0.06)',
+    }))
+  }
 
   // 图标
   g.add(new Text({ x: 6, y: 3, text: '📄', fontSize: 13 }))
