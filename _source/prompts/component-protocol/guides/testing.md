@@ -53,17 +53,6 @@ test('toggleExpand 切换折叠状态', () => {
 })
 ```
 
-### core/pretext.ts（文本测量）
-
-输入 label + font → 输出精确宽度。影响布局准确性。
-
-```ts
-test('文本宽度计算', () => {
-  const w = measureNaturalWidth('Hello', { fontSize: 14, fontFamily: 'sans-serif' })
-  expect(w).toBeGreaterThan(0)
-})
-```
-
 ### core/capability-map/behavior.ts（XState 状态机）
 
 XState 官方提供 `@xstate/test` 自动生成用例，覆盖所有合法迁移路径。
