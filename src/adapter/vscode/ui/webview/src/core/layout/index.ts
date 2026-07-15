@@ -8,7 +8,7 @@
  */
 
 export const LEVEL_HEIGHT = 90
-export const NODE_GAP = 24
+export const NODE_GAP = 1
 export const TREE_TOP = 48
 export const TREE_LEFT = 24
 
@@ -34,29 +34,26 @@ export function calcSubtreeWidth(node: any): void {
 /**
  * @contract
  * 第二遍：自顶向下计算节点位置。
+ * 父节点位置固定，子节点以父节点中线为轴对称排列。
  * 输入：node - 必须有 subtreeW、w、h
  * 副作用：写入 node.x、node.y
  */
 export function layoutNode(node: any, x: number, y: number): void {
+  node.x = x
+  node.y = y
+
   if (node.children?.length) {
+    const parentCx = x + node.w / 2   // 父节点中线
     let total = 0
     for (let i = 0; i < node.children.length; i++) {
       total += (i > 0 ? NODE_GAP : 0) + node.children[i].subtreeW
     }
-    let childX = x + (node.subtreeW - total) / 2
+    let childX = parentCx - total / 2  // 子节点组居中于父节点中线
     const childY = y + LEVEL_HEIGHT
     for (let i = 0; i < node.children.length; i++) {
       layoutNode(node.children[i], childX, childY)
       childX += node.children[i].subtreeW + NODE_GAP
     }
-    const first = node.children[0]
-    const last  = node.children[node.children.length - 1]
-    const cx = (first.x + first.w / 2 + last.x + last.w / 2) / 2
-    node.x = cx - node.w / 2
-    node.y = y
-  } else {
-    node.x = x
-    node.y = y
   }
 }
 
