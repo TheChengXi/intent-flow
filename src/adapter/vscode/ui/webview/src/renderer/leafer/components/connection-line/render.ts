@@ -62,25 +62,27 @@ function computeLines(nodes: any[]): any[] {
     const py = parentAnchor.bottom
     const lineY = py + 10 // 水平线在父节点底部以下 10px
 
-    // 计算所有子节点的视觉中心，取均值作为横线的对齐中点
-    const childAnchors = node.children.map((c: any) => getVisualAnchor(c))
-    const avgCx = childAnchors.reduce((s: number, a: any) => s + a.cx, 0) / childAnchors.length
-    const cxMin = Math.min(...childAnchors.map((a: any) => a.cx))
-    const cxMax = Math.max(...childAnchors.map((a: any) => a.cx))
+    const first = node.children[0]
+    const last  = node.children[node.children.length - 1]
+    const firstAnchor = getVisualAnchor(first)
+    const lastAnchor = getVisualAnchor(last)
+    const lx = firstAnchor.cx
+    const rx = lastAnchor.cx
 
-    // 垂直竖线：父节点视觉底部 → 水平线（以子节点平均中心为目标）
+    // 垂直竖线：父节点视觉底部 → 水平线
     if (lineY - py > 2) {
-      lines.push({ x1: px, y1: py, x2: avgCx, y2: lineY })
+      lines.push({ x1: px, y1: py, x2: px, y2: lineY })
     }
 
-    // 水平横线：覆盖所有子节点的视觉中心范围
-    if (cxMax - cxMin > 2) {
-      lines.push({ x1: cxMin, y1: lineY, x2: cxMax, y2: lineY })
+    // 水平横线：第一个子节点视觉中心 → 最后一个子节点视觉中心
+    if (rx - lx > 2) {
+      lines.push({ x1: lx, y1: lineY, x2: rx, y2: lineY })
     }
 
     // 垂直短线：水平线 → 每个子节点视觉顶部
-    childAnchors.forEach((ca: any) => {
-      if (Math.abs(ca.cx - avgCx) > 1 || ca.top - lineY > 2) {
+    node.children.forEach((c: any) => {
+      const ca = getVisualAnchor(c)
+      if (Math.abs(ca.cx - px) > 1 || ca.top - lineY > 2) {
         lines.push({ x1: ca.cx, y1: lineY, x2: ca.cx, y2: ca.top })
       }
     })
