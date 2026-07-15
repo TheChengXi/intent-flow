@@ -44,7 +44,7 @@ export function createSceneManager(): SceneManager {
   // ── 选择框状态 ──
   let _selStart: { x: number; y: number } | null = null
   let _flatNodes: any[] = []
-  let _ctrlDown = false
+
 
   // ── 场景管理 ──
   function createScene(container: HTMLElement) {
@@ -80,7 +80,6 @@ export function createSceneManager(): SceneManager {
     if (!_app) return
     _app.on('pointer.down', onPointerDown)
     window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('keyup', onKeyUp)
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
     window.addEventListener('wheel', onWheel, { passive: false })
@@ -90,7 +89,6 @@ export function createSceneManager(): SceneManager {
     if (!_app) return
     _app.off('pointer.down', onPointerDown)
     window.removeEventListener('keydown', onKeyDown)
-    window.removeEventListener('keyup', onKeyUp)
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
     window.removeEventListener('wheel', onWheel)
@@ -99,8 +97,8 @@ export function createSceneManager(): SceneManager {
   function onPointerDown(e: any) {
     if (!state.rootData || state.loading) return
 
-    if (state.selectionMode && _ctrlDown) {
-      // Ctrl+点击：切换单个节点选中（节点 tap 事件已通过 data.selectionMode 阻断）
+    if (state.selectionMode && e.ctrlKey) {
+      // Ctrl+点击：切换单个节点选中
       toggleNodeSelection(e.x, e.y)
       return
     }
@@ -148,17 +146,11 @@ export function createSceneManager(): SceneManager {
 
   // ── 快捷键 ──
   function onKeyDown(e: KeyboardEvent) {
-    _ctrlDown = e.ctrlKey || e.metaKey
-
-    // Ctrl+B: 切换选择模式
-    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyB') {
+    // 按 B 键切换选择模式（不冲突，画布中没有文本输入）
+    if (e.code === 'KeyB' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault()
       stateInvokeAction('toggleSelectionMode')
     }
-  }
-
-  function onKeyUp(e: KeyboardEvent) {
-    _ctrlDown = e.ctrlKey || e.metaKey
   }
 
   function onWheel(e: any) {
