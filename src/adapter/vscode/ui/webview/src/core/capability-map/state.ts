@@ -238,16 +238,24 @@ export function copyMap(): void {
 
   const lines = ['# 能力地图: ' + state.currentFolder, '']
 
-  function shouldInclude(name: string): boolean {
-    return state.selectedIds.length === 0 || state.selectedIds.includes(name)
+  if (state.selectedIds.length > 0) {
+    // 有选中节点：直接输出选中项（扁平列表，不遍历树）
+    state.selectedIds.forEach(id => {
+      lines.push('  📄 ' + id)
+    })
+  } else {
+    // 无选中节点：输出完整树
+    walk(state.rootData, 0)
   }
+
+  navigator.clipboard.writeText(lines.join('\n'))
+    .then(() => showToast('✅ 已复制能力地图到剪贴板'))
+    .catch(() => showToast('❌ 复制失败'))
 
   function walk(data: any, depth: number): void {
     const indent = '  '.repeat(depth)
     if (data.subdirectories) {
       data.subdirectories.forEach((d: string) => {
-        // 直接用目录名 d 匹配（selectedIds 存的是 node.label = 目录名）
-        if (!shouldInclude(d)) return
         const fp = state.currentFolder + '/' + d
         lines.push(indent + '📁 ' + d)
         if (state.expanded[fp] && state.cache[fp]) {
@@ -257,30 +265,19 @@ export function copyMap(): void {
     }
     if (data.groups) {
       data.groups.forEach((g: any) => {
-        if (!shouldInclude(g.name)) return
         lines.push(indent + '⭕ ' + g.name)
         if (g.summary) lines.push(indent + '  > ' + g.summary)
         if (g.files) {
           g.files.forEach((f: any) => {
-            const fp = f.path || f.name || f
-            if (!shouldInclude(fp)) return
-            lines.push(indent + '  📄 ' + fp)
+            lines.push(indent + '  📄 ' + (f.path || f.name || f))
           })
         }
       })
     }
     if (data.files) {
       data.files.forEach((f: any) => {
-        const fp = f.file || f.name || f
-        if (!shouldInclude(fp)) return
-        lines.push(indent + '📄 ' + fp)
+        lines.push(indent + '📄 ' + (f.file || f.name || f))
       })
     }
   }
-
-  walk(state.rootData, 0)
-
-  navigator.clipboard.writeText(lines.join('\n'))
-    .then(() => showToast('✅ 已复制能力地图到剪贴板'))
-    .catch(() => showToast('❌ 复制失败'))
 }
