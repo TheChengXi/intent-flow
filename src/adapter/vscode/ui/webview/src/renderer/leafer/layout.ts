@@ -5,7 +5,7 @@
  */
 
 import { calcSubtreeWidth, layoutNode, flattenTree,
-  TREE_LEFT, TREE_TOP, NODE_GAP } from '../../layout'
+  TREE_LEFT, TREE_TOP, NODE_GAP } from '@core/layout'
 import { compileNode, convertTree } from '../../converter'
 import type { ConvertNode } from '../../converter'
 import { protocol as folderProtocol } from './components/folder'

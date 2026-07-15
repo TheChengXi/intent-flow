@@ -75,7 +75,7 @@ src/
 ├── pages/                   # 页面编排（可选层，单页面可省略）
 │   └── capability-map/      #   CapabilityMap.vue + composable
 ├── converter/               # 换算层（% → px 纯函数）
-├── layout/                  # 布局算法
+├── core/layout/             # 布局算法（纯函数，树形图位置计算）
 ├── resource/                # 文本/主题资源
 ├── pretext.ts               # 文本测量
 ├── App.vue                  # 根组件分发
