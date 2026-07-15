@@ -43,12 +43,14 @@ export function createSceneManager(): SceneManager {
 
   // ── 选择框状态 ──
   let _selStart: { x: number; y: number } | null = null
+  const focusCanvas = () => _canvasRef?.focus()
   let _flatNodes: any[] = []
 
 
   // ── 场景管理 ──
   function createScene(container: HTMLElement) {
     _canvasRef = container
+    container.setAttribute('tabindex', '0')
     _app = new Leafer({ view: container })
     _mapLayer = new Group()
     _overlayLayer = new Group()
@@ -79,7 +81,8 @@ export function createSceneManager(): SceneManager {
     _dragSend = dragSnd
     if (!_app) return
     _app.on('pointer.down', onPointerDown)
-    window.addEventListener('keydown', onKeyDown)
+    _canvasRef?.addEventListener('keydown', onKeyDown)
+    _canvasRef?.addEventListener('pointerdown', focusCanvas)
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
     window.addEventListener('wheel', onWheel, { passive: false })
@@ -88,7 +91,8 @@ export function createSceneManager(): SceneManager {
   function unbindEvents() {
     if (!_app) return
     _app.off('pointer.down', onPointerDown)
-    window.removeEventListener('keydown', onKeyDown)
+    _canvasRef?.removeEventListener('keydown', onKeyDown)
+    _canvasRef?.removeEventListener('pointerdown', focusCanvas)
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
     window.removeEventListener('wheel', onWheel)
