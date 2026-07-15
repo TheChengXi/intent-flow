@@ -127,10 +127,12 @@ export function createSceneManager(): SceneManager {
     state.zoom = 1
   }
 
+  const ZOOM_STEP = 0.1
+
   function zoomIn() {
     if (!_mapLayer) return
     const cur = state.zoom || 1
-    const next = Math.min(5, cur * 1.14)
+    const next = Math.min(5, +(cur + ZOOM_STEP).toFixed(2))
     _mapLayer.scaleX = next
     _mapLayer.scaleY = next
     state.zoom = next
@@ -139,7 +141,7 @@ export function createSceneManager(): SceneManager {
   function zoomOut() {
     if (!_mapLayer) return
     const cur = state.zoom || 1
-    const next = Math.max(0.15, cur * 0.88)
+    const next = Math.max(0.15, +(cur - ZOOM_STEP).toFixed(2))
     _mapLayer.scaleX = next
     _mapLayer.scaleY = next
     state.zoom = next
