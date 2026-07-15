@@ -8,6 +8,9 @@ nul
 .vscode/
 *.vsix
 
+# 构建产物
+dist/
+
 # 依赖
 node_modules/
 .cdd/
