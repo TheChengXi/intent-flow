@@ -5,8 +5,8 @@
  */
 
 import type { IUseCase } from './IUseCase';
-import type { AgentDiscoveryResult, AgentScope } from '../data/entities/AgentDefinition';
-import type { IAgentRepository } from '../data/repositories/IAgentRepository';
+import type { AgentDiscoveryResult, AgentScope } from '../../data/entities/AgentDefinition';
+import type { IAgentRepository } from '../../data/repositories/IAgentRepository';
 
 // ==================== 输入/输出类型 ====================
 

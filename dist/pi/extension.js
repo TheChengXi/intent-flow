@@ -1158,8 +1158,8 @@ class ToolAccessGuard {
   }
 }
 class ListAgentsTool {
-  constructor(agentRepo) {
-    this.agentRepo = agentRepo;
+  constructor(discoverAgents) {
+    this.discoverAgents = discoverAgents;
   }
   register(pi) {
     pi.registerTool({
@@ -1172,7 +1172,7 @@ class ListAgentsTool {
         )
       }),
       execute: async (_toolCallId, params, _signal, _onUpdate, _ctx) => {
-        const { agents } = await this.agentRepo.discoverAll("sub_skill");
+        const { agents } = await this.discoverAgents.execute({ scope: "sub_skill" });
         if (agents.length === 0) {
           return {
             content: [{ type: "text", text: "当前没有可用的 sub-agent。" }],
@@ -1397,7 +1397,7 @@ class DIContainer {
     this.discoverAgentsUseCase = new DiscoverAgentsUseCase(this.agentRepo);
     this.spawnAgentUseCase = new SpawnAgentUseCase(this.agentRepo, this.subProcessRunner);
     this.spawnAgentTool = new SpawnAgentTool(this.spawnAgentUseCase, this.agentTracker);
-    this.listAgentsTool = new ListAgentsTool(this.agentRepo);
+    this.listAgentsTool = new ListAgentsTool(this.discoverAgentsUseCase);
     this.accessPolicy = new ScopePolicy();
     this.toolAccessGuard = new ToolAccessGuard(this.accessPolicy);
   }
