@@ -26,17 +26,14 @@ export function render(ctx: RenderContext): void {
     textWrap: false,
   }))
 
-  // @step: 展开/折叠指示器
-  if (node.children?.length) {
-    const expanded = !!data.expanded[node.path]
-    // 悬浮在图标右上角（部分重叠）
-    g.add(new Text({
-      x: 14, y: -4,
-      text: expanded ? '−' : '+', fontSize: 13, fill: '#9b59b6',
-      textAlign: 'center', backgroundColor: tokens.bg,
-      cornerRadius: 8, padding: [1, 4],
-    }))
-  }
+  // @step: 展开/折叠指示器（悬浮在图标右上角）
+  const expanded = !!data.expanded[node.path]
+  g.add(new Text({
+    x: 14, y: -4,
+    text: expanded ? '−' : '+', fontSize: 13, fill: '#9b59b6',
+    textAlign: 'center', backgroundColor: tokens.bg,
+    cornerRadius: 8, padding: [1, 4],
+  }))
 
   // @step: hover 动效
   g.on('pointer.enter', () => { g.scaleX = 1.08; g.scaleY = 1.08 })
