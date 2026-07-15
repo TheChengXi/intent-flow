@@ -42,7 +42,9 @@ export function render(ctx: RenderContext): void {
   g.add(label)
 
   let hoverTimer: any = null
+  // 选择模式下不触发 hover
   g.on('pointer.enter', () => {
+    if (data.selectionMode) return
     label.backgroundColor = 'rgba(232,67,147,0.25)'
     hoverTimer = setTimeout(() => invokeAction('hoverFile', { label: node.label }), 300)
   })

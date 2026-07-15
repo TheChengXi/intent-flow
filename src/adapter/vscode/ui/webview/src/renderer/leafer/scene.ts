@@ -98,14 +98,16 @@ export function createSceneManager(): SceneManager {
 
   function onPointerDown(e: any) {
     if (!state.rootData || state.loading) return
+
+    if (state.selectionMode && _ctrlDown) {
+      // Ctrl+点击：切换单个节点选中（节点 tap 事件已通过 data.selectionMode 阻断）
+      toggleNodeSelection(e.x, e.y)
+      return
+    }
+
     if (e.target?.__isInteractive) return
 
     if (state.selectionMode) {
-      if (_ctrlDown) {
-        // Ctrl+点击：切换单个节点选中
-        toggleNodeSelection(e.x, e.y)
-        return
-      }
       // 选择模式：开始框选
       _selStart = { x: e.x, y: e.y }
       return
@@ -249,7 +251,7 @@ export function createSceneManager(): SceneManager {
   }
 
   // ── 场景图构建 ──
-  function localInvokeAction(name: string, payload: any = {}) { {
+  function localInvokeAction(name: string, payload: any = {}) {
     if (name === 'resetView') { resetView(); return { x: 0, y: 0, scale: 1 } }
     stateInvokeAction(name, payload)
   }

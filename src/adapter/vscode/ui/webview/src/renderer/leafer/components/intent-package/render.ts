@@ -48,10 +48,13 @@ export function render(ctx: RenderContext): void {
 
   g.on('pointer.enter', () => { circle.stroke = 'rgba(26,188,156,1)' })
   g.on('pointer.leave', () => { circle.stroke = 'rgba(26,188,156,0.7)' })
-  g.on('tap', () => invokeAction('traceGroup', {
-    data: node.data,
-    label: node.children[0]?.label,
-  }))
+  g.on('tap', () => {
+    if (ctx.data.selectionMode) return
+    invokeAction('traceGroup', {
+      data: node.data,
+      label: node.children[0]?.label,
+    })
+  })
 
   parent.add(g)
 }
