@@ -43,9 +43,10 @@ export function createSceneManager(): SceneManager {
   function createScene(container: HTMLElement) {
     _canvasRef = container
     _app = new Leafer({ view: container })
-    _app.zoom = 1  // 显式初始化，防止首次读 zoom 时 undefined → NaN
     _mapLayer = new Group()
     _overlayLayer = new Group()
+    _mapLayer.scaleX = 1
+    _mapLayer.scaleY = 1
     _app.add(_mapLayer)
     _app.add(_overlayLayer)
   }
@@ -108,30 +109,40 @@ export function createSceneManager(): SceneManager {
   }
 
   function onWheel(e: any) {
-    if (!state.rootData || state.loading || !_app) return
+    if (!state.rootData || state.loading || !_mapLayer) return
     const ratio = e.deltaY > 0 ? 0.88 : 1.14
-    _app.zoom = Math.max(0.15, Math.min(5, _app.zoom * ratio))
-    state.zoom = _app.zoom
+    const cur = state.zoom || 1
+    const next = Math.max(0.15, Math.min(5, cur * ratio))
+    _mapLayer.scaleX = next
+    _mapLayer.scaleY = next
+    state.zoom = next
   }
 
   function resetView() {
-    if (!_app || !_mapLayer) return
-    _app.zoom = 1
+    if (!_mapLayer) return
+    _mapLayer.scaleX = 1
+    _mapLayer.scaleY = 1
     _mapLayer.x = 0
     _mapLayer.y = 0
     state.zoom = 1
   }
 
   function zoomIn() {
-    if (!_app) return
-    _app.zoom = Math.min(5, _app.zoom * 1.14)
-    state.zoom = _app.zoom
+    if (!_mapLayer) return
+    const cur = state.zoom || 1
+    const next = Math.min(5, cur * 1.14)
+    _mapLayer.scaleX = next
+    _mapLayer.scaleY = next
+    state.zoom = next
   }
 
   function zoomOut() {
-    if (!_app) return
-    _app.zoom = Math.max(0.15, _app.zoom * 0.88)
-    state.zoom = _app.zoom
+    if (!_mapLayer) return
+    const cur = state.zoom || 1
+    const next = Math.max(0.15, cur * 0.88)
+    _mapLayer.scaleX = next
+    _mapLayer.scaleY = next
+    state.zoom = next
   }
 
   // ── 场景图构建 ──
@@ -149,7 +160,8 @@ export function createSceneManager(): SceneManager {
     if (!state.rootData || state.loading) {
       _mapLayer.x = 0
       _mapLayer.y = 0
-      _app.zoom = 1
+      _mapLayer.scaleX = 1
+      _mapLayer.scaleY = 1
       state.zoom = 1
     }
 
