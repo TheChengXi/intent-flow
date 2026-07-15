@@ -21,7 +21,9 @@ interface CapabilityState {
   infoVisible: boolean
   toastMsg: string
   toastVisible: boolean
-  zoom: number  // 当前缩放比例，供 MapTools 展示
+  zoom: number
+  selectionMode: boolean
+  selectedIds: string[]
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null
@@ -41,6 +43,8 @@ export const state = reactive<CapabilityState>({
   toastMsg: '',
   toastVisible: false,
   zoom: 1,
+  selectionMode: false,
+  selectedIds: [],
 })
 
 // ── dryRun：纯函数验证，不修改状态 ──
@@ -60,6 +64,8 @@ export function dryRun(name: string, payload: any = {}): any {
     case 'hoverFile':
     case 'hideInfo':
     case 'copyMap':
+    case 'toggleSelectionMode':
+    case 'clearSelection':
       return { valid: true }
     default:
       return null
@@ -93,6 +99,12 @@ export function invokeAction(name: string, payload: any = {}): any {
       break
     case 'copyMap':
       copyMap()
+      break
+    case 'toggleSelectionMode':
+      toggleSelectionMode()
+      break
+    case 'clearSelection':
+      state.selectedIds = []
       break
   }
 
@@ -198,6 +210,17 @@ export function hideInfo(): void {
 
 
 
+export function toggleSelectionMode(): void {
+  state.selectionMode = !state.selectionMode
+  if (!state.selectionMode) {
+    state.selectedIds = []
+  }
+}
+
+export function setSelectedIds(ids: string[]): void {
+  state.selectedIds = ids
+}
+
 function showToast(msg: string, dur = 2000): void {
   state.toastMsg = msg
   state.toastVisible = true
@@ -215,11 +238,16 @@ export function copyMap(): void {
 
   const lines = ['# 能力地图: ' + state.currentFolder, '']
 
+  function shouldInclude(fp: string): boolean {
+    return state.selectedIds.length === 0 || state.selectedIds.includes(fp)
+  }
+
   function walk(data: any, depth: number): void {
     const indent = '  '.repeat(depth)
     if (data.subdirectories) {
       data.subdirectories.forEach((d: string) => {
         const fp = state.currentFolder + '/' + d
+        if (!shouldInclude(fp)) return
         lines.push(indent + '📁 ' + d)
         if (state.expanded[fp] && state.cache[fp]) {
           walk(state.cache[fp], depth + 1)
@@ -228,18 +256,23 @@ export function copyMap(): void {
     }
     if (data.groups) {
       data.groups.forEach((g: any) => {
+        if (!shouldInclude(g.name)) return
         lines.push(indent + '⭕ ' + g.name)
         if (g.summary) lines.push(indent + '  > ' + g.summary)
         if (g.files) {
           g.files.forEach((f: any) => {
-            lines.push(indent + '  📄 ' + (f.path || f.name || f))
+            const fp = f.path || f.name || f
+            if (!shouldInclude(fp)) return
+            lines.push(indent + '  📄 ' + fp)
           })
         }
       })
     }
     if (data.files) {
       data.files.forEach((f: any) => {
-        lines.push(indent + '📄 ' + (f.file || f.name || f))
+        const fp = f.file || f.name || f
+        if (!shouldInclude(fp)) return
+        lines.push(indent + '📄 ' + fp)
       })
     }
   }

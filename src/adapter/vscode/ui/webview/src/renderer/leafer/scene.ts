@@ -6,11 +6,12 @@
  */
 
 import { Leafer, Group, Rect, Text } from 'leafer-ui'
-import { state, invokeAction as stateInvokeAction } from '@core/capability-map'
+import { state, invokeAction as stateInvokeAction, setSelectedIds } from '@core/capability-map'
 import { render as renderFolder } from './components/folder'
 import { render as renderIntentPackage } from './components/intent-package'
 import { render as renderFile } from './components/file'
 import { render as renderConnectionLine } from './components/connection-line'
+import { updateRect as updateSelRect, removeRect as removeSelRect } from './components/selection-box'
 import { calcLayout } from './layout'
 import { text as uiText } from '@resource/text/ui'
 import type { RenderContext } from './types'
@@ -26,6 +27,7 @@ export interface SceneManager {
   zoomIn(): void
   zoomOut(): void
   buildScene(tokens: Record<string, string>, cw: number, ch: number): void
+  clearSelectionDisplay(): void
 }
 
 export function createSceneManager(): SceneManager {
@@ -38,6 +40,10 @@ export function createSceneManager(): SceneManager {
   const _dragOrigin = { x: 0, y: 0, layerX: 0, layerY: 0 }
   let _dragSnapshot: any = null
   let _dragSend: any = null
+
+  // ── 选择框状态 ──
+  let _selStart: { x: number; y: number } | null = null
+  let _flatNodes: any[] = []
 
   // ── 场景管理 ──
   function createScene(container: HTMLElement) {
@@ -88,6 +94,14 @@ export function createSceneManager(): SceneManager {
   function onPointerDown(e: any) {
     if (!state.rootData || state.loading) return
     if (e.target?.__isInteractive) return
+
+    if (state.selectionMode) {
+      // 选择模式：开始框选
+      _selStart = { x: e.x, y: e.y }
+      return
+    }
+
+    // 正常模式：拖拽画布
     _dragSend?.({ type: 'DRAG_START' })
     if (!_mapLayer) return
     _dragOrigin.x = _mapLayer.x
@@ -97,19 +111,31 @@ export function createSceneManager(): SceneManager {
   }
 
   function onPointerMove(e: any) {
+    if (state.selectionMode && _selStart) {
+      if (_overlayLayer) updateSelRect(_overlayLayer, _selStart.x, _selStart.y, e.x, e.y)
+      return
+    }
+
     if (!_dragSnapshot?.value?.matches('dragging') || !_mapLayer) return
     _mapLayer.x = _dragOrigin.x + (e.x - _dragOrigin.layerX)
     _mapLayer.y = _dragOrigin.y + (e.y - _dragOrigin.layerY)
   }
 
-  function onPointerUp() {
+  function onPointerUp(e: any) {
+    if (state.selectionMode && _selStart) {
+      doSelectionHitTest(_selStart.x, _selStart.y, e.x, e.y)
+      _selStart = null
+      removeSelRect()
+      return
+    }
+
     if (_dragSnapshot?.value?.matches('dragging')) {
       _dragSend?.({ type: 'DROP' })
     }
   }
 
   function onWheel(e: any) {
-    if (!state.rootData || state.loading || !_mapLayer) return
+    if (!state.rootData || state.loading || !_mapLayer || state.selectionMode) return
     const ratio = e.deltaY > 0 ? 0.88 : 1.14
     const cur = state.zoom || 1
     const next = Math.max(0.15, Math.min(5, cur * ratio))
@@ -145,6 +171,31 @@ export function createSceneManager(): SceneManager {
     _mapLayer.scaleX = next
     _mapLayer.scaleY = next
     state.zoom = next
+  }
+
+  // ── 选择框 ──
+  function doSelectionHitTest(x1: number, y1: number, x2: number, y2: number) {
+    if (!_mapLayer) return
+
+    // 转换屏幕坐标 → 画布坐标（考虑 pan/zoom）
+    const sx = _mapLayer.scaleX || 1
+    const sy = _mapLayer.scaleY || 1
+    const lx = Math.min(x1, x2)
+    const rx = Math.max(x1, x2)
+    const ty = Math.min(y1, y2)
+    const by = Math.max(y1, y2)
+    const left   = (lx - _mapLayer.x) / sx
+    const right  = (rx - _mapLayer.x) / sx
+    const top    = (ty - _mapLayer.y) / sy
+    const bottom = (by - _mapLayer.y) / sy
+
+    const selected = _flatNodes.filter((n: any) => {
+      const cx = n.x + (n.cxOffset ?? n.w / 2)
+      const cy = n.y + (n.h || 40) / 2
+      return cx >= left && cx <= right && cy >= top && cy <= bottom
+    })
+
+    setSelectedIds(selected.map((n: any) => n.id || n.label || '').filter(Boolean))
   }
 
   // ── 场景图构建 ──
@@ -183,11 +234,12 @@ export function createSceneManager(): SceneManager {
   }
 
   function renderMap(t: Record<string, string>, cw: number, ch: number) {
-    const { flatNodes: nodes } = calcLayout(state, cw, ch)
+    const result = calcLayout(state, cw, ch)
+    _flatNodes = result.flatNodes
 
-    renderConnectionLine({ parent: _mapLayer, nodes, tokens: t })
+    renderConnectionLine({ parent: _mapLayer, nodes: _flatNodes, tokens: t })
 
-    nodes.forEach((n: any) => {
+    _flatNodes.forEach((n: any) => {
       const renderCtx: RenderContext = {
         parent: _mapLayer,
         node: n,
@@ -212,5 +264,11 @@ export function createSceneManager(): SceneManager {
     zoomIn,
     zoomOut,
     buildScene,
+    clearSelectionDisplay,
+  }
+
+  function clearSelectionDisplay() {
+    _selStart = null
+    removeSelRect()
   }
 }

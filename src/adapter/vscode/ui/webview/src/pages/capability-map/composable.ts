@@ -35,6 +35,11 @@ export function initWatcher(scene: SceneManager): void {
     () => scheduleRender(scene),
     { deep: true },
   )
+
+  // 退出选择模式时清除画布上的虚线框
+  watch(() => state.selectionMode, (mode) => {
+    if (!mode) scene.clearSelectionDisplay()
+  })
 }
 
 /**

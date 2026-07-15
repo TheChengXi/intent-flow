@@ -5,6 +5,13 @@
     <button class="tool-btn" @click="$emit('zoomIn')" title="放大">+</button>
     <span class="sep" />
     <button class="tool-btn" @click="$emit('resetView')" title="重置视图">⟲</button>
+    <span class="sep" />
+    <button
+      class="tool-btn"
+      :class="{ active: state.selectionMode }"
+      @click="invokeAction('toggleSelectionMode')"
+      title="框选节点"
+    >□</button>
     <button class="tool-btn" @click="invokeAction('copyMap')" title="复制地图">📋</button>
   </div>
 </template>
@@ -43,6 +50,11 @@ defineEmits<{
 .tool-btn:hover {
   background: var(--vscode-button-hoverBackground);
   color: var(--vscode-button-foreground);
+}
+.tool-btn.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  box-shadow: 0 0 0 1px var(--vscode-focusBorder);
 }
 .sep { width: 1px; height: 1.2em; background: var(--vscode-panel-border); }
 </style>
