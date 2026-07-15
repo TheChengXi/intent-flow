@@ -1,10 +1,11 @@
 /**
  * @intent
  * 连接线组件的渲染逻辑。
- * 绘制节点之间的父子关系连线，带圆角。
+ * 绘制节点之间的连线，线上可浮动文本标注（如 import 路径）。
+ * 文本排版预留 Pretext 接口，当前用 Leafer Text 暂代。
  */
 
-import { Line, Path } from 'leafer-ui'
+import { Line, Text } from 'leafer-ui'
 
 export interface RenderContext {
   parent: any
@@ -13,67 +14,74 @@ export interface RenderContext {
 }
 
 /**
- * 配置
+ * @contract
+ * 根据节点位置生成连线。
+ * 副作用：无
  */
-const LINE_COLOR = 'textMuted'     // token key
-const LINE_WIDTH = 1.2
-const LINE_OPACITY = 0.5
-const R = 4                         // 圆角半径
-
-export function render(ctx: RenderContext): void {
-  const { parent, nodes, tokens } = ctx
-  const color = tokens[LINE_COLOR] || tokens.textMuted
-  const lineStyle = { stroke: color, strokeWidth: LINE_WIDTH, opacity: LINE_OPACITY, fill: 'none' }
-
+function computeLines(nodes: any[]): any[] {
+  const lines: any[] = []
   nodes.forEach(node => {
     if (!node.children?.length) return
 
-    const cx = node.x + node.w / 2       // 父节点水平中线
-    const cy = node.y + node.h           // 父节点底部
+    const px = node.x + node.w / 2
+    const py = node.y + node.h
     const first = node.children[0]
     const last  = node.children[node.children.length - 1]
-    const lx = first.x + first.w / 2     // 第一个子节点中线
-    const rx = last.x + last.w / 2       // 最后一个子节点中线
-    const lineY = cy + 10                // 水平线 Y 坐标
+    const lineY = py + 10
+    const lx = first.x + first.w / 2
+    const rx = last.x + last.w / 2
 
-    // ── ① 垂直竖线：父节点底部 → 水平线 ──
-    parent.add(new Line({
-      ...lineStyle,
-      x: 0, y: 0,
-      points: [cx, cy, cx, lineY],
-    }))
-
-    // ── ② 水平横线：最左 → 最右（如果有多个子节点） ──
-    if (rx - lx > R * 2) {
-      parent.add(new Line({
-        ...lineStyle,
-        x: 0, y: 0,
-        points: [lx, lineY, rx, lineY],
-      }))
+    // 垂直竖线：父节点底部 → 水平线
+    if (lineY - py > 2) {
+      lines.push({ x1: px, y1: py, x2: px, y2: lineY })
     }
 
-    // ── ③ 每个子节点：水平线 → 子节点顶部（带圆角） ──
-    node.children.forEach((c: any) => {
-      const cxc = c.x + c.w / 2
-      const cyc = c.y
-      const dy = cyc - lineY
+    // 水平横线：第一个子节点 → 最后一个子节点
+    if (rx - lx > 2) {
+      lines.push({ x1: lx, y1: lineY, x2: rx, y2: lineY })
+    }
 
-      if (dy > R) {
-        // 垂直下落够长才画，用 Path 做圆角
-        parent.add(new Path({
-          ...lineStyle,
-          path:
-            `M ${cxc} ${lineY} ` +
-            `L ${cxc} ${cyc - R} ` +
-            `Q ${cxc} ${cyc} ${cxc - R} ${cyc}`,
-        }))
-      } else if (dy > 0) {
-        parent.add(new Line({
-          ...lineStyle,
-          x: 0, y: 0,
-          points: [cxc, lineY, cxc, cyc],
-        }))
+    // 垂直短线：水平线 → 每个子节点顶部
+    node.children.forEach((c: any) => {
+      const cx = c.x + c.w / 2
+      if (Math.abs(cx - px) > 1 || c.y - lineY > 2) {
+        lines.push({ x1: cx, y1: lineY, x2: cx, y2: c.y })
       }
     })
+  })
+  return lines
+}
+
+export function render(ctx: RenderContext): void {
+  const { parent, nodes, tokens } = ctx
+  const lines = computeLines(nodes)
+
+  // 画线
+  lines.forEach(l => {
+    parent.add(new Line({
+      x: 0, y: 0,
+      points: [l.x1, l.y1, l.x2, l.y2],
+      stroke: tokens.panelBorder,
+      strokeWidth: 1.5,
+      strokeDash: [4, 3],
+    }))
+
+    // ── 预留：线上浮动文本 ──
+    // 当节点带有 importLabel 时，在连线中点显示标注
+    // 当前用 Leafer Text 暂代，后续接入 Pretext 实现精准排版
+    //
+    // if (l.label) {
+    //   const mx = (l.x1 + l.x2) / 2
+    //   const my = (l.y1 + l.y2) / 2
+    //   // TODO: Pretext.layout(label, ...) → { width, height }
+    //   parent.add(new Text({
+    //     x: mx, y: my,
+    //     text: l.label,
+    //     fontSize: 10, fill: tokens.textMuted,
+    //     textAlign: 'center',
+    //     backgroundColor: tokens.bg,
+    //     padding: [1, 4],
+    //   }))
+    // }
   })
 }
