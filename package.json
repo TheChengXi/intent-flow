@@ -118,7 +118,7 @@
       {
         "command": "cdd.toggleSelectionMode",
         "key": "b",
-        "when": "webviewId == 'cdd.capabilityMap' && !editorFocus"
+        "when": "activeWebviewPanelId == 'cdd.capabilityMap'"
       }
     ],
     "configuration": {
