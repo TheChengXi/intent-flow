@@ -31,6 +31,7 @@ export function initWatcher(scene: SceneManager): void {
       state.infoIntent,
       state.toastVisible,
       state.toastMsg,
+      JSON.stringify(state.selectedIds),
     ],
     () => scheduleRender(scene),
     { deep: true },
