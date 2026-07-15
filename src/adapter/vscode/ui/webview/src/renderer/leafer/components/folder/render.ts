@@ -1,7 +1,16 @@
 /**
  * @intent
  * 文件夹组件的 Leafer 渲染逻辑。
- * 只负责"怎么画"，不关心 layout 和尺寸来源。
+ * 接受 RenderContext（节点位置/状态/token），在 parent Group 中创建：
+ *   ① 📁 图标（emojis）
+ *   ② 文件夹名称（Text）
+ *   ③ 展开/折叠角标（+ / −）
+ *   ④ hover 缩放动效（1.08x）
+ *   ⑤ tap → toggleFolder（展开/折叠）
+ *
+ * 输入：RenderContext（node.x/y 来自 layout 计算）
+ * 输出：向 parent 添加 Group 节点
+ * 不关心：node 的 x/y 从哪来、尺寸是 px 还是 %
  */
 
 import { Group, Text } from 'leafer-ui'
