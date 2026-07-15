@@ -8,7 +8,7 @@
  */
 
 export const LEVEL_HEIGHT = 90
-export const NODE_GAP = 24
+export const NODE_GAP = 10
 export const TREE_TOP = 48
 export const TREE_LEFT = 24
 
