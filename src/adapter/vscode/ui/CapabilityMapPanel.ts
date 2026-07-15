@@ -234,6 +234,12 @@ code {
           break;
         }
 
+        case 'openFile': {
+          const fileUri = vscode.Uri.file(msg.path);
+          vscode.window.showTextDocument(fileUri);
+          break;
+        }
+
         case 'hoverFile': {
           const absFile = path.join(this.currentAbsFolder, msg.fileName);
           try {
