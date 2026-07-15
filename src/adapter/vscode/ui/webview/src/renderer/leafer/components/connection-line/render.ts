@@ -62,21 +62,18 @@ function computeLines(nodes: any[]): any[] {
     const py = parentAnchor.bottom
     const lineY = py + 10 // 水平线在父节点底部以下 10px
 
-    const first = node.children[0]
-    const last  = node.children[node.children.length - 1]
-    const firstAnchor = getVisualAnchor(first)
-    const lastAnchor = getVisualAnchor(last)
-    const lx = firstAnchor.cx
-    const rx = lastAnchor.cx
-
-    // 垂直竖线：父节点视觉底部 → 水平线
+    // 垂直竖线：父节点视觉底部 → 水平线（始终保持竖直）
     if (lineY - py > 2) {
       lines.push({ x1: px, y1: py, x2: px, y2: lineY })
     }
 
-    // 水平横线：第一个子节点视觉中心 → 最后一个子节点视觉中心
-    if (rx - lx > 2) {
-      lines.push({ x1: lx, y1: lineY, x2: rx, y2: lineY })
+    // 水平横线：以父节点 cx 为对称中心，向两侧等距延伸覆盖所有子节点
+    const childCxes = node.children.map((c: any) => getVisualAnchor(c).cx)
+    const maxOffset = Math.max(...childCxes.map((cx: number) => Math.abs(cx - px)))
+    const hx1 = px - maxOffset - 6
+    const hx2 = px + maxOffset + 6
+    if (hx2 - hx1 > 2) {
+      lines.push({ x1: hx1, y1: lineY, x2: hx2, y2: lineY })
     }
 
     // 垂直短线：水平线 → 每个子节点视觉顶部
