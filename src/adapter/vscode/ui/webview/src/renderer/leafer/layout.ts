@@ -9,7 +9,7 @@ import { calcSubtreeWidth, layoutNode, flattenTree,
 import { compileNode, convertTree } from '../../converter'
 import type { ConvertNode } from '../../converter'
 import { protocol as folderProtocol } from './components/folder'
-import { protocol as groupProtocol } from './components/group'
+import { protocol as intentPackageProtocol } from './components/intent-package'
 import { protocol as fileProtocol } from './components/file'
 import { prepare, measureNaturalWidth } from '@chenglou/pretext'
 
