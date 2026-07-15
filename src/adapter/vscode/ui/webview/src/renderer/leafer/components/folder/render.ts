@@ -15,6 +15,7 @@
  */
 
 import { Group, Text, Rect } from 'leafer-ui'
+import { state } from '@core/capability-map'
 import type { RenderContext } from '../../types'
 
 export function render(ctx: RenderContext): void {
@@ -63,7 +64,7 @@ export function render(ctx: RenderContext): void {
 
   // @step: 点击切换展开（选择模式下 Ctrl+点不触发，交给 scene 的 toggleNodeSelection）
   g.on('tap', () => {
-    if (data.selectionMode) return
+    if (state.selectionMode) return
     invokeAction('toggleFolder', { path: node.path })
   })
 

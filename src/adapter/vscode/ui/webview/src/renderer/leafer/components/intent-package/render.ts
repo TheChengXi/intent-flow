@@ -5,6 +5,7 @@
  */
 
 import { Group, Rect, Text } from 'leafer-ui'
+import { state } from '@core/capability-map'
 import type { RenderContext } from '../../types'
 
 export function render(ctx: RenderContext): void {
@@ -49,7 +50,7 @@ export function render(ctx: RenderContext): void {
   g.on('pointer.enter', () => { circle.stroke = 'rgba(26,188,156,1)' })
   g.on('pointer.leave', () => { circle.stroke = 'rgba(26,188,156,0.7)' })
   g.on('tap', () => {
-    if (ctx.data.selectionMode) return
+    if (state.selectionMode) return
     invokeAction('traceGroup', {
       data: node.data,
       label: node.children[0]?.label,

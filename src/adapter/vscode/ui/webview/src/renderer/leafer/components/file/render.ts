@@ -5,6 +5,7 @@
  */
 
 import { Group, Text, Rect } from 'leafer-ui'
+import { state } from '@core/capability-map'
 import type { RenderContext } from '../../types'
 
 export function render(ctx: RenderContext): void {
@@ -44,7 +45,7 @@ export function render(ctx: RenderContext): void {
   let hoverTimer: any = null
   // 选择模式下不触发 hover
   g.on('pointer.enter', () => {
-    if (data.selectionMode) return
+    if (state.selectionMode) return
     label.backgroundColor = 'rgba(232,67,147,0.25)'
     hoverTimer = setTimeout(() => invokeAction('hoverFile', { label: node.label }), 300)
   })

@@ -96,19 +96,18 @@ export function createSceneManager(): SceneManager {
   function onPointerDown(e: any) {
     if (!state.rootData || state.loading) return
 
-    if (state.selectionMode && e.ctrlKey) {
-      // Ctrl+点击：切换单个节点选中
-      toggleNodeSelection(e.x, e.y)
+    if (state.selectionMode) {
+      if (e.target?.__isInteractive) {
+        // 点在节点上：切换选中（不需要 Ctrl，选择模式本身就意味着选中操作）
+        toggleNodeSelection(e.x, e.y)
+        return
+      }
+      // 点在空白处：开始框选
+      _selStart = { x: e.x, y: e.y }
       return
     }
 
     if (e.target?.__isInteractive) return
-
-    if (state.selectionMode) {
-      // 选择模式：开始框选
-      _selStart = { x: e.x, y: e.y }
-      return
-    }
 
     // 正常模式：拖拽画布
     _dragSend?.({ type: 'DRAG_START' })
