@@ -74,7 +74,7 @@ export function createSceneManager(): SceneManager {
     _app.on('pointer.down', onPointerDown)
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
-    _app.on('wheel', onWheel)
+    window.addEventListener('wheel', onWheel, { passive: false })
   }
 
   function unbindEvents() {
@@ -82,7 +82,7 @@ export function createSceneManager(): SceneManager {
     _app.off('pointer.down', onPointerDown)
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
-    _app.off('wheel', onWheel)
+    window.removeEventListener('wheel', onWheel)
   }
 
   function onPointerDown(e: any) {
