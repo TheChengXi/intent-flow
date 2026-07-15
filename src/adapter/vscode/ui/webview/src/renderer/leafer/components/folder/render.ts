@@ -29,9 +29,9 @@ export function render(ctx: RenderContext): void {
   // @step: 展开/折叠指示器
   if (node.children?.length) {
     const expanded = !!data.expanded[node.path]
-    // 右上角贴合：+ 号在图标右上，像角标
+    // 悬浮在图标右上角（部分重叠）
     g.add(new Text({
-      x: 20, y: -8,
+      x: 14, y: -4,
       text: expanded ? '−' : '+', fontSize: 13, fill: '#9b59b6',
       textAlign: 'center', backgroundColor: tokens.bg,
       cornerRadius: 8, padding: [1, 4],
