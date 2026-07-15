@@ -15,7 +15,7 @@ export function render(ctx: RenderContext): void {
   g.__isInteractive = true
 
   // @step: 选中高亮（蓝色外环）
-  const isSelected = Array.isArray(data.selectedIds) && data.selectedIds.includes(node.label)
+  const isSelected = Array.isArray(data.selectedIds) && data.selectedIds.some((s: any) => s.label === node.label)
   if (isSelected) {
     g.add(new Rect({
       x: -6, y: -6,

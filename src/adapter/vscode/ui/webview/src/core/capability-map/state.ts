@@ -23,7 +23,7 @@ interface CapabilityState {
   toastVisible: boolean
   zoom: number
   selectionMode: boolean
-  selectedIds: string[]
+  selectedIds: { label: string; type: string }[]
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null
@@ -44,7 +44,7 @@ export const state = reactive<CapabilityState>({
   toastVisible: false,
   zoom: 1,
   selectionMode: false,
-  selectedIds: [],
+  selectedIds: [], // { label, type }[]
 })
 
 // ── dryRun：纯函数验证，不修改状态 ──
@@ -217,7 +217,7 @@ export function toggleSelectionMode(): void {
   }
 }
 
-export function setSelectedIds(ids: string[]): void {
+export function setSelectedIds(ids: { label: string; type: string }[]): void {
   state.selectedIds = ids
 }
 
@@ -240,8 +240,9 @@ export function copyMap(): void {
 
   if (state.selectedIds.length > 0) {
     // 有选中节点：直接输出选中项（扁平列表，不遍历树）
-    state.selectedIds.forEach(id => {
-      lines.push('  📄 ' + id)
+    state.selectedIds.forEach(s => {
+      const icon = s.type === 'folder' ? '📁' : s.type === 'intent-package' ? '⭕' : '📄'
+      lines.push('  ' + icon + ' ' + s.label)
     })
   } else {
     // 无选中节点：输出完整树

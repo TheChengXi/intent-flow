@@ -14,7 +14,7 @@ export function render(ctx: RenderContext): void {
   g.__isInteractive = true
 
   // @step: 选中高亮
-  const isSelected = Array.isArray(data.selectedIds) && data.selectedIds.includes(node.label)
+  const isSelected = Array.isArray(data.selectedIds) && data.selectedIds.some((s: any) => s.label === node.label)
   if (isSelected) {
     const rw = 42 + (node.textWidth || 80)
     g.add(new Rect({
