@@ -117,8 +117,8 @@
     "keybindings": [
       {
         "command": "cdd.toggleSelectionMode",
-        "key": "escape",
-        "when": "webviewId == 'cdd.capabilityMap'"
+        "key": "b",
+        "when": "webviewId == 'cdd.capabilityMap' && !editorFocus"
       }
     ],
     "configuration": {
