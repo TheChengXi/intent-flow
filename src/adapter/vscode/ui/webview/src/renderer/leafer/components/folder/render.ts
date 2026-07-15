@@ -62,11 +62,10 @@ export function render(ctx: RenderContext): void {
   g.on('pointer.enter', () => { g.scaleX = 1.08; g.scaleY = 1.08 })
   g.on('pointer.leave', () => { g.scaleX = 1; g.scaleY = 1 })
 
-  // @step: 点击切换展开（选择模式下 Ctrl+点不触发，交给 scene 的 toggleNodeSelection）
-  g.on('tap', () => {
-    if (state.selectionMode) return
-    invokeAction('toggleFolder', { path: node.path })
-  })
+  // @step: 点击切换展开（选择模式下不注册 tap，由 scene 接管）
+  if (!state.selectionMode) {
+    g.on('tap', () => invokeAction('toggleFolder', { path: node.path }))
+  }
 
   parent.add(g)
 }

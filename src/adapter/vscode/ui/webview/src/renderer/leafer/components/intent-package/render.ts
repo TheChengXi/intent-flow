@@ -49,13 +49,12 @@ export function render(ctx: RenderContext): void {
 
   g.on('pointer.enter', () => { circle.stroke = 'rgba(26,188,156,1)' })
   g.on('pointer.leave', () => { circle.stroke = 'rgba(26,188,156,0.7)' })
-  g.on('tap', () => {
-    if (state.selectionMode) return
-    invokeAction('traceGroup', {
+  if (!state.selectionMode) {
+    g.on('tap', () => invokeAction('traceGroup', {
       data: node.data,
       label: node.children[0]?.label,
-    })
-  })
+    }))
+  }
 
   parent.add(g)
 }
