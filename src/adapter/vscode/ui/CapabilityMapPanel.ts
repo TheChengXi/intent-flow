@@ -17,6 +17,8 @@ export class CapabilityMapPanel {
   private container: VSCodeDIContainer;
   private disposables: vscode.Disposable[] = [];
 
+  static activePanel: CapabilityMapPanel | undefined;
+
   /** 当前正在浏览的文件夹绝对路径 */
   private currentAbsFolder = '';
 
@@ -47,6 +49,20 @@ export class CapabilityMapPanel {
     );
 
     this.context.subscriptions.push(this.panel);
+
+    CapabilityMapPanel.activePanel = this;
+
+    // 注册快捷键命令（转发到 webview）
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand('cdd.toggleSelectionMode', () => {
+        CapabilityMapPanel.activePanel?.postMessage({ type: 'toggleSelectionMode' });
+      })
+    );
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand('cdd.clearSelection', () => {
+        CapabilityMapPanel.activePanel?.postMessage({ type: 'clearSelection' });
+      })
+    );
   }
 
   /** 将用户输入的相对路径解析为工作区绝对路径 */

@@ -153,6 +153,13 @@ export function initMessages(): void {
       case 'saveResult':
         state.status = msg.success ? '✅ ' + msg.message : '❌ ' + msg.message
         break
+      case 'toggleSelectionMode':
+        toggleSelectionMode()
+        break
+      case 'clearSelection':
+        state.selectedIds = []
+        if (state.selectionMode) toggleSelectionMode()
+        break
     }
   })
 }

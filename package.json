@@ -53,6 +53,14 @@
       {
         "command": "cdd.openCapabilityMap",
         "title": "CDD: 打开能力地图"
+      },
+      {
+        "command": "cdd.toggleSelectionMode",
+        "title": "CDD: 切换框选模式"
+      },
+      {
+        "command": "cdd.clearSelection",
+        "title": "CDD: 清除选中"
       }
     ],
     "menus": {
@@ -106,6 +114,13 @@
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "cdd.toggleSelectionMode",
+        "key": "escape",
+        "when": "webviewId == 'cdd.capabilityMap'"
+      }
+    ],
     "configuration": {
       "title": "CDD",
       "properties": {
