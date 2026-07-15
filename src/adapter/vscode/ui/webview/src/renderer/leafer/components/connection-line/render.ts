@@ -62,29 +62,27 @@ function computeLines(nodes: any[]): any[] {
     const py = parentAnchor.bottom
     const lineY = py + 10 // 水平线在父节点底部以下 10px
 
-    // 计算所有子节点的 cx，取中位数作为垂直落线的连接点
-    const childCxes = node.children.map((c: any) => getVisualAnchor(c).cx).sort((a: number, b: number) => a - b)
-    const half = Math.floor(childCxes.length / 2)
-    const midCx = childCxes.length % 2 === 1
-      ? childCxes[half]
-      : (childCxes[half - 1] + childCxes[half]) / 2
-    const firstCx = childCxes[0]
-    const lastCx = childCxes[childCxes.length - 1]
+    const first = node.children[0]
+    const last  = node.children[node.children.length - 1]
+    const firstAnchor = getVisualAnchor(first)
+    const lastAnchor = getVisualAnchor(last)
+    const lx = firstAnchor.cx
+    const rx = lastAnchor.cx
 
-    // 垂直落线：父节点视觉底部 → 子节点中位数 cx（奇数直接取中间，偶数取中间两值的平均）
+    // 垂直竖线：父节点视觉底部 → 水平线
     if (lineY - py > 2) {
-      lines.push({ x1: px, y1: py, x2: midCx, y2: lineY })
+      lines.push({ x1: px, y1: py, x2: px, y2: lineY })
     }
 
-    // 水平横线：覆盖所有子节点
-    if (lastCx - firstCx > 2) {
-      lines.push({ x1: firstCx, y1: lineY, x2: lastCx, y2: lineY })
+    // 水平横线：第一个子节点视觉中心 → 最后一个子节点视觉中心
+    if (rx - lx > 2) {
+      lines.push({ x1: lx, y1: lineY, x2: rx, y2: lineY })
     }
 
     // 垂直短线：水平线 → 每个子节点视觉顶部
     node.children.forEach((c: any) => {
       const ca = getVisualAnchor(c)
-      if (Math.abs(ca.cx - midCx) > 1 || ca.top - lineY > 2) {
+      if (Math.abs(ca.cx - px) > 1 || ca.top - lineY > 2) {
         lines.push({ x1: ca.cx, y1: lineY, x2: ca.cx, y2: ca.top })
       }
     })
