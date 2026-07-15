@@ -6,8 +6,8 @@
  *
  * 视觉锚点表（纯像素值，与 render/*.ts 中的绘制位置对齐）：
  *
- *   folder          📁 (0,0) fontSize:24  → 宽≈24px, 高≈24px
- *                    视觉底部: node.y + 24
+ *   folder          📁 (0,0) fontSize:24 + 文字 (0,28) fontSize:12
+ *                    文字中点: node.x, 视觉底部: node.y + 40
  *
  *   file            📄 (6,3) fontSize:13  → 宽≈13px, 高≈16px
  *                    视觉顶部: node.y + 3
@@ -30,9 +30,9 @@ export interface RenderContext {
 function getVisualAnchor(node: any): { cx: number; top: number; bottom: number } {
   switch (node.type) {
     case 'folder':
-      // 📁 (0,0) fontSize:24, textAlign:'center' 文字居中于 x:0
-      // 整体视觉以文字宽度为准，文字中点 = node.x
-      return { cx: node.x, top: node.y, bottom: node.y + 24 }
+      // 📁 (0,0) fontSize:24 + 文字 (0,28) fontSize:12
+      // 文字中点 = node.x, 视觉底部 = 文字底边 y:40
+      return { cx: node.x, top: node.y, bottom: node.y + 40 }
     case 'file':
       // 📄 (6,3) fontSize:13 ≈ 13px + 文件名 (26,3) fontSize:12 + padding [3,8]
       // 组合视觉跨度：emoji 左 x:6 → 文字右 x:26+textWidth+8
