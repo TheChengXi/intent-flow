@@ -44,6 +44,7 @@ export function createSceneManager(): SceneManager {
   // ── 选择框状态 ──
   let _selStart: { x: number; y: number } | null = null
   let _flatNodes: any[] = []
+  let _ctrlDown = false
 
   // ── 场景管理 ──
   function createScene(container: HTMLElement) {
@@ -78,6 +79,8 @@ export function createSceneManager(): SceneManager {
     _dragSend = dragSnd
     if (!_app) return
     _app.on('pointer.down', onPointerDown)
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
     window.addEventListener('wheel', onWheel, { passive: false })
@@ -86,6 +89,8 @@ export function createSceneManager(): SceneManager {
   function unbindEvents() {
     if (!_app) return
     _app.off('pointer.down', onPointerDown)
+    window.removeEventListener('keydown', onKeyDown)
+    window.removeEventListener('keyup', onKeyUp)
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
     window.removeEventListener('wheel', onWheel)
@@ -96,6 +101,11 @@ export function createSceneManager(): SceneManager {
     if (e.target?.__isInteractive) return
 
     if (state.selectionMode) {
+      if (_ctrlDown) {
+        // Ctrl+点击：切换单个节点选中
+        toggleNodeSelection(e.x, e.y)
+        return
+      }
       // 选择模式：开始框选
       _selStart = { x: e.x, y: e.y }
       return
@@ -132,6 +142,21 @@ export function createSceneManager(): SceneManager {
     if (_dragSnapshot?.value?.matches('dragging')) {
       _dragSend?.({ type: 'DROP' })
     }
+  }
+
+  // ── 快捷键 ──
+  function onKeyDown(e: KeyboardEvent) {
+    _ctrlDown = e.ctrlKey || e.metaKey
+
+    // Ctrl+B: 切换选择模式
+    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyB') {
+      e.preventDefault()
+      stateInvokeAction('toggleSelectionMode')
+    }
+  }
+
+  function onKeyUp(e: KeyboardEvent) {
+    _ctrlDown = e.ctrlKey || e.metaKey
   }
 
   function onWheel(e: any) {
@@ -198,8 +223,33 @@ export function createSceneManager(): SceneManager {
     setSelectedIds(selected.map((n: any) => ({ label: n.label, type: n.type })).filter((s: any) => s.label))
   }
 
+  function toggleNodeSelection(px: number, py: number) {
+    if (!_mapLayer) return
+    const sx = _mapLayer.scaleX || 1
+    const sy = _mapLayer.scaleY || 1
+    const mx = (px - _mapLayer.x) / sx
+    const my = (py - _mapLayer.y) / sy
+
+    const hit = _flatNodes.find((n: any) => {
+      const cx = n.x + (n.cxOffset ?? n.w / 2)
+      const cy = n.y + (n.h || 40) / 2
+      const hw = (n.w || 60) / 2 + 8
+      const hh = (n.h || 40) / 2 + 8
+      return Math.abs(mx - cx) <= hw && Math.abs(my - cy) <= hh
+    })
+
+    if (!hit) return
+    const entry = { label: hit.label, type: hit.type }
+    const idx = state.selectedIds.findIndex((s: any) => s.label === entry.label)
+    if (idx >= 0) {
+      state.selectedIds.splice(idx, 1)
+    } else {
+      state.selectedIds.push(entry)
+    }
+  }
+
   // ── 场景图构建 ──
-  function localInvokeAction(name: string, payload: any = {}) {
+  function localInvokeAction(name: string, payload: any = {}) { {
     if (name === 'resetView') { resetView(); return { x: 0, y: 0, scale: 1 } }
     stateInvokeAction(name, payload)
   }
