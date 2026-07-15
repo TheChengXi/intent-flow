@@ -195,7 +195,7 @@ export function createSceneManager(): SceneManager {
       return cx >= left && cx <= right && cy >= top && cy <= bottom
     })
 
-    setSelectedIds(selected.map((n: any) => n.id || n.label || '').filter(Boolean))
+    setSelectedIds(selected.map((n: any) => n.label || '').filter(Boolean))
   }
 
   // ── 场景图构建 ──

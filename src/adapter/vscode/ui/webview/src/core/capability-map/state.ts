@@ -238,16 +238,17 @@ export function copyMap(): void {
 
   const lines = ['# 能力地图: ' + state.currentFolder, '']
 
-  function shouldInclude(fp: string): boolean {
-    return state.selectedIds.length === 0 || state.selectedIds.includes(fp)
+  function shouldInclude(name: string): boolean {
+    return state.selectedIds.length === 0 || state.selectedIds.includes(name)
   }
 
   function walk(data: any, depth: number): void {
     const indent = '  '.repeat(depth)
     if (data.subdirectories) {
       data.subdirectories.forEach((d: string) => {
+        // 直接用目录名 d 匹配（selectedIds 存的是 node.label = 目录名）
+        if (!shouldInclude(d)) return
         const fp = state.currentFolder + '/' + d
-        if (!shouldInclude(fp)) return
         lines.push(indent + '📁 ' + d)
         if (state.expanded[fp] && state.cache[fp]) {
           walk(state.cache[fp], depth + 1)
