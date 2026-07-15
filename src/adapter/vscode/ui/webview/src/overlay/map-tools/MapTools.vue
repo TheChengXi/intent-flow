@@ -10,7 +10,7 @@
       class="tool-btn"
       :class="{ active: state.selectionMode }"
       @click="invokeAction('toggleSelectionMode')"
-      title="框选节点"
+      title="框选节点 / Esc 退出"
     >□</button>
     <button class="tool-btn" @click="invokeAction('copyMap')" title="复制地图">📋</button>
   </div>

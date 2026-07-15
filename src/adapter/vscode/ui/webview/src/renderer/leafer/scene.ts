@@ -145,7 +145,11 @@ export function createSceneManager(): SceneManager {
 
   // ── 快捷键 ──
   function onKeyDown(e: KeyboardEvent) {
-    // 按 B 键切换选择模式（不冲突，画布中没有文本输入）
+    // Escape: 退出选择模式（VS Code 不拦截）
+    if (e.code === 'Escape' && state.selectionMode) {
+      stateInvokeAction('toggleSelectionMode')
+      return
+    }
     if (e.code === 'KeyB' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault()
       stateInvokeAction('toggleSelectionMode')
