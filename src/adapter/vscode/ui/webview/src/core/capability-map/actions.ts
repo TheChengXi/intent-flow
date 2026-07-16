@@ -7,8 +7,7 @@
 
 import { state } from './state'
 import { calcZoom } from './behavior'
-
-const vscode = (window as any).acquireVsCodeApi?.() || { postMessage: () => {} }
+import { vscode } from './vscode-api'
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -31,6 +30,7 @@ export function dryRun(name: string, payload: any = {}): any {
     case 'copyMap':
     case 'toggleSelectionMode':
     case 'clearSelection':
+    case 'openFile':
       return { valid: true }
     default:
       return null
@@ -67,6 +67,12 @@ export function invokeAction(name: string, payload: any = {}): any {
       break
     case 'toggleSelectionMode':
       toggleSelectionMode()
+      break
+    case 'openFile':
+      if (payload.path) {
+        state.status = '打开 ' + (payload.label || payload.path)
+        vscode.postMessage({ type: 'openFile', path: payload.path })
+      }
       break
     case 'clearSelection':
       state.selectedIds = []

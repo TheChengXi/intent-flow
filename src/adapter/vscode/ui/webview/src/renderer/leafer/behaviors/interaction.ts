@@ -64,10 +64,14 @@ export function createPointerInteraction(
           // 双击文件 → 打开
           ctx.lastClickTarget = null
           ctx.lastClickTime = 0
-          if (hit.type === 'file') openFile(hit)
+          if (hit.type === 'file') {
+            state.status = '双击: ' + hit.label + ' path=' + (hit.path || '无')
+            openFile(hit)
+          }
         } else {
           ctx.lastClickTarget = hit
           ctx.lastClickTime = now
+          state.status = '单击: ' + hit.label
         }
         return
       }

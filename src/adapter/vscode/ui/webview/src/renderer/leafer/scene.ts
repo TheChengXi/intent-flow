@@ -159,12 +159,10 @@ export function createSceneManager(): SceneManager {
     })
   }
 
-  // ── 事件订阅（behavior → UI） ──
+  // ── 事件订阅（behavior → actions） ──
   hub.subscribe('openFile', (data) => {
     if (!data.path) return
-    state.status = '打开 ' + data.label
-    const vscode = (window as any).acquireVsCodeApi?.() || { postMessage: () => {} }
-    vscode.postMessage({ type: 'openFile', path: data.path })
+    stateInvokeAction('openFile', { path: data.path, label: data.label })
   })
 
   return {

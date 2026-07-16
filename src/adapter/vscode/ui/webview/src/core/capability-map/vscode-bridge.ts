@@ -7,8 +7,7 @@
 
 import { state } from './state'
 import { toggleSelectionMode } from './actions'
-
-const vscode = (window as any).acquireVsCodeApi?.() || { postMessage: () => {} }
+import { vscode } from './vscode-api'
 
 function handleFolderData(data: any): void {
   state.loading = false
@@ -61,4 +60,4 @@ export function initMessages(): void {
   })
 }
 
-export { vscode }
+
