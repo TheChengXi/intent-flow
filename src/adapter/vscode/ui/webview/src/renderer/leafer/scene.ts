@@ -115,15 +115,7 @@ export function createSceneManager(): SceneManager {
         _lastClickTarget = hit
         _lastClickTime = now
         if (hit) {
-          // 从原始 DOM 事件读取 Ctrl 状态（Leafer 透传的 ctrlKey 有时不生效）
-          const ctrlHeld = e.origin?.ctrlKey || e.ctrlKey
-          if (ctrlHeld) {
-            // Ctrl 按住：追加到选中，不清其他
-            toggleNodeSelection(e.x, e.y)
-          } else {
-            // 不按 Ctrl：只选当前，清掉其他
-            selectNodeOnly(e.x, e.y)
-          }
+          toggleNodeSelection(e.x, e.y)
         }
         return
       }
@@ -157,10 +149,7 @@ export function createSceneManager(): SceneManager {
 
   function onPointerUp(e: any) {
     if (state.selectionMode && _selStart) {
-      const ctrlHeld = e.origin?.ctrlKey || e.ctrlKey
-      if (!ctrlHeld) {
-        doSelectionHitTest(_selStart.x, _selStart.y, e.x, e.y)
-      }
+      doSelectionHitTest(_selStart.x, _selStart.y, e.x, e.y)
       _selStart = null
       removeSelRect()
       return
