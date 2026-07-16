@@ -48,8 +48,8 @@ export function render(ctx: RenderContext): void {
     fontWeight: 'bold', width: r * 2 - 16,
   }))
 
-  g.on('pointer.enter', () => { circle.stroke = 'rgba(26,188,156,1)' })
-  g.on('pointer.leave', () => { circle.stroke = 'rgba(26,188,156,0.7)' })
+  g.on('pointer.enter', () => { g.scaleX = 1.08; g.scaleY = 1.08; circle.stroke = 'rgba(26,188,156,1)' })
+  g.on('pointer.leave', () => { g.scaleX = 1; g.scaleY = 1; circle.stroke = 'rgba(26,188,156,0.7)' })
   if (!state.selectionMode) {
     g.on('tap', () => invokeAction('traceGroup', {
       data: node.data,
