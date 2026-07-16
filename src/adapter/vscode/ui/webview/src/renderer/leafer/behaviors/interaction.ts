@@ -59,8 +59,21 @@ export function createPointerInteraction(
     if (!state.rootData || state.loading) return
 
     if (state.selectionMode) {
-      // 点击节点 → 不处理，交由 tap 检测双击
-      if (findNodeAt(e.x, e.y)) return
+      const hit = findNodeAt(e.x, e.y)
+      if (hit) {
+        // 点击节点：记录供双击检测，不框选
+        const now = Date.now()
+        if (hit === ctx.lastClickTarget && now - ctx.lastClickTime < 300) {
+          // 双击文件 → 打开
+          ctx.lastClickTarget = null
+          ctx.lastClickTime = 0
+          if (hit.type === 'file') openFile(hit)
+        } else {
+          ctx.lastClickTarget = hit
+          ctx.lastClickTime = now
+        }
+        return
+      }
       // 点在空白处：开始框选
       ctx.selStart = { x: e.x, y: e.y }
       return
@@ -101,25 +114,6 @@ export function createPointerInteraction(
     }
   }
 
-  // ── 双击检测（选择模式） ──
-  function onTap(e: any) {
-    if (!state.selectionMode) return
-    const hit = findNodeAt(e.x, e.y)
-    if (!hit) return
-
-    if (hit === ctx.lastClickTarget) {
-      // 同一节点第二次 tap → 双击
-      ctx.lastClickTarget = null
-      ctx.lastClickTime = 0
-      if (hit.type === 'file') openFile(hit)
-    } else {
-      ctx.lastClickTarget = hit
-      ctx.lastClickTime = Date.now()
-      // 300ms 后清除记录，防止第三次 tap 误判
-      setTimeout(() => { ctx.lastClickTarget = null }, 300)
-    }
-  }
-
   // ── 快捷键 ──
   function onKeyDown(e: KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.code === 'KeyC') {
@@ -133,7 +127,6 @@ export function createPointerInteraction(
     _dragSend = dragSnd
     if (!ctx.app) return
     ctx.app.on('pointer.down', onPointerDown)
-    ctx.app.on('tap', onTap)
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
@@ -142,7 +135,6 @@ export function createPointerInteraction(
   function unbindEvents() {
     if (!ctx.app) return
     ctx.app.off('pointer.down', onPointerDown)
-    ctx.app.off('tap', onTap)
     window.removeEventListener('keydown', onKeyDown)
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
