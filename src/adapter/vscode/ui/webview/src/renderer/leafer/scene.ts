@@ -148,7 +148,10 @@ export function createSceneManager(): SceneManager {
 
   function onPointerUp(e: any) {
     if (state.selectionMode && _selStart) {
-      doSelectionHitTest(_selStart.x, _selStart.y, e.x, e.y)
+      // Ctrl 按住时跳过框选 hitTest，保留已有选中
+      if (!_ctrlDown) {
+        doSelectionHitTest(_selStart.x, _selStart.y, e.x, e.y)
+      }
       _selStart = null
       removeSelRect()
       return
