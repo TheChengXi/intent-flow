@@ -42,6 +42,7 @@ export function render(ctx: RenderContext): void {
 
   })
   g.add(label)
+  node._labelEl = label
 
   let hoverTimer: any = null
   // 选择模式下不触发 hover

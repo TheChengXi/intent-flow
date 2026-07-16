@@ -43,12 +43,14 @@ export function render(ctx: RenderContext): void {
   }))
 
   // @step: 文件夹名称（textWrap: false 让 Leafer 自动撑开，x:0 与图标同一中心）
-  g.add(new Text({
+  const labelText = new Text({
     x: 0, y: 28,
     text: node.label, fontSize: 12, fill: tokens.text,
     textAlign: 'center',
     textWrap: false,
-  }))
+  })
+  g.add(labelText)
+  node._labelEl = labelText
 
   // @step: 展开/折叠指示器（悬浮在图标右上角）
   const expanded = !!data.expanded[node.path]

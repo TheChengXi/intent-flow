@@ -68,6 +68,12 @@ export function createPointerInteraction(
         } else {
           ctx.lastClickTarget = hit
           ctx.lastClickTime = now
+          // 单击反馈：字体闪灰
+          if (hit._labelEl && hit._labelEl.fill !== '#999') {
+            const orig = hit._labelEl.fill
+            hit._labelEl.fill = '#999'
+            setTimeout(() => { if (hit._labelEl) hit._labelEl.fill = orig }, 80)
+          }
         }
         return
       }
