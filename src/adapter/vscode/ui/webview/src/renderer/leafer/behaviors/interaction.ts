@@ -57,15 +57,17 @@ export function createPointerInteraction(
     if (!state.rootData || state.loading) return
 
     if (state.selectionMode) {
-      if (e.target?.__isInteractive) {
-        const now = Date.now()
-        const hit = findNodeAt(e.x, e.y)
-        if (hit && hit === ctx.lastClickTarget && now - ctx.lastClickTime < 300) {
-          ctx.lastClickTarget = null
-          ctx.lastClickTime = 0
-          if (hit.type === 'file') openFile(hit)
-          return
-        }
+      const now = Date.now()
+      const hit = findNodeAt(e.x, e.y)
+      if (hit && hit === ctx.lastClickTarget && now - ctx.lastClickTime < 300) {
+        // 双击文件 → 打开
+        ctx.lastClickTarget = null
+        ctx.lastClickTime = 0
+        if (hit.type === 'file') openFile(hit)
+        return
+      }
+      if (hit) {
+        // 单击节点 → 记录，不做选中
         ctx.lastClickTarget = hit
         ctx.lastClickTime = now
         return
