@@ -5,7 +5,7 @@
  * 读取 SceneContext 共享状态，通过 ctxRef 回调获取 selection 模块的 doSelectionHitTest。
  */
 
-import { state } from '@core/capability-map'
+import { state, invokeAction as stateInvokeAction } from '@core/capability-map'
 import { updateRect as updateSelRect, removeRect as removeSelRect } from '../components/selection-box'
 import type { SceneContext } from '../types'
 
@@ -111,11 +111,21 @@ export function createPointerInteraction(
     }
   }
 
+  // ── 快捷键 ──
+  function onKeyDown(e: KeyboardEvent) {
+    // Ctrl+C / Cmd+C：复制地图
+    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyC') {
+      e.preventDefault()
+      stateInvokeAction('copyMap')
+    }
+  }
+
   function bindEvents(dragSnap: any, dragSnd: any) {
     _dragSnapshot = dragSnap
     _dragSend = dragSnd
     if (!ctx.app) return
     ctx.app.on('pointer.down', onPointerDown)
+    window.addEventListener('keydown', onKeyDown)
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
   }
@@ -123,6 +133,7 @@ export function createPointerInteraction(
   function unbindEvents() {
     if (!ctx.app) return
     ctx.app.off('pointer.down', onPointerDown)
+    window.removeEventListener('keydown', onKeyDown)
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
   }
