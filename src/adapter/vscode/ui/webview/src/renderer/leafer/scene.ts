@@ -276,11 +276,13 @@ export function createSceneManager(): SceneManager {
     const hit = findNodeAt(px, py)
     if (!hit) return
     const entry = { label: hit.label, type: hit.type }
-    const idx = state.selectedIds.findIndex((s: any) => s.label === entry.label)
-    if (idx >= 0) {
-      state.selectedIds.splice(idx, 1)
+    const has = state.selectedIds.some((s: any) => s.label === entry.label)
+    if (has) {
+      // 已选中 → 移除
+      setSelectedIds(state.selectedIds.filter((s: any) => s.label !== entry.label))
     } else {
-      state.selectedIds.push(entry)
+      // 未选中 → 追加
+      setSelectedIds([...state.selectedIds, entry])
     }
   }
 
