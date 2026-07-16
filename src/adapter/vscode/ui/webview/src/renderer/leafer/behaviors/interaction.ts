@@ -32,9 +32,11 @@ export function createPointerInteraction(
   function openFile(node: any) {
     const fp = node.path || node.label
     if (!fp) return
-    const absPath = state.currentFolder + '/' + fp
-    const vscode = (window as any).acquireVsCodeApi?.() || { postMessage: () => {} }
-    vscode.postMessage({ type: 'openFile', path: absPath })
+    ctx.events.emit({
+      type: 'openFile',
+      path: state.currentFolder + '/' + fp,
+      label: node.label,
+    })
   }
 
   function findNodeAt(px: number, py: number) {

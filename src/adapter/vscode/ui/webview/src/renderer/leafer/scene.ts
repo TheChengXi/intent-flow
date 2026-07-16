@@ -17,6 +17,7 @@ import { text as uiText } from '@resource/text/ui'
 import { createPointerInteraction } from './behaviors/interaction'
 import { createSelectionActions } from './behaviors/selection'
 import { createZoomControls } from './behaviors/zoom'
+import { createEventHub } from './behaviors/event-hub'
 import type { SceneContext, RenderContext } from './types'
 
 export interface SceneManager {
@@ -35,6 +36,7 @@ export interface SceneManager {
 
 export function createSceneManager(): SceneManager {
   // ── 共享场景上下文 ──
+  const hub = createEventHub()
   const ctx: SceneContext = {
     app: null,
     mapLayer: null,
@@ -44,6 +46,7 @@ export function createSceneManager(): SceneManager {
     selStart: null,
     lastClickTarget: null,
     lastClickTime: 0,
+    events: hub,
   }
 
   // ── behavior 模块 ──
@@ -155,6 +158,14 @@ export function createSceneManager(): SceneManager {
       else if (n.type === 'file') renderFile(renderCtx)
     })
   }
+
+  // ── 事件订阅（behavior → UI） ──
+  hub.subscribe('openFile', (data) => {
+    if (!data.path) return
+    state.status = '打开 ' + data.label
+    const vscode = (window as any).acquireVsCodeApi?.() || { postMessage: () => {} }
+    vscode.postMessage({ type: 'openFile', path: data.path })
+  })
 
   return {
     createScene,
