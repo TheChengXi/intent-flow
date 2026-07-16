@@ -41,14 +41,12 @@ export function render(ctx: RenderContext): void {
   })
   g.add(circle)
 
-  const ipLabel = new Text({
+  g.add(new Text({
     x: r, y: r,
     text: node.label, fontSize: 13, fill: tokens.text,
     textAlign: 'center', verticalAlign: 'middle',
     fontWeight: 'bold', width: r * 2 - 16,
-  })
-  g.add(ipLabel)
-  node._labelEl = ipLabel
+  }))
 
   g.on('pointer.enter', () => { circle.stroke = 'rgba(26,188,156,1)' })
   g.on('pointer.leave', () => { circle.stroke = 'rgba(26,188,156,0.7)' })
