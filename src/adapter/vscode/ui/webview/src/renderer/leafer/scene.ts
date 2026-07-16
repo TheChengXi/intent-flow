@@ -114,8 +114,15 @@ export function createSceneManager(): SceneManager {
         }
         _lastClickTarget = hit
         _lastClickTime = now
-        // 单击：切换选中
-        if (hit) toggleNodeSelection(e.x, e.y)
+        if (hit) {
+          if (e.ctrlKey) {
+            // Ctrl 按住：追加到选中，不清其他
+            toggleNodeSelection(e.x, e.y)
+          } else {
+            // 不按 Ctrl：只选当前，清掉其他
+            selectNodeOnly(e.x, e.y)
+          }
+        }
         return
       }
       // 点在空白处：开始框选
@@ -149,7 +156,7 @@ export function createSceneManager(): SceneManager {
   function onPointerUp(e: any) {
     if (state.selectionMode && _selStart) {
       // Ctrl 按住时跳过框选 hitTest，保留已有选中
-      if (!_ctrlDown) {
+      if (!e.ctrlKey) {
         doSelectionHitTest(_selStart.x, _selStart.y, e.x, e.y)
       }
       _selStart = null
@@ -258,6 +265,25 @@ export function createSceneManager(): SceneManager {
     })
 
     setSelectedIds(selected.map((n: any) => ({ label: n.label, type: n.type })).filter((s: any) => s.label))
+  }
+
+  function selectNodeOnly(px: number, py: number) {
+    if (!_mapLayer) return
+    const sx = _mapLayer.scaleX || 1
+    const sy = _mapLayer.scaleY || 1
+    const mx = (px - _mapLayer.x) / sx
+    const my = (py - _mapLayer.y) / sy
+
+    const hit = _flatNodes.find((n: any) => {
+      const cx = n.x + (n.cxOffset ?? n.w / 2)
+      const cy = n.y + (n.h || 40) / 2
+      const hw = (n.w || 60) / 2 + 8
+      const hh = (n.h || 40) / 2 + 8
+      return Math.abs(mx - cx) <= hw && Math.abs(my - cy) <= hh
+    })
+
+    if (!hit) return
+    setSelectedIds([{ label: hit.label, type: hit.type }])
   }
 
   function toggleNodeSelection(px: number, py: number) {
