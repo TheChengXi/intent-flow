@@ -83,6 +83,7 @@ export function createSceneManager(): SceneManager {
     _app.on('pointer.down', onPointerDown)
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('pointerdown', onWindowPointerDown)
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
     window.addEventListener('wheel', onWheel, { passive: false })
@@ -93,6 +94,7 @@ export function createSceneManager(): SceneManager {
     _app.off('pointer.down', onPointerDown)
     window.removeEventListener('keydown', onKeyDown)
     window.removeEventListener('keyup', onKeyUp)
+    window.removeEventListener('pointerdown', onWindowPointerDown)
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
     window.removeEventListener('wheel', onWheel)
@@ -115,7 +117,13 @@ export function createSceneManager(): SceneManager {
         _lastClickTarget = hit
         _lastClickTime = now
         if (hit) {
-          toggleNodeSelection(e.x, e.y)
+          if (_ctrlDown) {
+            // Ctrl 按住：追加到选中，不清其他
+            toggleNodeSelection(e.x, e.y)
+          } else {
+            // 不按 Ctrl：只选当前，清掉其他
+            selectNodeOnly(e.x, e.y)
+          }
         }
         return
       }
@@ -149,7 +157,10 @@ export function createSceneManager(): SceneManager {
 
   function onPointerUp(e: any) {
     if (state.selectionMode && _selStart) {
-      doSelectionHitTest(_selStart.x, _selStart.y, e.x, e.y)
+      // Ctrl 按住时跳过框选 hitTest，保留已有选中
+      if (!_ctrlDown) {
+        doSelectionHitTest(_selStart.x, _selStart.y, e.x, e.y)
+      }
       _selStart = null
       removeSelRect()
       return
@@ -165,6 +176,11 @@ export function createSceneManager(): SceneManager {
     _ctrlDown = e.ctrlKey || e.metaKey
   }
   function onKeyUp(e: KeyboardEvent) {
+    _ctrlDown = e.ctrlKey || e.metaKey
+  }
+
+  // 原生 pointerdown 更新 _ctrlDown（vs code webview 中 keydown 可能收不到，但 pointer 一定有）
+  function onWindowPointerDown(e: PointerEvent) {
     _ctrlDown = e.ctrlKey || e.metaKey
   }
 
