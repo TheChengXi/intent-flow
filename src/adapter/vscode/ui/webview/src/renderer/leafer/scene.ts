@@ -110,12 +110,7 @@ export function createSceneManager(): SceneManager {
         _lastClickTarget = hit
         _lastClickTime = now
         if (hit) {
-          console.log('[click] ctrlKey=' + e.ctrlKey, 'node=' + hit.label, 'e.type=' + e.type)
-          if (e.ctrlKey) {
-            toggleNodeSelection(e.x, e.y)
-          } else {
-            selectNodeOnly(e.x, e.y)
-          }
+          // 单击不操作选中，仅用于双击打开文件
         }
         return
       }
@@ -149,9 +144,7 @@ export function createSceneManager(): SceneManager {
 
   function onPointerUp(e: any) {
     if (state.selectionMode && _selStart) {
-      if (!e.ctrlKey) {
-        doSelectionHitTest(_selStart.x, _selStart.y, e.x, e.y)
-      }
+      doSelectionHitTest(_selStart.x, _selStart.y, e.x, e.y, e.ctrlKey)
       _selStart = null
       removeSelRect()
       return
@@ -230,10 +223,9 @@ export function createSceneManager(): SceneManager {
   }
 
   // ── 选择框 ──
-  function doSelectionHitTest(x1: number, y1: number, x2: number, y2: number) {
+  function doSelectionHitTest(x1: number, y1: number, x2: number, y2: number, merge = false) {
     if (!_mapLayer) return
 
-    // 转换屏幕坐标 → 画布坐标（考虑 pan/zoom）
     const sx = _mapLayer.scaleX || 1
     const sy = _mapLayer.scaleY || 1
     const lx = Math.min(x1, x2)
@@ -245,13 +237,22 @@ export function createSceneManager(): SceneManager {
     const top    = (ty - _mapLayer.y) / sy
     const bottom = (by - _mapLayer.y) / sy
 
-    const selected = _flatNodes.filter((n: any) => {
+    const boxNodes = _flatNodes.filter((n: any) => {
       const cx = n.x + (n.cxOffset ?? n.w / 2)
       const cy = n.y + (n.h || 40) / 2
       return cx >= left && cx <= right && cy >= top && cy <= bottom
-    })
+    }).map((n: any) => ({ label: n.label, type: n.type })).filter((s: any) => s.label)
 
-    setSelectedIds(selected.map((n: any) => ({ label: n.label, type: n.type })).filter((s: any) => s.label))
+    if (merge) {
+      // Ctrl+框选：追加到现有选中，不替换
+      const existingLabels = new Set(state.selectedIds.map((s: any) => s.label))
+      const toAdd = boxNodes.filter((n: any) => !existingLabels.has(n.label))
+      if (toAdd.length > 0) {
+        setSelectedIds([...state.selectedIds, ...toAdd])
+      }
+    } else {
+      setSelectedIds(boxNodes)
+    }
   }
 
   function selectNodeOnly(px: number, py: number) {
