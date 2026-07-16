@@ -110,8 +110,7 @@ export function createSceneManager(): SceneManager {
         _lastClickTarget = hit
         _lastClickTime = now
         if (hit) {
-          // 🔬 debug: 把 e.ctrlKey 值写进 status，看你是否看到
-          state.status = 'ctrlKey=' + e.ctrlKey + ' node=' + hit.label
+          console.log('[click] ctrlKey=' + e.ctrlKey, 'node=' + hit.label, 'e.type=' + e.type)
           if (e.ctrlKey) {
             toggleNodeSelection(e.x, e.y)
           } else {
