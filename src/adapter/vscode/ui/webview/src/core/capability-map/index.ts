@@ -1,10 +1,14 @@
 /**
  * @intent
  * 能力地图核心层统一出口。
- * 只导出引擎无关的纯逻辑：状态管理、行为状态机、接口类型。
- * 渲染相关功能在 renderer/ 中，页面编排在 pages/ 中。
+ * state      — 响应式数据（Vue reactive）
+ * actions    — 业务逻辑（dryRun/invokeAction/操作函数）
+ * vscode-bridge — VS Code 消息收发
+ * behavior   — 状态机
  */
 
-export { state, dryRun, invokeAction, initMessages, toggleSelectionMode, setSelectedIds } from './state'
+export { state } from './state'
+export { dryRun, invokeAction, toggleSelectionMode, setSelectedIds } from './actions'
+export { initMessages } from './vscode-bridge'
 export { dragMachine, calcZoom } from './behavior'
 export type { SceneManager } from './types'
