@@ -44,7 +44,6 @@ export function createSceneManager(): SceneManager {
   // ── 选择框 / 双击状态 ──
   let _selStart: { x: number; y: number } | null = null
   let _flatNodes: any[] = []
-  let _ctrlDown = false
   let _lastClickTarget: any = null
   let _lastClickTime = 0
 
@@ -81,10 +80,6 @@ export function createSceneManager(): SceneManager {
     _dragSend = dragSnd
     if (!_app) return
     _app.on('pointer.down', onPointerDown)
-    window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('keyup', onKeyUp)    
-    _ctrlDown = true // 🔬 debug: 强制 Ctrl ON，测试 toggleNodeSelection
-    window.addEventListener('pointerdown', onWindowPointerDown, { capture: true })
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
     window.addEventListener('wheel', onWheel, { passive: false })
@@ -93,9 +88,6 @@ export function createSceneManager(): SceneManager {
   function unbindEvents() {
     if (!_app) return
     _app.off('pointer.down', onPointerDown)
-    window.removeEventListener('keydown', onKeyDown)
-    window.removeEventListener('keyup', onKeyUp)
-    window.removeEventListener('pointerdown', onWindowPointerDown, { capture: true })
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
     window.removeEventListener('wheel', onWheel)
@@ -118,11 +110,9 @@ export function createSceneManager(): SceneManager {
         _lastClickTarget = hit
         _lastClickTime = now
         if (hit) {
-          if (_ctrlDown) {
-            // Ctrl 按住：追加到选中，不清其他
+          if (e.ctrlKey) {
             toggleNodeSelection(e.x, e.y)
           } else {
-            // 不按 Ctrl：只选当前，清掉其他
             selectNodeOnly(e.x, e.y)
           }
         }
@@ -158,8 +148,7 @@ export function createSceneManager(): SceneManager {
 
   function onPointerUp(e: any) {
     if (state.selectionMode && _selStart) {
-      // Ctrl 按住时跳过框选 hitTest，保留已有选中
-      if (!_ctrlDown) {
+      if (!e.ctrlKey) {
         doSelectionHitTest(_selStart.x, _selStart.y, e.x, e.y)
       }
       _selStart = null
@@ -172,18 +161,7 @@ export function createSceneManager(): SceneManager {
     }
   }
 
-  // ── Ctrl 键跟踪 ──
-  function onKeyDown(e: KeyboardEvent) {
-    _ctrlDown = e.ctrlKey || e.metaKey
-  }
-  function onKeyUp(e: KeyboardEvent) {
-    _ctrlDown = e.ctrlKey || e.metaKey
-  }
 
-  // 原生 pointerdown 更新 _ctrlDown（vs code webview 中 keydown 可能收不到，但 pointer 一定有）
-  function onWindowPointerDown(e: PointerEvent) {
-    _ctrlDown = e.ctrlKey || e.metaKey
-  }
 
   // ── 双击打开 ──
   function openFile(node: any) {
