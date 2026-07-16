@@ -82,7 +82,8 @@ export function createSceneManager(): SceneManager {
     if (!_app) return
     _app.on('pointer.down', onPointerDown)
     window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('keyup', onKeyUp)    
+    _ctrlDown = true // 🔬 debug: 强制 Ctrl ON，测试 toggleNodeSelection
     window.addEventListener('pointerdown', onWindowPointerDown, { capture: true })
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
