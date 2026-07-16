@@ -30,13 +30,10 @@ export function createPointerInteraction(
 
   // ── 双击打开文件 ──
   function openFile(node: any) {
+    // node.path 来自 layout.ts buildTree，已经是绝对路径
     const fp = node.path || node.label
     if (!fp) return
-    ctx.events.emit({
-      type: 'openFile',
-      path: state.currentFolder + '/' + fp,
-      label: node.label,
-    })
+    ctx.events.emit({ type: 'openFile', path: fp, label: node.label })
   }
 
   function findNodeAt(px: number, py: number) {
