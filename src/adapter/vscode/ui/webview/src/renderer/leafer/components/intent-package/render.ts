@@ -14,6 +14,7 @@ export function render(ctx: RenderContext): void {
 
   const g = new Group({ x: node.x - r, y: node.y - r })
   g.__isInteractive = true
+  node._leaferEl = g
 
   // @step: 选中高亮（蓝色外环）
   const isSelected = Array.isArray(data.selectedIds) && data.selectedIds.some((s: any) => s.label === node.label)

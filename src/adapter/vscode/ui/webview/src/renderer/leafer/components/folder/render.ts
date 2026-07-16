@@ -22,6 +22,7 @@ export function render(ctx: RenderContext): void {
   const { parent, node, tokens, data, invokeAction } = ctx
   const g = new Group({ x: node.x, y: node.y })
   g.__isInteractive = true
+  node._leaferEl = g
 
   // @step: 选中高亮
   const isSelected = Array.isArray(data.selectedIds) && data.selectedIds.some((s: any) => s.label === node.label)

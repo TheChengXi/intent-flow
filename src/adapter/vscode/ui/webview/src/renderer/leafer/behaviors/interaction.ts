@@ -52,6 +52,16 @@ export function createPointerInteraction(
     })
   }
 
+  // ── 双击动效：放大再缩小 ──
+  function animateHit(node: any) {
+    const el = node._leaferEl
+    if (!el) return
+    el.set({ scaleX: 1.15, scaleY: 1.15, transition: { duration: 0.1 } })
+    setTimeout(() => {
+      el.set({ scaleX: 1, scaleY: 1, transition: { duration: 0.15 } })
+    }, 120)
+  }
+
   function onPointerDown(e: any) {
     if (!state.rootData || state.loading) return
 
@@ -61,17 +71,16 @@ export function createPointerInteraction(
         // 点击节点：记录供双击检测，不框选
         const now = Date.now()
         if (hit === ctx.lastClickTarget && now - ctx.lastClickTime < 300) {
-          // 双击文件 → 打开
+          // 双击文件 → 动效 + 打开
           ctx.lastClickTarget = null
           ctx.lastClickTime = 0
           if (hit.type === 'file') {
-            state.status = '双击: ' + hit.label + ' path=' + (hit.path || '无')
+            animateHit(hit)
             openFile(hit)
           }
         } else {
           ctx.lastClickTarget = hit
           ctx.lastClickTime = now
-          state.status = '单击: ' + hit.label
         }
         return
       }
