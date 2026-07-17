@@ -17,11 +17,11 @@
 
 ### 步骤 1：定位改动点
 
-使用 `trace_dependency_chain` 追踪相关功能的完整调用链，标记需要修改的文件。
+用 `trace_dependency_chain` 追踪调用链，标记需修改的文件。
 
 ### 步骤 2：检查兼容性
 
-对于需要修改的接口，设计向下兼容方案：
+需修改的接口，设计向下兼容方案：
 - 新增重载而非修改原有签名
 - 保留旧方法，标记为 deprecated
 - 确保不影响既有调用方
@@ -38,4 +38,4 @@
 
 按 [part-to-finish.md](./part-to-finish.md) 输出 `.cdd/02-arch-design.part-to-finish.md`。
 
-询问用户是否需要割舍一些内容，将割舍的内容写入 [part-to-later-on.md](./part-to-later-on.md)。
+确认需要割舍的内容，写入 [part-to-later-on.md](./part-to-later-on.md)。

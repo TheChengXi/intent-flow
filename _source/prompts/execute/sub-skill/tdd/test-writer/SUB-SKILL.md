@@ -9,11 +9,11 @@ tools: read,write,edit,bash
 - `.cdd/01-requirements.md`
 
 ## 任务阅读
-- 按照任务发布的文件地址去写测试，其文件需测试的内容在于文件 @intent
+- 按 task 指定的文件路径写测试，职责由 @intent 定义
 
 # TDD Test Writer
 
-对一个文件写测试。你**不知道**实现逻辑——你只知道 @intent 描述的职责。
+对一个文件写测试。只读 @intent，不推测实现逻辑。
 
 ## 流程
 

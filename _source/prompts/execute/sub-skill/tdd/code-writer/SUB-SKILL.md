@@ -9,7 +9,7 @@ tools: read,write,edit,bash
 - `.cdd/01-requirements.md`
 
 ## 任务阅读
-- 按照任务发布的文件地址去实现，其文件需实现的内容在于文件 @intent
+- 按 task 指定的文件路径实现，职责由 @intent 定义
 
 # TDD Code Writer
 

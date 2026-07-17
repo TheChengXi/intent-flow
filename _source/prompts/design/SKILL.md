@@ -5,7 +5,7 @@ description: 根据需求文档和既有代码状态，路由到修改或新增�
 
 # 结构设计入口 — 路由
 
-本技能不做具体设计，只做一件事：**判断项目状态，路由到对应的执行规则**。
+只做路由：**判断项目状态，路由到对应的执行规则**。
 
 ## 工作流程
 
@@ -41,4 +41,4 @@ description: 根据需求文档和既有代码状态，路由到修改或新增�
 - `.cdd/02-arch-design.part-to-finish.md` — 本次必须交付的设计（格式见 [part-to-finish.md](./part-to-finish.md)）
 - `.cdd/02-arch-design.part-to-later-on.md` — 后续想法备忘（格式见 [part-to-later-on.md](./part-to-later-on.md)）
 
-完成后告知用户设计完成，可以进入执行阶段。
+完成后通知设计完成，进入执行阶段。

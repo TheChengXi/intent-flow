@@ -6,7 +6,7 @@
 
 ## 核心原则
 
-从需求出发，在架构约束下做模块划分和接口定义。
+在架构约束下做模块划分和接口定义。
 
 ## 前置读取
 
@@ -36,4 +36,4 @@
 
 按 [part-to-finish.md](./part-to-finish.md) 输出 `.cdd/02-arch-design.part-to-finish.md`。
 
-询问用户是否需要割舍一些内容，将割舍的内容写入 [part-to-later-on.md](./part-to-later-on.md)。
+确认需要割舍的内容，写入 [part-to-later-on.md](./part-to-later-on.md)。
