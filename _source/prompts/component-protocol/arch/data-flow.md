@@ -1,30 +1,22 @@
 # 数据流向
 
-## 核心流程：一次 resize 的完整生命周期
+## 核心流程
 
 ```
-ResizeObserver 捕获容器尺寸变化
+容器尺寸变化（resize / 初始化）
         │
         cw, ch
         ▼
 dryRun('resize', { width, height })
-        │
-        │ 纯函数验证，不修改任何状态
-        │ 返回 { cw, ch } 或裁剪后的合法值
+        │  纯函数验证，不修改任何状态
         ▼
-invokeAction('resize')
+invokeAction('resize')  或  直接调 convertTree
         │
-        │ 确认通过后：将尺寸传入 converter
         ▼
 converter.convertTree(compiled, cw, ch)
-        │
-        │ 所有百分比 → px
+        │  所有百分比 → px
         ▼
-buildScene({ app, mapLayer, ... })
-        │
-        │ 接收 px 坐标，更新场景图
-        ▼
-Leafer 渲染
+render 消费 px 坐标，更新画面
 ```
 
 ## 关键契约
@@ -41,54 +33,23 @@ Leafer 渲染
 - Render 只消费 px 值，不关心来源是百分比还是固定值
 - Converter 无渲染上下文依赖，可在 Node / Worker / 浏览器任意环境运行
 
-## overlay ↔ renderer 通信规则
+## 多渲染层通信规则
 
-overlay（Vue DOM 组件）和 renderer（Canvas 场景图）之间**不直接通信**。
-两者都通过同一通道：`invokeAction → behavior → state`。
+如果项目中同时使用多个渲染层（如 DOM overlay + Canvas 场景图），两者应**不直接通信**，通过共享状态中介：
 
 ```
-overlay/ (Vue 按钮点击)
-  → invokeAction('toggleExpand', { identity })
-  → behavior.ts (状态机 transitions)
-  → state.ts (响应式数据变更)
-  → composable watcher 检测变化
-  → scheduleRender()
-  → renderer/leafer/ (Canvas 重绘)
+DOM 组件（按钮点击）
+  → invokeAction('toggle')
+  → state 变更
+  → Canvas 监听到状态变化 → 重绘
 
-─── 反向同理 ───
-
-renderer/ (Canvas 拖拽)
-  → events.ts → invokeAction('drag', { x, y })
-  → behavior.ts (状态机 transitions)
-  → state.ts (响应式数据变更)
-  → Vue 组件自动响应 (reactive)
-  → overlay UI 更新
+Canvas（拖拽）
+  → invokeAction('drag')
+  → state 变更
+  → DOM 监听到状态变化 → UI 更新
 ```
 
 **核心规则：**
-- overlay 不直接调 renderer 的方法
-- renderer 不直接操作 Vue 的响应式数据
-- 两者只通过 state 这个中介交流
-- 事件源无所谓，state 变更后的响应方式由监听者自己决定（Vue 用 reactive，Canvas 用 scheduleRender）
-
-## 一次 resize 的代码映射
-
-```
-App.vue
-├── ResizeObserver → onResize
-├── dryRun('resize', { w, h })
-│   └── 验证尺寸合法性（proportions 等）
-├── invokeAction('resize')
-│   └── 触发 scheduleRender()
-└── buildScene()
-    ├── convertTree(compiled, cw, ch)
-    │   ├── compileNode()   —— 解析百分比字符串
-    │   ├── resolveText()   —— Pretext 测量文本尺寸
-    │   └── convertNode()   —— 递归换算每个节点
-    ├── calcSubtreeWidth()  —— 计算子节点撑起的实际宽度
-    ├── layoutNode()        —— 分配 x, y 位置
-    └── Leafer.Group 更新
-```
-
-> 图中 Leafer 标注为 2D 渲染引擎。如需 3D，可切换为 Three.js 等引擎，或混合使用。
-> 协议层与换算层无需改动，仅替换 `render.ts`。
+- DOM 不直接调 Canvas 的方法
+- Canvas 不直接操作 DOM 的响应式数据
+- 两者只通过 state 中介交流

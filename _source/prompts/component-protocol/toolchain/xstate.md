@@ -19,16 +19,13 @@
 
 behavior.ts 是整个架构中**唯一引用 XState 的地方**。
 
-```vue
-// CapabilityMap.vue 中的使用方式
+```ts
+// 示例（以 Vue 为例）
 import { useActor } from '@xstate/vue'
 import { dragMachine } from './behavior'
 
 const { snapshot: dragSnapshot, send: dragSend } = useActor(dragMachine)
 
-// 发送事件
 dragSend({ type: 'DRAG_START' })
-
-// 读取当前状态
 dragSnapshot.value.matches('dragging')  // true / false
 ```

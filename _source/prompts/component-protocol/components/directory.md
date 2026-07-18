@@ -60,38 +60,4 @@ button/behavior/
 **规则：** 向外暴露的签名不变，目录内的拆分对外完全透明。
 调用方（index.ts 或其他组件）永远只 import 维度根路径。
 
-## 当前实际结构
 
-```
-src/
-├── core/                    # 引擎无关的核心逻辑
-│   └── capability-map/      #   state / behavior / types
-├── renderer/                # 渲染引擎实现
-│   └── leafer/              #   scene / layout / types + components/
-│       └── components/      #   folder / group / file / connection-line
-├── overlay/                 # Vue DOM 悬浮组件（可选层）
-│   ├── toolbar / map-tools / path-indicator /
-│   ├── empty-state / info-panel / toast /
-├── pages/                   # 页面编排（可选层，单页面可省略）
-│   └── capability-map/      #   CapabilityMap.vue + composable
-├── converter/               # 换算层（% → px 纯函数）
-├── core/layout/             # 布局算法（纯函数，树形图位置计算）
-├── resource/                # 文本/主题资源
-├── App.vue                  # 根组件分发
-└── main.js                  # 入口
-```
-
-> overlay/ 和 pages/ 是推荐但不是强制。overlay 只是 Vue DOM 组件的收容层，不涉及渲染引擎耦合；pages 只在有多个页面时有价值。单页面项目完全可以把所有东西放在同一层。
-
-## 与场景图的映射
-
-```
-协议组件                  Leafer 场景图
-─────────────────────────────────────────
-根节点 page              App ｜ Stage
-  ├─ 容器组件            ├─ Group
-  │   ├─ 子容器          │   ├─ Group
-  │   └─ 协议子组件      │   └─ Leaf (Rect/Text/Image)
-  ├─ 协议子组件          ├─ Leaf
-  └─ 文字排版            └─ Pretext 输出排版数据
-```

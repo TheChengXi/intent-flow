@@ -59,7 +59,7 @@ converter 管的是**单位**，layout 管的是**形状**。
 Layout 放在组件目录下，作为组件私有的中间件：
 
 ```
-components/capability-map/
+components/<name>/
 ├── state.ts        ← 存数据
 ├── layout.ts       ← 格式适配（state 输出的下一站）
 └── render.ts       ← 画图（layout 输出的下一站）

@@ -69,13 +69,4 @@ interface MotionParams {
 | 只描述状态间的关系，不持有业务数据 | 持有完整的业务数据 |
 | 由状态机引擎执行，可验证、可追溯 | 由数据容器驱动，响应式更新渲染 |
 
-## 当前实现示例
-
-| 维度 | 当前示例 |
-|------|---------|
-| 状态机引擎 | XState（`createMachine()`） |
-| 代码文件 | `behavior.ts` |
-| Vue 集成 | `useActor()` 桥接状态机到响应式系统 |
-| 运动参数执行 | 渲染层通过 converter 换算后驱动 |
-
-状态机引擎可替换为其他实现（如 C 中的手工状态表、Rust 中的 match + enum），只要遵循 states / transitions / motion 的契约格式即可。
+状态机引擎可替换为其他实现（如 XState、C 中的手工状态表、Rust 中的 match + enum），只要遵循 states / transitions / motion 的契约格式即可。

@@ -177,7 +177,7 @@ preprocessNodes()    ← 对每个 node.label 调 prepare(label, font)
 1. **font 来自 protocol** — 组件协议中声明 `font: '12px sans-serif'`，与 render 层保持一致
 2. **预处理在 buildTree 后立即执行** — 数据到达时一次性 prepare，后续只调 layout()
 3. **缓存复用 `resource/text/index.ts` 的 prepareText()** — 相同文本+字体只 prepare 一次
-4. **render 层不需要 width 约束** — Leafer 的 `textWrap: false` 自动撑开，不设 width
+4. **render 层不需要 width 约束** — 如使用 Leafer，`textWrap: false` 自动撑开，不设 width
 
 ### 示例
 
