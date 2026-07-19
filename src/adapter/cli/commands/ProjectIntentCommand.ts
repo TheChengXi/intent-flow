@@ -5,7 +5,7 @@ import { CliDIContainer } from '../CliDIContainer';
 import { parseArgs, hasFlag } from './utils';
 
 export const command = 'project-intent';
-export const description = '创建文件并写入 @intent 注释，自动创建父目录';
+export const description = '创建/更新 @intent 注释，文件已存在时替换/插入 @intent，保留其他内容';
 export const usage = `cdd project-intent <path> --intent <desc> [--force] [--json]`;
 
 /**
@@ -18,7 +18,7 @@ export const usage = `cdd project-intent <path> --intent <desc> [--force] [--jso
  * @boundary
  * - path 是必填位置参数
  * - intent 是必填标志参数
- * - force 默认为 false（不覆盖已有 @intent）
+ * - force 默认为 false（不修改已有文件）；force=true 时替换/插入 @intent，不覆盖其他内容
  */
 export async function handler(args: string[]): Promise<void> {
   const { positional, flags } = parseArgs(args);

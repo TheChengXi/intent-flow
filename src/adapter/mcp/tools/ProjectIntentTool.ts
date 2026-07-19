@@ -4,13 +4,13 @@ import { ProjectIntentUseCase, ProjectIntentInput, ProjectIntentResult } from '.
 /**
  * @intent
  * 封装 ProjectIntentUseCase 为 MCP 工具，对外暴露 project_intent。自动创建父目录并根据后缀选择注释语法。
- * 边界：文件已存在且 force=false 时跳过不覆盖
+ * force=true 时在已有文件中替换/插入 @intent，不覆盖其他内容
  */
 
 export class ProjectIntentTool implements MCPToolHandler<ProjectIntentInput, ProjectIntentResult> {
   definition: MCPToolDefinition = {
     name: 'project_intent',
-    description: '创建文件并写入 @intent 注释。自动创建父目录，根据后缀名选择注释语法。',
+    description: '创建/更新 @intent 注释。文件不存在时自动创建；已存在时替换/插入 @intent，保留其他内容。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -24,7 +24,7 @@ export class ProjectIntentTool implements MCPToolHandler<ProjectIntentInput, Pro
         },
         force: {
           type: 'boolean',
-          description: '文件已存在时是否覆盖 @intent（默认 false，跳过不修改）'
+          description: '文件已存在时是否替换/插入 @intent（默认 false，跳过不修改）'
         }
       },
       required: ['path', 'intent']
