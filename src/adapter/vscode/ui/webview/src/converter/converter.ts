@@ -1,5 +1,4 @@
 /**
- * @file 递归百分比布局换算器
  * @intent
  * 协议树百分比 → px 的递归换算器。
  * 纯函数，无副作用，不引用任何框架。
@@ -9,12 +8,10 @@
  *   left/margin    → 参照容器 width（CSS 惯例）
  *   top            → 参照容器 height
  *
- * @example
- * ```ts
- * const compiled = compileNode(rawTree)
- * const pxMap = convertTree(compiled, { width: 1200, height: 800 })
- * pxMap.get('page.header.title') // → { x: 0, y: 0, width: 720, height: 40 }
- * ```
+ * 使用方式：
+ *   const compiled = compileTree(rawTree)
+ *   const pxMap = convertTree(compiled, { width: 1200, height: 800 })
+ *   pxMap.get('page.header.title') // → { x: 0, y: 0, width: 720, height: 40 }
  */
 
 import type { ConvertNode, CompiledNode, PxBounds, TextHeightResolver } from './types'
@@ -25,7 +22,7 @@ import type { ConvertNode, CompiledNode, PxBounds, TextHeightResolver } from './
 
 /**
  * @contract
- * 将百分比字符串预解析为比值。
+ * 将 CN 的百分比字符串预解析为比值。
  * 输入："60%" | "100%" | undefined
  * 输出：0.6 | 1 | 0
  * 副作用：无
@@ -36,11 +33,11 @@ function parseRatio(value: string | undefined): number {
 }
 
 /**
+ * @contract
  * 递归预编译整棵协议树。
- * 将所有百分比字符串提前解析为比值，换算阶段只做乘法。
- *
- * @param raw - 协议原始节点，含百分比字符串
- * @returns 编译后节点，所有百分比已解析为比值（0~1）
+ * 输入：raw - 协议原始节点
+ * 输出：CompiledNode - 所有百分比已解析为比值
+ * 副作用：无
  */
 export function compileNode(raw: ConvertNode): CompiledNode {
   return {
@@ -64,11 +61,12 @@ export function compileNode(raw: ConvertNode): CompiledNode {
  * @contract
  * 节点内部的 text 换算逻辑。
  * 非 text 节点或缺少必要参数时返回 0。
- *
- * @param node  - 编译后节点
- * @param pw    - 容器宽度 px
- * @param textResolver - 外部注入的文本高度计算器
- * @returns textHeight px
+ * 输入：
+ *   node  - 编译后节点
+ *   pw    - 容器宽度 px
+ *   textResolver - 外部注入的文本高度计算器
+ * 输出：textHeight px
+ * 副作用：无
  */
 function resolveTextHeight(
   node: CompiledNode,
@@ -81,14 +79,14 @@ function resolveTextHeight(
 }
 
 /**
+ * @contract
  * 将单个编译节点换算为 PxBounds。
- * 宽度高度来自换算后的 px，不做字符串解析。
- *
- * @param node    - 编译后节点（含比值）
- * @param pw      - 容器宽度 px
- * @param ph      - 容器高度 px
- * @param textResolver - 可选文本高度计算器，用于 auto 高度文本节点
- * @returns 节点在容器内的 px 坐标和尺寸
+ * 输入：
+ *   node    - 编译后节点
+ *   pw, ph  - 容器宽高 px
+ *   textResolver - 可选，文本高度计算器
+ * 输出：节点自身的 px 坐标和尺寸
+ * 副作用：无
  */
 export function convertNode(
   node: CompiledNode,
@@ -113,15 +111,14 @@ export function convertNode(
 }
 
 /**
+ * @contract
  * 递归换算整棵协议树，返回 identity → PxBounds 映射。
- * 每个节点的尺寸参照其父节点的 px 尺寸，
- * 根节点的父容器由 cw/ch 参数指定。
- *
- * @param root    - 编译后的根节点
- * @param cw      - 根容器宽度 px
- * @param ch      - 根容器高度 px
- * @param textResolver - 可选文本高度计算器
- * @returns identity 到 px 坐标的映射表
+ * 输入：
+ *   root    - 编译后的根节点
+ *   cw, ch  - 容器宽高 px
+ *   textResolver - 可选，文本高度计算器
+ * 输出：Map<identity, PxBounds>
+ * 副作用：无
  */
 export function convertTree(
   root: CompiledNode,

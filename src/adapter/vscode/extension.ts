@@ -6,6 +6,7 @@ import * as ReviewCommand from './commands/ReviewCommand';
 import * as TranslateCommand from './commands/TranslateCommand';
 import * as RequirementTranslatorCommand from './commands/RequirementTranslatorCommand';
 import * as CheckFileSizeCommand from './commands/CheckFileSizeCommand';
+import * as CapabilityMapCommand from './commands/CapabilityMapCommand';
 
 // Dry Run 功能导入
 import { DryRunManager } from './application/dryrun/DryRunManager';
@@ -50,6 +51,12 @@ export function activate(context: vscode.ExtensionContext) {
   const requirementTranslatorCommand = vscode.commands.registerCommand('cdd.requirementTranslator', RequirementTranslatorCommand.execute);
   const checkFileSizeCommand = vscode.commands.registerCommand('cdd.checkFileSize', CheckFileSizeCommand.execute);
   const checkCurrentFileCommand = vscode.commands.registerCommand('cdd.checkCurrentFileWithDeps', CheckFileSizeCommand.checkCurrentFileWithDependencies);
+
+  // 注册能力地图命令
+  const capabilityMapCommand = vscode.commands.registerCommand(
+    CapabilityMapCommand.command,
+    () => CapabilityMapCommand.handler(context)
+  );
 
   context.subscriptions.push(toggleDryRunDisposable);
   context.subscriptions.push(dryRunStatusBar);
