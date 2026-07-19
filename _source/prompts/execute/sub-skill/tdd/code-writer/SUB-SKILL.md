@@ -16,7 +16,7 @@ tools: read,write,edit,bash
 ## 流程
 
 ### 1. 读 @intent
-读 task 指定的文件，了解接口签名和职责。
+读 task 指定的文件，了解接口签名和职责。不修改 @intent。
 
 ### 2. 写实现
 - 实现让测试通过的最少代码
