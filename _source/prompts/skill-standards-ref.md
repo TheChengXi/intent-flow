@@ -126,31 +126,67 @@ skill 中不需要写：
 
 ## 7. 流程描述衔接
 
-当多个 skill 属于同一流程时，description 应设计为**独立可读、连读成篇**：
+当多个 skill 属于同一流程时，description 应设计为**独立可读、列表连贯**：
 
 分开看每个 description 描述自己的行为边界；
-连起来看是一条完整的工作流叙事。
+按顺序排列时相邻条目的用语和逻辑自然衔接，形成一致的工作流印象。
+
+### 前提
+
+此标准仅在能同时控制以下两项时有效：
+1. **description 的内容**——自主编写而非自动生成
+2. **skill 在列表中的排列顺序**——框架不重排（如 pi 按加载顺序排列，不自动排序）
+
+如果框架按字母序、随机序或其它不可控方式排列 skill，"列表连贯"的效果无法保证。
+
+### 实际形式
+
+在 pi 等符合 Agent Skills 标准的工具中，description 出现在 XML 列表中：
+
+```xml
+<available_skills>
+  <skill>
+    <name>requirement</name>
+    <description>在对话中收集需求，生成 feature 名...</description>
+  </skill>
+  <skill>
+    <name>design</name>
+    <description>判断项目状态，路由到...结构设计。</description>
+  </skill>
+  <skill>
+    <name>execute</name>
+    <description>向文件投射 @intent 规格...</description>
+  </skill>
+</available_skills>
+```
+
+LLM 看到的是三个独立的 XML 条目，不是一段自然散文。连贯性体现在相邻条目间用语和逻辑的自然承接，而非文字的直接拼接。
 
 ### 原则
 
 - **独立可读**：每个 description 脱离上下文也能被 LLM 理解
-- **连读成篇**：所有 description 按流程顺序拼接后形成连贯段落
-- **风格统一**：句式结构、动词时态、术语保持一致
+- **列表连贯**：相邻条目的句式结构、动词时态、术语一致，形成整体感
 - **减少重复**：上游 description 声明过的上下文，下游不再重复
 
 ### 案例
 
+```xml
+<!-- 列表中的相邻条目，术语和句式自然承接 -->
+<skill>
+  <name>requirement</name>
+  <description>在对话中收集需求，生成 feature 名，建立目录并输出需求文档。</description>
+</skill>
+<skill>
+  <name>design</name>
+  <description>判断项目状态，路由到修改或新增分支执行结构设计。</description>
+</skill>
+<skill>
+  <name>execute</name>
+  <description>向文件投射 @intent 规格，TDD 逐文件对齐实现，集成验证。</description>
+</skill>
 ```
-# 三个 description 连起来读：
-在对话中收集需求，生成 feature 名，建立目录并输出需求文档。
-→ 判断项目状态，路由到修改或新增分支执行结构设计。
-→ 向文件投射 @intent 规格，TDD 逐文件对齐实现，集成验证。
 
-# 分开独立看：
-requirement → 在对话中收集需求，生成 feature 名，建立目录并输出需求文档。
-design     → 判断项目状态，路由到修改或新增分支执行结构设计。
-execute    → 向文件投射 @intent 规格，TDD 逐文件对齐实现，集成验证。
-```
+各自独立成句，但动词时态一致（判断→路由→投射）、术语统一（feature、@intent、TDD）、无重复上下文。
 
 ### 验证
 
@@ -192,4 +228,4 @@ include/CHECKLIST.md   → 检查清单（参考）
 | 4 | 不角色扮演 | 不给模型做人设 | PRISM / DeepMind (2025) |
 | 5 | 不做冗余 | 不解释、不论证、不铺垫 | FrugalPrompt |
 | 6 | 不兜底 | 不存在的不防御 | Negation is harmful |
-| 7 | 流程描述衔接 | 独立可读、连读成篇 | 同流程多 skill description 编排 |
+| 7 | 流程描述衔接 | 独立可读、列表连贯 | 同流程多 skill description 编排，需可控顺序 |
