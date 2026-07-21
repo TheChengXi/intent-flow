@@ -59,7 +59,7 @@ export default function (pi: ExtensionAPI) {
 			if (!prev) {
 				// 新 feature 目录首次出现（本轮 session 中刚创建）
 				// 按当前已有文件决定派发到哪一阶段
-				if (current.hasDesign) {
+				if (current.hasDesign && current.hasReq) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
 						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +`\n\n` +
@@ -75,7 +75,7 @@ export default function (pi: ExtensionAPI) {
 				}
 			} else {
 				// 已有 feature → 检测新文件出现
-				if (current.hasDesign && !prev.hasDesign) {
+				if (current.hasDesign && current.hasReq && !prev.hasDesign) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
 						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +`\n\n` +
