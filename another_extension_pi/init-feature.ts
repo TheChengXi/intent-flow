@@ -62,6 +62,7 @@ export default function (pi: ExtensionAPI) {
 				if (current.hasDesign) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
+						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +`\n\n` +
 						`请按 **execute skill** 进入实现阶段：先投射 @intent，再 TDD 逐文件对齐，最后集成验证。`,
 						{ deliverAs: "followUp" }
 					);
@@ -77,6 +78,7 @@ export default function (pi: ExtensionAPI) {
 				if (current.hasDesign && !prev.hasDesign) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
+						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +`\n\n` +
 						`请按 **execute skill** 进入实现阶段：先投射 @intent，再 TDD 逐文件对齐，最后集成验证。`,
 						{ deliverAs: "followUp" }
 					);
@@ -140,6 +142,7 @@ export default function (pi: ExtensionAPI) {
 				case "execute":
 					pi.sendUserMessage(
 						`Feature **${feature.name}** 的设计已完成。\n\n` +
+						`Feature 目录：\`.cdd/${feature.name}/\`（含 requirement.md 和 design.md）。` +`\n\n` +
 						`请按 **execute skill** 进入实现阶段：先投射 @intent，再 TDD 逐文件对齐，最后集成验证。`
 					);
 					break;
