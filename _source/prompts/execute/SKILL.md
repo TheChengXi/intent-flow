@@ -1,6 +1,6 @@
 ---
 name: execute
-description: 三分阶段：先投射 @intent（规格PRD）→ TDD 向规格对齐 → 集成验证
+description: 向文件投射 @intent 规格，通过 TDD 子进程逐文件对齐实现，最后集成验证。
 ---
 
 # Execute

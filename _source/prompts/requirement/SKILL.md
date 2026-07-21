@@ -1,6 +1,6 @@
 ---
 name: requirement
-description: 两阶段需求分析管道：Phase 1 收集需求全景，Phase 2 提取核心功能并分析结构关系。Use when 有模糊想法需要结构化，或已有需求文档需要核心提取。
+description: 在对话中收集需求，生成 feature 名，建立 .cdd/<feature-name>/ 目录并输出需求文档。Use when 有模糊想法需要结构化，或已有需求文档需要核心提取。
 ---
 
 # 需求分析
