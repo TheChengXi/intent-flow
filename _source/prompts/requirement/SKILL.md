@@ -8,8 +8,7 @@ description: 两阶段需求分析管道：Phase 1 收集需求全景，Phase 2 
 以下规则具有最高优先级。
 
 两阶段管道：Phase 1 需求收集 → Phase 2 核心提取与结构分析。
-Phase 2 依赖 Phase 1 的输出 `.cdd/01-requirements.md`。
-文件已存在时可直接从 Phase 2 开始。
+Phase 2 依赖 Phase 1 的输出。
 
 ---
 
@@ -17,7 +16,21 @@ Phase 2 依赖 Phase 1 的输出 `.cdd/01-requirements.md`。
 
 将模糊想法展开为结构化需求。
 
-### 0. 联网搜索（可选）
+### 0. 命名 Feature（首次执行时）
+
+需求讨论到能确定意图后，生成 feature 目录名：
+
+1. **提炼核心意图**：用一句话概括这个 feature 要做什么
+2. **生成 kebab-case 短名**：从核心意图提取 2-4 个关键词，连字符连接
+   - 示例："用户登录后查看历史记录" → `user-login-history`
+   - 禁止使用泛词如 `new-feature`、`my-feature`、`test`
+3. **展示给用户确认**："这个 feature 命名为 X，可以吗？"
+   - 用户拒绝 → 让用户提供或重新提炼
+   - 用户确认 → 创建 `.cdd/<feature-name>/` 目录
+
+创建后本阶段所有产出写入 `.cdd/<feature-name>/` 目录。
+
+### 0a. 联网搜索（可选）
 
 触发联网搜索确认：是否需要先搜索同类方案？
 - 是 → 按 [web-search-standard](./web-search-standard.md) 执行，结果作为参考背景
@@ -43,7 +56,7 @@ Phase 2 依赖 Phase 1 的输出 `.cdd/01-requirements.md`。
 
 记录范围边界（要什么、不要什么），不作压缩决策。
 
-**完成标志**：`.cdd/01-requirements.md` 包含项目意图、用户群体、功能清单（全部功能）、业务规则。
+**完成标志**：`.cdd/<feature-name>/requirement.md` 包含项目意图、用户群体、功能清单（全部功能）、业务规则。
 
 ---
 
@@ -102,7 +115,7 @@ Phase 2 依赖 Phase 1 的输出 `.cdd/01-requirements.md`。
 - **必保项**：缺少就转不动的核心功能
 - **可延后**：标记延后理由
 
-**完成标志**：`.cdd/01-requirements.md` 补充核心功能列表、关系矩阵、验证场景。
+**完成标志**：`.cdd/<feature-name>/requirement.md` 补充核心功能列表、关系矩阵、验证场景。
 
 ---
 
@@ -132,7 +145,7 @@ Phase 2 依赖 Phase 1 的输出 `.cdd/01-requirements.md`。
 
 ## 最终交付物
 
-保存为 `.cdd/01-requirements.md`。
+保存为 `.cdd/<feature-name>/requirement.md`。
 
 内容包含：
 1. 项目意图 & 用户群体

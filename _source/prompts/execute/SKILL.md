@@ -24,7 +24,7 @@ description: 三分阶段：先投射 @intent（规格PRD）→ TDD 向规格对
 ### 前置阅读（必须）
 
 1. 读取 [GLOSSARY.md](./GLOSSARY.md) 作为 @intent 质量的评判依据
-2. 读取设计文档（`.cdd/02-arch-design.*.md`），识别每个条目的类型：
+2. 读取设计文档（`.cdd/<feature-name>/design.md`），识别每个条目的类型：
    - **已有文件** — 设计文档指定修改其职责/行为
    - **新增文件** — 设计文档指定新建
 
@@ -69,17 +69,17 @@ project_intent(
 
 ### 第 1 步：写测试
 
-调 `spawn_agent` — `agent: "test-writer"`，task 指定文件路径。写测试到磁盘，返回接口签名列表。
+调 `spawn_agent` — `agent: "test-writer"`，task 包含文件路径 + feature 目录路径。写测试到磁盘，返回接口签名列表。
 
 ### 第 2 步：写实现
 
-拿上一步的接口签名，调 `spawn_agent` — `agent: "code-writer"`，task 指定文件路径。写实现，跑测试确认全绿。
+拿上一步的接口签名，调 `spawn_agent` — `agent: "code-writer"`，task 包含文件路径 + feature 目录路径。写实现，跑测试确认全绿。
 
 实现向该文件头顶的 @intent（Phase 1 设定的规格）对齐。
 
 ### 第 3 步：审查
 
-拿上一步结果，调 `spawn_agent` — `agent: "reviewer"`，task 指定文件路径。先跑测试，再审查代码是否满足 @intent 规格。
+拿上一步结果，调 `spawn_agent` — `agent: "reviewer"`，task 包含文件路径 + feature 目录路径。先跑测试，再审查代码是否满足 @intent 规格。
 
 返回 `PASS` → 该文件完成。
 返回 `FAIL` + findings → 调 `code-writer` 修复后重审（最多 3 次）。

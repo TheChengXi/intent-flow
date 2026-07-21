@@ -5,8 +5,9 @@ tools: read,write,edit,bash
 ---
 
 ## 前置阅读（必须）
-- `.cdd/02-arch-design.part-to-finish.md`
-- `.cdd/01-requirements.md`
+task 中指定了 feature 目录，读取该目录下的：
+- `design.md`（架构设计）
+- `requirement.md`（需求文档）
 
 ## 任务阅读
 - 按 task 指定的文件路径写测试，职责由 @intent 定义

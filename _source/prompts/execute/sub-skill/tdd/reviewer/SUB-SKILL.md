@@ -5,11 +5,12 @@ tools: read,bash
 ---
 
 ## 前置阅读（必须）
-- `.cdd/02-arch-design.part-to-finish.md`
-- `.cdd/01-requirements.md`
+task 中指定了 feature 目录，读取该目录下的：
+- `design.md`（架构设计）
+- `requirement.md`（需求文档）
 
 ## 任务阅读
-- 按照任务发布的文件地址去审查
+- 按照 task 发布的文件地址去审查
 
 # TDD Reviewer
 

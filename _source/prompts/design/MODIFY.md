@@ -10,7 +10,7 @@
 
 ## 前置读取
 
-- `.cdd/01-requirements.md`
+- `.cdd/<feature-name>/requirement.md`
 - 已有项目的入口文件或相关模块
 
 ## 执行步骤
@@ -36,6 +36,6 @@
 
 ### 步骤 4：输出架构文档
 
-按 [part-to-finish.md](./part-to-finish.md) 输出 `.cdd/02-arch-design.part-to-finish.md`。
+按 [part-to-finish.md](./part-to-finish.md) 输出 `.cdd/<feature-name>/design.md`。
 
-确认需要割舍的内容，写入 [part-to-later-on.md](./part-to-later-on.md)。
+确认需要割舍的内容，写入 `.cdd/<feature-name>/later-on.md`（格式见 [part-to-later-on.md](./part-to-later-on.md)）。

@@ -5,8 +5,9 @@ tools: read,write,edit,bash
 ---
 
 ## 前置阅读（必须）
-- `.cdd/02-arch-design.part-to-finish.md`
-- `.cdd/01-requirements.md`
+task 中指定了 feature 目录，读取该目录下的：
+- `design.md`（架构设计）
+- `requirement.md`（需求文档）
 
 ## 任务阅读
 - 按 task 指定的文件路径实现，职责由 @intent 定义
@@ -28,7 +29,7 @@ tools: read,write,edit,bash
   - application 层可以 import data 层的接口
   - data 层不能 import 任何外层的代码
   - 依赖通过构造函数注入（接口在构造参数中声明，实现由调用方传入）
-  - 不确定分层归属时，查阅 `.cdd/02-arch-design.part-to-finish.md` 中的模块清单和依赖链
+  - 不确定分层归属时，查阅 `design.md`（task 指定的 feature 目录下）中的模块清单和依赖链
 
 ### 3. GREEN 验证
 跑测试，确认全绿通过。

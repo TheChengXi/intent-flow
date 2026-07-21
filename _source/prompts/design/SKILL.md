@@ -9,11 +9,7 @@ description: 根据需求文档和既有代码状态，路由到修改或新增�
 
 ## 工作流程
 
-### 1. 读取前置文档
-
-读取 `.cdd/01-requirements.md`，确认需求内容。
-
-### 2. 判断项目状态
+### 1. 判断项目状态
 
 通过观察项目根目录判断：
 
@@ -24,21 +20,21 @@ description: 根据需求文档和既有代码状态，路由到修改或新增�
 | **无既有代码 / 新项目** | `src/` 目录不存在或为空 |
 | | 需求是一个全新的功能域，没有既有模块可嫁接 |
 
-### 3. 路由
+### 2. 路由
 
 ```
 有既有代码 → 读取同目录下的 MODIFY.md，按该文档的规则执行
 无既有代码 → 读取同目录下的 NEW.md，按该文档的规则执行
 ```
 
-### 4. 共享约束
+### 3. 共享约束
 
 无论哪条分支，设计必须遵守 [CONSTRAINTS.md](./CONSTRAINTS.md) 中定义的架构约束。
 
-### 5. 产出物
+### 4. 产出物
 
-两条分支统一输出两份文档：
-- `.cdd/02-arch-design.part-to-finish.md` — 本次必须交付的设计（格式见 [part-to-finish.md](./part-to-finish.md)）
-- `.cdd/02-arch-design.part-to-later-on.md` — 后续想法备忘（格式见 [part-to-later-on.md](./part-to-later-on.md)）
+指向 requirement 阶段建立的 feature 目录（对话上下文中已知 `<feature-name>`），输出：
+- `.cdd/<feature-name>/design.md` — 本次必须交付的设计（格式见 [part-to-finish.md](./part-to-finish.md)）
+- `.cdd/<feature-name>/later-on.md` — 后续想法备忘（格式见 [part-to-later-on.md](./part-to-later-on.md)）
 
 完成后通知设计完成，进入执行阶段。
