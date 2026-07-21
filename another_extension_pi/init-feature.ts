@@ -56,8 +56,24 @@ export default function (pi: ExtensionAPI) {
 			const current = readFileState(f.dir);
 			const prev = lastFiles.get(f.name);
 
-			if (prev) {
-				// 新文件出现 → 自动派发下一阶段
+			if (!prev) {
+				// 新 feature 目录首次出现（本轮 session 中刚创建）
+				// 按当前已有文件决定派发到哪一阶段
+				if (current.hasDesign) {
+					pi.sendUserMessage(
+						`Feature **${f.name}** 的设计已完成。\n\n` +
+						`请按 **execute skill** 进入实现阶段：先投射 @intent，再 TDD 逐文件对齐，最后集成验证。`,
+						{ deliverAs: "followUp" }
+					);
+				} else if (current.hasReq) {
+					pi.sendUserMessage(
+						`Feature **${f.name}** 的需求分析已完成。\n\n` +
+						`请按 **design skill** 执行架构设计，输出 \`.cdd/${f.name}/design.md\` 和 \`.cdd/${f.name}/later-on.md\`。`,
+						{ deliverAs: "followUp" }
+					);
+				}
+			} else {
+				// 已有 feature → 检测新文件出现
 				if (current.hasDesign && !prev.hasDesign) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
