@@ -18,11 +18,16 @@ export default function (pi: ExtensionAPI) {
 
   // ── session 生命周期 ──
   pi.on('session_start', async (_event, ctx) => {
+    let userDismissed = false;  // 用户主动关闭后不再自动弹
+
     tracker.subscribe(() => {
       // 自动弹出：tracker 新增运行中记录 → 弹 SubAgentView
-      if (!agentViewOpen && tracker.getRunningRuns().length > 0 && ctx.mode === 'tui') {
+      // 用户主动关闭后不再自动弹（可手动 /sub-agent 打开）
+      if (!agentViewOpen && tracker.getRunningRuns().length > 0 && ctx.mode === 'tui' && !userDismissed) {
         agentViewOpen = true;
-        openSubAgentView(ctx, tracker).finally(() => {
+        openSubAgentView(ctx, tracker, {
+          onUserDismiss: () => { userDismissed = true; },
+        }).finally(() => {
           agentViewOpen = false;
         });
       }

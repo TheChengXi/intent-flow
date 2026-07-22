@@ -23,6 +23,8 @@ export interface SubAgentViewConfig {
   onClose: () => void;
   onKill?: (toolCallId: string) => void;
   onRetry?: (toolCallId: string) => void;
+  /** 用户主动关闭的回调（区别于自动关闭） */
+  onUserDismiss?: () => void;
 }
 
 export class SubAgentView {
@@ -203,31 +205,55 @@ export async function openSubAgentView(
   options?: {
     onKill?: (toolCallId: string) => void;
     onRetry?: (toolCallId: string) => void;
+    /** 用户主动关闭仪表盘时回调（区别于自动关闭） */
+    onUserDismiss?: () => void;
   },
 ): Promise<void> {
   await ctx.ui.custom(
     (tui: any, theme: Theme, _kb: any, done: (v?: any) => void) => {
       const themeFg = theme.fg.bind(theme);
+      let closed = false;
+      let unsub: (() => void) | null = null;
+
+      // 安全关闭：防止重复调用 + 清理订阅
+      const safeDone = (userDismiss: boolean) => {
+        if (closed) return;
+        closed = true;
+        unsub?.();
+        if (userDismiss) options?.onUserDismiss?.();
+        done(undefined);
+      };
 
       const config: SubAgentViewConfig = {
         tracker,
-        onClose: () => done(undefined),
+        onClose: () => safeDone(true),  // 用户主动关闭
         onKill: options?.onKill,
         onRetry: options?.onRetry,
+        onUserDismiss: options?.onUserDismiss,
       };
 
       const view = new SubAgentView(config);
 
-      const unsub = tracker.subscribe(() => {
+      unsub = tracker.subscribe(() => {
+        if (closed) return;
+
+        // 所有子 agent 已完成 → 自动关闭仪表盘
+        if (tracker.getRunningRuns().length === 0 && tracker.getAllRuns().length > 0) {
+          safeDone(false);  // 非用户主动，不触发 onUserDismiss
+          return;
+        }
+
         tui.requestRender();
       });
 
       return {
         render: (w: number) => {
+          if (closed) return [];
           const themeBold = theme.bold?.bind ? theme.bold.bind(theme) : undefined;
           return view.render(w, themeFg, themeBold);
         },
         handleInput: (data: string) => {
+          if (closed) return;
           view.handleInput(data);
           tui.requestRender();
         },
