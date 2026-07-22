@@ -7,7 +7,7 @@
 
 import { IFileRepository } from '../../data/repositories/IFileRepository';
 import { ICodeParserRepository } from '../../data/repositories/ICodeParserRepository';
-import { LanguageConfig } from '../../data/services/core/LanguageConfig';
+import { LanguageConfig } from '../../data/services/tree-sitter/LanguageConfig';
 import { CallDependency } from '../../data/entities/CallDependency';
 import { IUseCase } from './IUseCase';
 import * as path from 'path';

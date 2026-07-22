@@ -1,5 +1,5 @@
 import * as fs from 'fs/promises';
-import { TreeSitterManager } from './core/TreeSitterManager';
+import { TreeSitterManager } from './tree-sitter/TreeSitterManager';
 
 // @entity: CallNode
 // 调用图节点

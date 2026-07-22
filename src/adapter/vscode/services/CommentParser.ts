@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { CDDComment, ContractAnnotation, StepAnnotation, BoundaryAnnotation } from '../../../data/entities/CDDComment';
 import { ValidationError } from '../../../data/entities/Errors';
-import { LanguageConfig } from '../../../data/services/core/LanguageConfig';
+import { LanguageConfig } from '../../../data/services/tree-sitter/LanguageConfig';
 
 // @contract: parseComment(text: string, document: vscode.TextDocument, startLine: number) => CDDComment | null
 // @step: [跳过装饰行] 跳过不包含 @contract 的注释行

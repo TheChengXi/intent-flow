@@ -1,6 +1,6 @@
 import { Parser } from '@vscode/tree-sitter-wasm';
 import { WorkLine } from '../entities/WorkLine';
-import { TreeSitterManager } from './core/TreeSitterManager';
+import { TreeSitterManager } from './tree-sitter/TreeSitterManager';
 
 // @contract: TreeSitterParser.init() => Promise<void>
 // @step: [委托] 委托给 TreeSitterManager.init()

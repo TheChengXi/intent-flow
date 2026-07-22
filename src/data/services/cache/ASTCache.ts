@@ -1,4 +1,4 @@
-import { TreeSitterManager } from '../core/TreeSitterManager';
+import { TreeSitterManager } from '../tree-sitter/TreeSitterManager';
 
 // @intent: 缓存 Tree-sitter 解析的 AST，避免重复解析
 

@@ -3,8 +3,7 @@ import { TypeDefinition } from '../entities/TypeDefinition';
 
 /**
  * @intent
- * 代码静态分析的抽象边界，统一封装 tree-sitter 解析能力。
- * 屏蔽：不同编程语言的解析差异对调用方透明
+ * 代码静态分析的抽象边界，统一封装 tree-sitter 解析能力。新增 countNonCommentLines 方法用于排除注释后的行数统计。
  */
 
 export interface ICodeParserRepository {
@@ -70,6 +69,14 @@ export interface ICodeParserRepository {
     currentDir: string,
     language: string
   ): Promise<string[]>;
+
+  /**
+   * 统计排除注释后的纯代码行数
+   * @param content 文件内容
+   * @param filePath 文件路径（用于推断编程语言）
+   * @returns 排除注释后的代码行数（空行保留）
+   */
+  countNonCommentLines(content: string, filePath: string): Promise<number>;
 
   /**
    * 提取函数的 @contract 注释

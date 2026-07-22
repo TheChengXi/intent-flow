@@ -1,3 +1,8 @@
+/**
+ * @intent
+ * 核心依赖注入容器，管理所有适配器共享的核心依赖。checkFileSizeUseCase 注入 IFileRepository + ICodeParserRepository 两个依赖。
+ */
+
 import { IFileRepository } from '../data/repositories/IFileRepository';
 import { ICodeParserRepository } from '../data/repositories/ICodeParserRepository';
 import { ICacheRepository } from '../data/repositories/ICacheRepository';
@@ -96,7 +101,8 @@ export class CoreDIContainer {
 
     // 分析用例
     this.checkFileSizeUseCase = new UseCases.CheckFileSizeUseCase(
-      this.fileRepo
+      this.fileRepo,
+      this.parserRepo
     );
 
     // 能力清单生成用例

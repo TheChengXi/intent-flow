@@ -7,7 +7,7 @@
  * 不再持有语言分支逻辑——加语言 = 加 resolver + 注册，不改此文。
  */
 
-import { TreeSitterManager } from '../../../core/TreeSitterManager';
+import { TreeSitterManager } from '../../../tree-sitter/TreeSitterManager';
 import { ImportResolver } from './ImportResolver';
 import { ResolverRegistry } from './ResolverRegistry';
 import { TypeScriptResolver } from './resolvers/TypeScriptResolver';

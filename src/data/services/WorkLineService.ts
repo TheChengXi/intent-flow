@@ -7,7 +7,7 @@ import { ImportExtractor } from './codeContext/extractors/import/ImportExtractor
 import { ContractSearcher } from './codeContext/searchers/ContractSearcher';
 import { VSCodeContractSearcher } from '../../adapter/vscode/services/VSCodeContractSearcher';
 import { TypeDefinitionSearcher } from './codeContext/searchers/TypeDefinitionSearcher';
-import { LanguageConfig } from './core/LanguageConfig';
+import { LanguageConfig } from './tree-sitter/LanguageConfig';
 
 // @contract: WorkLineService.parseWorkLine(document: vscode.TextDocument, position: vscode.Position) => Promise<WorkLine | null>
 // @step: [检测语言] 从文档语言 ID 推断语言

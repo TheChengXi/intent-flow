@@ -1,4 +1,4 @@
-import { TreeSitterManager } from '../../core/TreeSitterManager';
+import { TreeSitterManager } from '../../tree-sitter/TreeSitterManager';
 import { CacheRepositoryImpl } from '../../cache/CacheRepositoryImpl';
 
 // @contract: TypeDefinitionSearcher.searchInFile(typeName: string, filePath: string, language?: string) => Promise<string | null>

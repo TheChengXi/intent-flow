@@ -1,4 +1,9 @@
-// @intent: 将原始 CLI 参数翻译为 CheckFileSizeUseCase 的输入协定。定义 CLI 特有默认值（threshold=400、workspaceRoot=cwd），缺失 filePath 时打印用法并退出
+/**
+ * @intent
+ * 将原始 CLI 参数翻译为 CheckFileSizeUseCase 的输入协定。仅支持 <filePath>（必填）和可选的 --threshold，已移除 --workspace-root 标志。
+ */
+
+
 
 import { getFormatter } from '../formatters';
 import { CliDIContainer } from '../CliDIContainer';
@@ -6,7 +11,7 @@ import { parseArgs, hasFlag } from './utils';
 
 export const command = 'check-file-size';
 export const description = '检查文件及其依赖树的大小，识别需要重构的文件';
-export const usage = `cdd check-file-size <filePath> [--workspace-root <path>] [--threshold <number>] [--json]`;
+export const usage = `cdd check-file-size <filePath> [--threshold <number>] [--json]`;
 
 /**
  * @contract
@@ -17,7 +22,6 @@ export const usage = `cdd check-file-size <filePath> [--workspace-root <path>] [
  * 副作用：调用 CheckFileSizeUseCase 读取文件系统
  * @boundary
  * - filePath 是必填位置参数
- * - workspaceRoot 默认 process.cwd()
  * - threshold 默认 400
  */
 export async function handler(args: string[]): Promise<void> {
@@ -33,7 +37,6 @@ export async function handler(args: string[]): Promise<void> {
   // @step: 构建输入参数
   const input = {
     filePath,
-    workspaceRoot: flags['workspace-root'] || process.cwd(),
     threshold: flags.threshold ? parseInt(flags.threshold, 10) : 400,
   };
 

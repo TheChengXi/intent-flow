@@ -1,7 +1,7 @@
 import { IUseCase } from './IUseCase';
 import { ICodeParserRepository } from '../../data/repositories/ICodeParserRepository';
 import { IFileRepository } from '../../data/repositories/IFileRepository';
-import { LanguageConfig } from '../../data/services/core/LanguageConfig';
+import { LanguageConfig } from '../../data/services/tree-sitter/LanguageConfig';
 import * as path from 'path';
 
 /**

@@ -1,4 +1,4 @@
-import { TreeSitterManager } from '../../core/TreeSitterManager';
+import { TreeSitterManager } from '../../tree-sitter/TreeSitterManager';
 import { CacheRepositoryImpl } from '../../cache/CacheRepositoryImpl';
 
 // @intent: 在文件中搜索函数定义，返回完整的函数代码（包含注释）

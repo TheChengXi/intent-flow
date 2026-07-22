@@ -1,5 +1,5 @@
-import { TreeSitterManager } from '../../core/TreeSitterManager';
-import { LanguageConfig } from '../../core/LanguageConfig';
+import { TreeSitterManager } from '../../tree-sitter/TreeSitterManager';
+import { LanguageConfig } from '../../tree-sitter/LanguageConfig';
 
 // @contract: FunctionCallExtractor.extractFromText(text: string, language?: string) => Promise<string[]>
 // @step: [检测语言] 如果提供了 language，使用 Tree-sitter 方案

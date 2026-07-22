@@ -12,7 +12,7 @@
 
 import { ICodeParserRepository } from '../../data/repositories/ICodeParserRepository';
 import { IFileRepository } from '../../data/repositories/IFileRepository';
-import { LanguageConfig } from '../../data/services/core/LanguageConfig';
+import { LanguageConfig } from '../../data/services/tree-sitter/LanguageConfig';
 import { ImportExtractor } from '../../data/services/codeContext/extractors/import/ImportExtractor';
 import { IUseCase } from './IUseCase';
 import * as path from 'path';

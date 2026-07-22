@@ -3,7 +3,7 @@ import { PartialContextResult } from '../../data/entities/PartialContextResult';
 import { IFileRepository } from '../../data/repositories/IFileRepository';
 import { ICodeParserRepository } from '../../data/repositories/ICodeParserRepository';
 import { ICacheRepository } from '../../data/repositories/ICacheRepository';
-import { LanguageConfig } from '../../data/services/core/LanguageConfig';
+import { LanguageConfig } from '../../data/services/tree-sitter/LanguageConfig';
 import * as path from 'path';
 
 /**

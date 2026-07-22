@@ -1,7 +1,12 @@
+/**
+ * @intent
+ * 导出两个 VSCode 命令入口：execute（项目范围扫描）和 checkCurrentFileWithDependencies（对当前文件执行大小检查）。已移除 workspaceRoot 参数构造。
+ */
+
 import * as vscode from 'vscode';
 import { VSCodeDIContainer } from '../VSCodeDIContainer';
 
-// @intent: 导出两个 VSCode 命令入口：execute（项目范围扫描，待完善）和 checkCurrentFileWithDependencies（对当前文件及其依赖树执行大小检查并输出报告）
+
 
 export async function execute(): Promise<void> {
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
@@ -38,12 +43,6 @@ export async function checkCurrentFileWithDependencies(): Promise<void> {
     return;
   }
 
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-  if (!workspaceRoot) {
-    vscode.window.showErrorMessage('未打开工作区');
-    return;
-  }
-
   const container = VSCodeDIContainer.getInstance();
 
   await vscode.window.withProgress(
@@ -57,7 +56,6 @@ export async function checkCurrentFileWithDependencies(): Promise<void> {
         const checkFileSizeUseCase = container.getCore().checkFileSizeUseCase;
         const results = await checkFileSizeUseCase.execute({
           filePath: editor.document.uri.fsPath,
-          workspaceRoot,
           threshold: 400
         });
 
@@ -73,7 +71,6 @@ export async function checkCurrentFileWithDependencies(): Promise<void> {
           outputChannel.appendLine(`发现 ${oversizedFiles.length} 个文件超标：\n`);
           oversizedFiles.forEach(file => {
             outputChannel.appendLine(`${file.filePath}`);
-            outputChannel.appendLine(`  行数：${file.lineCount} (推荐 < 400)`);
             outputChannel.appendLine(`  超出：${file.exceedLines} 行`);
             outputChannel.appendLine(`  建议：拆分为更小的模块\n`);
           });

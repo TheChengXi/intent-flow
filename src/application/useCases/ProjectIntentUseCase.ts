@@ -1,6 +1,6 @@
 import { IUseCase } from './IUseCase';
 import { IFileRepository } from '../../data/repositories/IFileRepository';
-import { LanguageConfig } from '../../data/services/core/LanguageConfig';
+import { LanguageConfig } from '../../data/services/tree-sitter/LanguageConfig';
 import * as path from 'path';
 
 // @intent: 投射意图用例，创建/更新文件中的 @intent 注释。用于 execute phase 1 的文件骨架生成。

@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { TreeSitterManager } from '../../core/TreeSitterManager';
-import { LanguageConfig } from '../../core/LanguageConfig';
+import { TreeSitterManager } from '../../tree-sitter/TreeSitterManager';
+import { LanguageConfig } from '../../tree-sitter/LanguageConfig';
 
 // @intent: 从文件中提取 @intent 注释，配合 ImportExtractor 形成「意图依赖树」
 
