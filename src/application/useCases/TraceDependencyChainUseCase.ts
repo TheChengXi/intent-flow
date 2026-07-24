@@ -36,10 +36,8 @@ export interface LayerConfig {
 }
 
 export interface TraceDependencyChainInput {
-  /** 入口文件路径（绝对路径，或相对于 projectRoot 的相对路径） */
+  /** 入口文件路径（绝对路径） */
   entryFile: string;
-  /** 项目根目录（默认 process.cwd()） */
-  projectRoot?: string;
   /** 架构层级检测配置（默认 CDD 三层：data/application/adapter） */
   layerConfig?: LayerConfig;
 }
@@ -47,8 +45,6 @@ export interface TraceDependencyChainInput {
 export interface DependencyInfo {
   /** 架构层级（data / application / adapter / adapter/mcp 等） */
   layer: string;
-  /** 文件名（不含路径） */
-  file: string;
   /** 相对于层级的路径（如 mcp/DIContainer.ts） */
   filePath: string;
   /** @intent 内容 */
@@ -58,7 +54,6 @@ export interface DependencyInfo {
 export interface TraceDependencyChainOutput {
   /** 入口文件信息 */
   entry: {
-    file: string;
     filePath: string;
     intent: string;
     layer: string;
@@ -67,8 +62,8 @@ export interface TraceDependencyChainOutput {
   dependencies: {
     /** 同层依赖（同架构层 + 同子模块） */
     same_layer: DependencyInfo[];
-    /** 跨层依赖（不同架构层 或 不同适配器） */
-    cross_layer: DependencyInfo[];
+    /** 跨层依赖（不同架构层 或 不同适配器），不存在时省略 */
+    cross_layer?: DependencyInfo[];
   };
 }
 
@@ -214,12 +209,8 @@ export class TraceDependencyChainUseCase
   async execute(
     input: TraceDependencyChainInput
   ): Promise<TraceDependencyChainOutput> {
-    const projectRoot = input.projectRoot || process.cwd();
+    const entryPath = path.resolve(input.entryFile);
     const layerRules = input.layerConfig?.rules;
-
-    const entryPath = path.isAbsolute(input.entryFile)
-      ? input.entryFile
-      : path.resolve(projectRoot, input.entryFile);
 
     const entryExists = await this.fileRepo.exists(entryPath);
     if (!entryExists) {
@@ -235,7 +226,7 @@ export class TraceDependencyChainUseCase
     const language = entryLanguage;
     const resolver = ImportExtractor.getResolver(language);
     const importBaseDir = resolver
-      ? await resolver.getImportBaseDir(entryPath, projectRoot)
+      ? await resolver.getImportBaseDir(entryPath, entryDir)
       : entryDir;
 
     const importedPaths = await this.codeParserRepo.extractImports(
@@ -247,7 +238,6 @@ export class TraceDependencyChainUseCase
     const depResults: Array<{
       layer: string;
       layerRoot: string;
-      file: string;
       filePath: string;
       intent: string;
     }> = [];
@@ -265,7 +255,6 @@ export class TraceDependencyChainUseCase
               depResults.push({
                 layer: extractLayer(f, layerRules),
                 layerRoot: extractLayerRoot(f, layerRules),
-                file: path.basename(f),
                 filePath: relativeToLayer(f, layerRules),
                 intent: extractIntentFromContent(
                   await this.fileRepo.readFile(f), getLanguage(f)
@@ -284,7 +273,6 @@ export class TraceDependencyChainUseCase
         depResults.push({
           layer: depLayer,
           layerRoot: extractLayerRoot(depPath, layerRules),
-          file: path.basename(depPath),
           filePath: relativeToLayer(depPath, layerRules),
           intent: depIntent,
         });
@@ -299,7 +287,6 @@ export class TraceDependencyChainUseCase
     for (const dep of depResults) {
       const info: DependencyInfo = {
         layer: dep.layer,
-        file: dep.file,
         filePath: dep.filePath,
         intent: dep.intent,
       };
@@ -315,14 +302,13 @@ export class TraceDependencyChainUseCase
 
     return {
       entry: {
-        file: path.basename(entryPath),
-        filePath: path.relative(projectRoot, entryPath).replace(/\\/g, '/'),
+        filePath: relativeToLayer(entryPath, layerRules),
         intent: entryIntent,
         layer: entryLayer,
       },
       dependencies: {
         same_layer: sameLayer,
-        cross_layer: crossLayer,
+        ...(crossLayer.length > 0 ? { cross_layer: crossLayer } : {}),
       },
     };
   }

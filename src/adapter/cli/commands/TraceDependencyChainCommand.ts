@@ -6,7 +6,7 @@ import { parseArgs, hasFlag } from './utils';
 
 export const command = 'trace-dependency-chain';
 export const description = '沿入口文件的依赖链追踪，分析直接依赖关系及 @intent 语义';
-export const usage = `cdd trace-dependency-chain <entryFile> [--project-root <path>] [--mode simple|normal|complex] [--json]`;
+export const usage = `cdd trace-dependency-chain <entryFile> [--mode simple|normal|complex] [--json]`;
 
 /**
  * @contract
@@ -17,7 +17,7 @@ export const usage = `cdd trace-dependency-chain <entryFile> [--project-root <pa
  * 副作用：调用 TraceDependencyChainUseCase 读取文件系统
  * @boundary
  * - entryFile 是必填位置参数
- * - projectRoot 默认 process.cwd()
+ * - entryFile 为绝对路径
  * - mode 默认 simple
  */
 export async function handler(args: string[]): Promise<void> {
@@ -40,7 +40,6 @@ export async function handler(args: string[]): Promise<void> {
   // @step: 构建输入参数
   const input = {
     entryFile,
-    projectRoot: flags['project-root'] || process.cwd(),
     mode: mode as 'simple' | 'normal' | 'complex',
   };
 

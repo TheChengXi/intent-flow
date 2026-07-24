@@ -2,7 +2,7 @@
  * @intent
  * 作为 MCP 工具层，处理 TraceDependencyChainInput → TraceDependencyChainOutput。
  * 核心行为：接收 entryFile 参数，调用 TraceDependencyChainUseCase，返回同层/跨层依赖分组。
- * 输入：entryFile（必填）、projectRoot（可选）、layerConfig（可选）。
+ * 输入：entryFile（必填）、layerConfig（可选）。
  * 输出：entry 信息 + dependencies（same_layer / cross_layer 两组）。
  * 谁调用：MCP Server 根据 "trace_dependency_chain" 工具名分发至此。
  * 边界：entryFile 不存在时向上抛错；依赖读取失败跳过单条。
@@ -20,11 +20,7 @@ export class TraceDependencyChainTool implements MCPToolHandler<TraceDependencyC
       properties: {
         entryFile: {
           type: 'string',
-          description: '入口文件路径（支持绝对路径，或相对于项目根目录的相对路径，如 "src/adapter/mcp/MCPServer.ts"）。必填。'
-        },
-        projectRoot: {
-          type: 'string',
-          description: '项目根目录（绝对路径，可选）。默认使用当前工作目录。'
+          description: '入口文件路径（绝对路径）。必填。'
         },
         layerConfig: {
           type: 'object',
