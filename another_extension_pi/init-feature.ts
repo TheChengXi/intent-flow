@@ -102,6 +102,11 @@ export default function (pi: ExtensionAPI) {
 				lastFiles.delete(name);
 			}
 		}
+
+		// 将 session 名称设为当前最靠前的 feature 名称
+		if (features.length > 0) {
+			pi.setSessionName(features[0].name);
+		}
 	});
 
 	// ── /init-feature 命令（手动触发 / 恢复 ──
@@ -123,6 +128,9 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			const feature = features[0];
+
+			// 将 session 名称设为当前 feature 名称
+			pi.setSessionName(feature.name);
 
 			switch (feature.phase) {
 				case "requirement":
