@@ -8,8 +8,7 @@
       "directTools": [
         "check_file_size",
         "trace_dependency_chain",
-        "project_intent",
-        "list_folder_intents"
+        "project_intent"
       ]
     }
   }
