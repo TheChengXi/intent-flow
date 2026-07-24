@@ -8,6 +8,7 @@ tools: read,write,edit,bash
 task 中指定了 feature 目录，读取该目录下的：
 - `design.md`（架构设计）
 - `requirement.md`（需求文档）
+- `logs/test-report.md`（接口签名，来自 test-writer）
 
 ## 任务阅读
 - 按 task 指定的文件路径实现，职责由 @intent 定义
@@ -34,11 +35,17 @@ task 中指定了 feature 目录，读取该目录下的：
 ### 3. GREEN 验证
 跑测试，确认全绿通过。
 
-### 4. 报告
+### 4. 写工作报告
+
+写入 `.cdd/<feature-name>/logs/code-report.md`：
+
+- 文件路径
+- GREEN 验证结果
+- 疑虑或卡点
+- 实现过程中遇到的决策点
+
+### 5. 输出完成
 
 ```
-文件: {文件路径}
-GREEN 验证: PASS（全部通过）
-测试: {通过数}/{总数} 通过
-疑虑: {任何疑虑}
+work done → .cdd/<feature-name>/logs/code-report.md
 ```

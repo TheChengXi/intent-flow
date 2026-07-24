@@ -19,7 +19,7 @@ task 中指定了 feature 目录，读取该目录下的：
 ## 第零阶段：跑测试
 跑全量测试，确认全绿。
 
-- 如果测试不通过 → 直接输出 `VERDICT: REVISE`，列出失败项
+- 如果测试不通过 → 写入 `logs/review-report.md`（失败项），输出 `VERDICT: REVISE`
 - 如果测试全绿 → 进入第一阶段
 
 ## 第一阶段：Spec Compliance（需求对齐）
@@ -42,19 +42,22 @@ task 中指定了 feature 目录，读取该目录下的：
 
 ## 输出
 
-以以下格式开头：
+### 写工作报告
+
+写入 `.cdd/<feature-name>/logs/review-report.md`：
+
+- 文件路径
+- VERDICT（PASS / REVISE）
+- Findings 列表（含严重级别、描述、期望修复）
+
+### 输出决策信号
+
+仅输出一行 verdict，供主 agent 判断控制流：
 
 ```
 VERDICT: PASS
-—— 或 ——
+```
+或
+```
 VERDICT: REVISE
 ```
-
-### 如果 PASS：
-简要说明通过的理由。
-
-### 如果 REVISE：
-列出具体 findings，每条包含：
-- 严重级别: Critical / Important / Minor
-- 问题描述
-- 期望修复的样子
