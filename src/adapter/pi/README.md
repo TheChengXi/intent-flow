@@ -28,7 +28,6 @@ src/adapter/pi/
 │   └── SubSkillRepository.ts ← Agent 发现（sub-skill 递归扫描）
 ├── commands/
 │   ├── index.ts
-│   └── StopTimeCommand.ts    ← /stop-time 命令
 └── DIContainer.ts
 ```
 
