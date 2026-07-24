@@ -43,9 +43,6 @@ export class CoreDIContainer {
   public extractPartialContextUseCase: UseCases.ExtractPartialContextUseCase;
   public extractFullContextUseCase: UseCases.ExtractFullContextUseCase;
 
-  // 搜索用例
-  public searchTypeDefinitionUseCase: UseCases.SearchTypeDefinitionUseCase;
-
   // 分析用例
   public checkFileSizeUseCase: UseCases.CheckFileSizeUseCase;
 
@@ -91,12 +88,6 @@ export class CoreDIContainer {
       this.fileRepo,
       this.parserRepo,
       this.cacheRepo
-    );
-
-    // 搜索用例
-    this.searchTypeDefinitionUseCase = new UseCases.SearchTypeDefinitionUseCase(
-      this.fileRepo,
-      this.parserRepo
     );
 
     // 分析用例

@@ -3,14 +3,12 @@
 import { handler as checkFileSizeHandler } from './CheckFileSizeCommand';
 import { handler as traceDependencyChainHandler } from './TraceDependencyChainCommand';
 import { handler as projectIntentHandler } from './ProjectIntentCommand';
-import { handler as searchTypeHandler } from './SearchTypeCommand';
 import { handler as intentPackageHandler } from './IntentPackageCommand';
 import { handler as listFolderIntentsHandler } from './ListFolderIntentsCommand';
 
 export { command as checkFileSizeCmd, description as checkFileSizeDesc, usage as checkFileSizeUsage, handler as checkFileSizeHandler } from './CheckFileSizeCommand';
 export { command as traceDependencyChainCmd, description as traceDependencyChainDesc, usage as traceDependencyChainUsage, handler as traceDependencyChainHandler } from './TraceDependencyChainCommand';
 export { command as projectIntentCmd, description as projectIntentDesc, usage as projectIntentUsage, handler as projectIntentHandler } from './ProjectIntentCommand';
-export { command as searchTypeCmd, description as searchTypeDesc, usage as searchTypeUsage, handler as searchTypeHandler } from './SearchTypeCommand';
 export { command as intentPackageCmd, description as intentPackageDesc, usage as intentPackageUsage, handler as intentPackageHandler } from './IntentPackageCommand';
 export { command as listFolderIntentsCmd, description as listFolderIntentsDesc, usage as listFolderIntentsUsage, handler as listFolderIntentsHandler } from './ListFolderIntentsCommand';
 
@@ -40,11 +38,6 @@ export const commandMap: Record<string, CommandEntry> = {
     description: '创建文件并写入 @intent 注释，自动创建父目录',
     usage: 'cdd project-intent <path> --intent <desc> [--force] [--json]',
     handler: projectIntentHandler,
-  },
-  'search-type': {
-    description: '在文件中搜索类型定义（interface、type、class、enum）',
-    usage: 'cdd search-type <typeName> <filePath> [--language <lang>] [--json]',
-    handler: searchTypeHandler,
   },
   'intent-package': {
     description: '意图包管理：增量更新、列举、查看、语义检索',

@@ -3,7 +3,6 @@
 export * from './IUseCase';
 export * from './ExtractPartialContextUseCase';
 export * from './ExtractFullContextUseCase';
-export * from './SearchTypeDefinitionUseCase';
 export * from './CheckFileSizeUseCase';
 export * from './AnalyzeCallGraphUseCase';
 export * from './TraceDependencyChainUseCase';

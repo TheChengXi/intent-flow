@@ -23,7 +23,6 @@ node dist/mcp-server.js   # 启动 MCP 服务器（stdio 传输）
 | `check_file_size` | `tools/call` | `CheckFileSizeUseCase` |
 | `trace_dependency_chain` | `tools/call` | `TraceDependencyChainUseCase` |
 | `project_intent` | `tools/call` | `ProjectIntentUseCase` |
-| `search_type_definition` | `tools/call` | `SearchTypeDefinitionUseCase` |
 
 ## 添加新工具
 

@@ -2,7 +2,6 @@ import { CoreDIContainer } from '../../application/CoreDIContainer';
 import { CheckFileSizeUseCase } from '../../application/useCases/CheckFileSizeUseCase';
 import { ITraceDependencyChainUseCase } from '../../application/useCases/TraceDependencyChainUseCase';
 import { ProjectIntentUseCase } from '../../application/useCases/ProjectIntentUseCase';
-import { SearchTypeDefinitionUseCase } from '../../application/useCases/SearchTypeDefinitionUseCase';
 
 /**
  * @intent
@@ -53,11 +52,6 @@ export class CliDIContainer {
   /** @contract 获取 ProjectIntentUseCase，用于写入 @intent */
   get projectIntentUseCase(): ProjectIntentUseCase {
     return this.core.projectIntentUseCase;
-  }
-
-  /** @contract 获取 SearchTypeDefinitionUseCase，用于类型搜索 */
-  get searchTypeDefinitionUseCase(): SearchTypeDefinitionUseCase {
-    return this.core.searchTypeDefinitionUseCase;
   }
 
   /** @contract 获取 MaintainIntentPackagesUseCase，用于增量维护 */

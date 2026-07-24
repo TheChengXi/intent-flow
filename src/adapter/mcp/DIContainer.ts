@@ -7,7 +7,7 @@ import * as Tools from './tools';
 
 /**
  * @intent
- * MCP 适配器的依赖注入容器，在 CoreDIContainer 之上注入 MCP 特定依赖（4 个 Tool + HookManager）。
+ * MCP 适配器的依赖注入容器，在 CoreDIContainer 之上注入 MCP 特定依赖（7 个 Tool + HookManager）。
  * 屏蔽：CoreDIContainer 的实例化细节对 Tools 透明
  */
 // @note: HookManager 是 MCP 适配器的专属基础设施，不放在 CoreDIContainer 中
@@ -24,7 +24,6 @@ export class DIContainer {
   public hookManager: HookManager;
 
   // @note: MCP Tools 封装基础用例，提供 MCP 协议接口
-  public searchTypeDefinitionTool: Tools.SearchTypeDefinitionTool;
   public checkFileSizeTool: Tools.CheckFileSizeTool;
   public traceDependencyChainTool: Tools.TraceDependencyChainTool;
   public projectIntentTool: Tools.ProjectIntentTool;
@@ -42,10 +41,6 @@ export class DIContainer {
     this.registerHooks();
 
     // 初始化 MCP Tools（使用核心容器中的用例和 MCP 的 HookManager）
-    this.searchTypeDefinitionTool = new Tools.SearchTypeDefinitionTool(
-      this.core.searchTypeDefinitionUseCase,
-      this.hookManager
-    );
     this.checkFileSizeTool = new Tools.CheckFileSizeTool(
       this.core.checkFileSizeUseCase
     );
@@ -121,7 +116,6 @@ export class DIContainer {
   // @boundary: 返回的工具列表现在是 7 个工具
   getAllTools() {
     return [
-      this.searchTypeDefinitionTool,
       this.checkFileSizeTool,
       this.traceDependencyChainTool,
       this.projectIntentTool,
