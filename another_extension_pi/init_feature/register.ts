@@ -37,9 +37,7 @@ export function register(pi: ExtensionAPI) {
 
 			if (!prev) {
 				// 新 feature 目录首次出现（本轮 session 中刚创建）
-				if (current.hasReport) {
-					// 已完成，不额外提示
-				} else if (current.hasDesign && current.hasReq) {
+				if (current.hasDesign && current.hasReq) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
 						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +
@@ -56,13 +54,7 @@ export function register(pi: ExtensionAPI) {
 				}
 			} else {
 				// 已有 feature → 检测新文件出现
-				if (current.hasReport && !prev.hasReport) {
-					pi.sendUserMessage(
-						`Feature **${f.name}** 已关账。\n\n` +
-						`报告：\`.cdd/${f.name}/report.md\``,
-						{ deliverAs: "followUp" }
-					);
-				} else if (current.hasDesign && current.hasReq && !prev.hasDesign) {
+				if (current.hasDesign && current.hasReq && !prev.hasDesign) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
 						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +

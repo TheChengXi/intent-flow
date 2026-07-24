@@ -20,7 +20,6 @@ export interface FeatureInfo {
 export interface FileState {
 	hasReq: boolean;
 	hasDesign: boolean;
-	hasReport: boolean;
 }
 
 // ── 阶段优先级（用于排序） ──
@@ -57,8 +56,7 @@ export function scanAll(cddDir: string, specificName?: string): FeatureInfo[] {
 		let phase: FeatureInfo["phase"];
 		if (!state.hasReq) phase = "requirement";
 		else if (!state.hasDesign) phase = "design";
-		else if (!state.hasReport) phase = "execute";
-		else phase = "complete";
+		else phase = "execute";
 
 		return { name: d.name, dir, phase };
 	});
@@ -75,6 +73,5 @@ export function readFileState(featureDir: string): FileState {
 	return {
 		hasReq: existsSync(join(featureDir, "requirement.md")),
 		hasDesign: existsSync(join(featureDir, "design.md")),
-		hasReport: existsSync(join(featureDir, "report.md")),
 	};
 }
