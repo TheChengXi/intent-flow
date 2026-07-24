@@ -1,6 +1,6 @@
 # Pi 适配层
 
-将 CCD 框架的 agent 发现与子进程调度能力暴露为 pi 扩展工具。
+将 CDD 框架的 agent 发现与子进程调度能力暴露为 pi 扩展工具。
 支持 `spawn_agent` 工具（调用子 agent）、`list_agents` 工具（查询可用子 agent）和 `/sub-agent` 命令（查看实时状态）。
 
 ## 架构
@@ -68,13 +68,13 @@ npm run compile:pi && npm run deploy:pi
 
 ```bash
 npm run compile:pi    # ≡ set CDD_BUILD=pi/extension && vite build → dist/pi/extension.js
-npm run deploy:pi     # ≡ node scripts/deploy-pi.js → 复制到 ~/.pi/agent/extensions/ccd-framework/
+npm run deploy:pi     # ≡ node scripts/deploy-pi.js → 复制到 ~/.pi/agent/extensions/cdd-framework/
 ```
 
 部署后的目录结构：
 
 ```
-~/.pi/agent/extensions/ccd-framework/
+~/.pi/agent/extensions/cdd-framework/
 ├── index.ts        ← pi 加载的入口（export { default } from "./extension.js"）
 └── extension.js    ← Vite 编译产物（~19KB）
 ```

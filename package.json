@@ -3,11 +3,11 @@
   "displayName": "CDD Framework",
   "description": "Comment-Driven Development Framework - 注释驱动开发框架",
   "version": "0.5.0",
-  "publisher": "your-publisher-name",
+  "publisher": "TheChengXi",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/CCD-framework.git"
+    "url": "https://github.com/TheChengXi/cdd-framework.git"
   },
   "engines": {
     "vscode": "^1.80.0"

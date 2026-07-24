@@ -1,5 +1,5 @@
 /**
- * deploy-pi.js — 部署 pi 扩展到 ~/.pi/agent/extensions/ccd-framework/
+ * deploy-pi.js — 部署 pi 扩展到 ~/.pi/agent/extensions/cdd-framework/
  *
  * 用法: node scripts/deploy-pi.js
  * 推荐: npm run compile:pi && npm run deploy:pi
@@ -9,7 +9,7 @@ const { execSync } = require('child_process');
 const { join } = require('path');
 const { homedir } = require('os');
 
-const dst = join(homedir(), '.pi', 'agent', 'extensions', 'ccd-framework');
+const dst = join(homedir(), '.pi', 'agent', 'extensions', 'cdd-framework');
 const src = join(__dirname, '..', 'dist', 'pi', 'extension.js');
 
 // 用原生 fs 操作，不用 shell 命令（避免 Windows/Linux 差异和中文路径问题）

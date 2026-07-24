@@ -28,7 +28,7 @@ export class TraceDependencyChainTool implements MCPToolHandler<TraceDependencyC
         },
         layerConfig: {
           type: 'object',
-          description: '架构层级检测配置（可选，默认 CCD 三层：data/application/adapter）。用于非 CCD 项目的同层/跨层分组。',
+          description: '架构层级检测配置（可选，默认 CDD 三层：data/application/adapter）。用于非 CDD 项目的同层/跨层分组。',
           properties: {
             rules: {
               type: 'array',

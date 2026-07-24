@@ -1,42 +1,21 @@
 /**
- * /init-feature — Feature 开发状态机（自动检测版）
+ * register — Feature 开发状态机的 pi 注册层
  *
- * 手动触发 + 自动检测双机制：
- *   1. /init-feature 命令启动流水线（无 feature 时进入 requirement）
- *   2. 每次 turn_end 检测文件变更，自动派发下一阶段
+ * 职责：依赖 pi ExtensionAPI，管理 lastFiles 内存快照，注册
+ * session_start / turn_end 事件和 /init-feature 命令。
  *
- * 状态判断基于文件存在性，不依赖内存缓存做派发决策。
- * 内存仅记录「上次扫描时的文件状态」，用于检测新增文件。
- *
- * 状态规则：
- *   无 requirement.md → requirement 阶段
- *   有 requirement.md + 无 design.md → design 阶段
- *   有 design.md → execute 阶段（later-on.md 不参与判断）
- *
- * 用法：
- *   /init-feature          自动选择最靠前的 feature
- *   /init-feature <name>   指定 feature
+ * @intent 将 feature 状态机绑定到 pi 扩展体系上，负责事件响应与用户通知。
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { readdirSync, existsSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { scanAll, readFileState } from "./engine";
 
-interface FeatureInfo {
-	name: string;
-	dir: string;
-	phase: "requirement" | "design" | "execute" | "complete";
-}
-
-interface FileState {
-	hasReq: boolean;
-	hasDesign: boolean;
-}
-
-export default function (pi: ExtensionAPI) {
+export function register(pi: ExtensionAPI) {
 	// ── 记录每个 feature 最近一次扫描时的文件状态 ──
 	// 仅用于检测"新文件出现"，不做派发授权判断
-	const lastFiles = new Map<string, FileState>();
+	const lastFiles = new Map<string, ReturnType<typeof readFileState>>();
 
 	// ── session 启动时初始化文件状态快照 ──
 	pi.on("session_start", async (_event, ctx) => {
@@ -58,11 +37,11 @@ export default function (pi: ExtensionAPI) {
 
 			if (!prev) {
 				// 新 feature 目录首次出现（本轮 session 中刚创建）
-				// 按当前已有文件决定派发到哪一阶段
 				if (current.hasDesign && current.hasReq) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
-						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +`\n\n` +
+						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +
+						`\n\n` +
 						`请按 **execute skill** 进入实现阶段：先投射 @intent，再 TDD 逐文件对齐，最后集成验证。`,
 						{ deliverAs: "followUp" }
 					);
@@ -78,7 +57,8 @@ export default function (pi: ExtensionAPI) {
 				if (current.hasDesign && current.hasReq && !prev.hasDesign) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
-						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +`\n\n` +
+						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +
+						`\n\n` +
 						`请按 **execute skill** 进入实现阶段：先投射 @intent，再 TDD 逐文件对齐，最后集成验证。`,
 						{ deliverAs: "followUp" }
 					);
@@ -150,7 +130,8 @@ export default function (pi: ExtensionAPI) {
 				case "execute":
 					pi.sendUserMessage(
 						`Feature **${feature.name}** 的设计已完成。\n\n` +
-						`Feature 目录：\`.cdd/${feature.name}/\`（含 requirement.md 和 design.md）。` +`\n\n` +
+						`Feature 目录：\`.cdd/${feature.name}/\`（含 requirement.md 和 design.md）。` +
+						`\n\n` +
 						`请按 **execute skill** 进入实现阶段：先投射 @intent，再 TDD 逐文件对齐，最后集成验证。`
 					);
 					break;
@@ -161,42 +142,4 @@ export default function (pi: ExtensionAPI) {
 			}
 		},
 	});
-}
-
-// ── 工具函数 ──
-
-function scanAll(cddDir: string, specificName?: string): FeatureInfo[] {
-	if (!existsSync(cddDir)) return [];
-
-	const entries = readdirSync(cddDir, { withFileTypes: true });
-	const dirs = entries.filter((e) => e.isDirectory());
-
-	let featureDirs = dirs;
-	if (specificName) {
-		featureDirs = dirs.filter((d) => d.name === specificName);
-	}
-
-	const features: FeatureInfo[] = featureDirs.map((d) => {
-		const dir = join(cddDir, d.name);
-		const state = readFileState(dir);
-
-		let phase: FeatureInfo["phase"];
-		if (!state.hasReq) phase = "requirement";
-		else if (!state.hasDesign) phase = "design";
-		else phase = "execute";
-
-		return { name: d.name, dir, phase };
-	});
-
-	const order = { requirement: 0, design: 1, execute: 2, complete: 3 };
-	features.sort((a, b) => order[a.phase] - order[b.phase]);
-
-	return features;
-}
-
-function readFileState(featureDir: string): FileState {
-	return {
-		hasReq: existsSync(join(featureDir, "requirement.md")),
-		hasDesign: existsSync(join(featureDir, "design.md")),
-	};
 }

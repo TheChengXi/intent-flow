@@ -40,7 +40,7 @@ export interface TraceDependencyChainInput {
   entryFile: string;
   /** 项目根目录（默认 process.cwd()） */
   projectRoot?: string;
-  /** 架构层级检测配置（默认 CCD 三层：data/application/adapter） */
+  /** 架构层级检测配置（默认 CDD 三层：data/application/adapter） */
   layerConfig?: LayerConfig;
 }
 
@@ -79,7 +79,7 @@ export interface ITraceDependencyChainUseCase
 
 // ==================== 层级检测（可配置） ====================
 
-/** CCD 框架默认三层架构规则 */
+/** CDD 框架默认三层架构规则 */
 const DEFAULT_LAYER_RULES: LayerMatchRule[] = [
   { name: 'adapter', pattern: '/(adapter)(/|$)', subModule: true },
   { name: 'application', pattern: '/(application)(/|$)' },
