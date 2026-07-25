@@ -1,15 +1,15 @@
-import { ICacheRepository } from '../../repositories/ICacheRepository';
-import { CacheStats, CacheTypeStats, DefinitionCacheStats } from '../../entities/CacheStats';
-import { FileContentCache } from './FileContentCache';
-import { ASTCache } from './ASTCache';
-import { DefinitionCache } from './DefinitionCache';
-
 /**
  * @intent
  * 唯一的缓存门面。实现 ICacheRepository 供 use case 通过 DI 使用，
  * 同时提供便捷方法供 searchers/extractors 通过静态 getInstance() 访问。
  * 屏蔽：键格式 "type:identifier" 的路由分发逻辑；三种缓存各自的 TTL 和容量策略差异
  */
+import { ICacheRepository } from '../../repositories/ICacheRepository';
+import { CacheStats, CacheTypeStats, DefinitionCacheStats } from '../../entities/CacheStats';
+import { FileContentCache } from './FileContentCache';
+import { ASTCache } from './ASTCache';
+import { DefinitionCache } from './DefinitionCache';
+
 
 export class CacheRepositoryImpl implements ICacheRepository {
   private static instance: CacheRepositoryImpl;
