@@ -7,6 +7,7 @@ import * as TranslateCommand from './commands/TranslateCommand';
 import * as RequirementTranslatorCommand from './commands/RequirementTranslatorCommand';
 import * as CheckFileSizeCommand from './commands/CheckFileSizeCommand';
 import * as CapabilityMapCommand from './commands/CapabilityMapCommand';
+import * as ProjectIntentsCommand from './commands/ProjectIntentsCommand';
 
 // Dry Run 功能导入
 import { DryRunManager } from './application/dryrun/DryRunManager';
@@ -15,6 +16,8 @@ import { APIInterceptor } from './application/dryrun/APIInterceptor';
 import { ToggleDryRunCommand } from './commands/ToggleDryRunCommand';
 import { DryRunStatusBarItem } from './ui/DryRunStatusBarItem';
 import { DryRunOutputChannel } from './ui/DryRunOutputChannel';
+import { IntentFileWatcher } from './services/IntentFileWatcher';
+import { VSCodeDIContainer } from './VSCodeDIContainer';
 
 // @contract: activate(context: vscode.ExtensionContext) => void
 // @step: [初始化] 输出激活日志
@@ -68,6 +71,28 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(checkFileSizeCommand);
   context.subscriptions.push(checkCurrentFileCommand);
   context.subscriptions.push(capabilityMapCommand);
+
+  // ==================== 意图投射（.cdd/intents/） ====================
+
+  // 注册手动重建命令
+  const projectIntentsCommand = vscode.commands.registerCommand(
+    ProjectIntentsCommand.command,
+    ProjectIntentsCommand.handler
+  );
+  context.subscriptions.push(projectIntentsCommand);
+
+  // 自动启动文件监听（仅在有工作区时）
+  const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;
+  if (root) {
+    const container = VSCodeDIContainer.getInstance();
+    const fileWatcher = new IntentFileWatcher(
+      container.getCore().projectIntentsToFilesUseCase,
+      root
+    );
+    fileWatcher.start(context).catch(err => {
+      console.error('[CDD] IntentFileWatcher 启动失败:', err);
+    });
+  }
 }
 // @end
 

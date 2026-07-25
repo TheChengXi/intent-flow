@@ -12,3 +12,4 @@ export * from './MaintainIntentPackagesUseCase';
 export * from './ListFolderIntentsUseCase';
 export * from './DiscoverAgentsUseCase';
 export * from './SpawnAgentUseCase';
+export * from './ProjectIntentsToFilesUseCase';
