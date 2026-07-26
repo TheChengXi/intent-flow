@@ -1,7 +1,9 @@
 /**
  * @intent
- * VS Code 命令（右键菜单）：从意图扫描列表中移除选定文件夹。
- * 自动从 cdd.intents.roots 移除并触发全量重建。
+ * VS Code 命令（右键菜单）：从意图扫描中排除选定文件夹。
+ * - 如果文件夹在 roots 列表中 → 从 roots 移除
+ * - 如果文件夹不在 roots 列表中 → 追加到 exclude 排除列表
+ * 触发全量重建使改动生效。
  */
 
 import * as vscode from 'vscode';
@@ -12,10 +14,10 @@ export const description = '从意图目录移除';
 
 /**
  * @contract
- * 将文件夹从 intent 扫描列表移除。
+ * 将文件夹从 intent 扫描中排除。
  * 输入：uri - 右键选中的文件夹 URI
  * 输出：void
- * 副作用：更新 cdd.intents.roots 设置，触发 .cdd/intents/ 重建
+ * 副作用：更新 cdd.intents.roots 或 cdd.intents.exclude，触发重扫
  */
 export async function handler(uri: vscode.Uri): Promise<void> {
   const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;
@@ -29,17 +31,22 @@ export async function handler(uri: vscode.Uri): Promise<void> {
   if (!relPath) relPath = '.';
 
   const config = vscode.workspace.getConfiguration('cdd.intents');
-  const current = config.get<string[]>('roots', []);
+  const roots = config.get<string[]>('roots', []);
+  const exclude = config.get<string[]>('exclude', []);
 
-  if (!current.includes(relPath)) {
-    vscode.window.showInformationMessage(`CDD: "${relPath}" 不在意图目录中`);
-    return;
+  if (roots.includes(relPath)) {
+    // 情况 A：在 roots 列表中 → 直接移除
+    const updated = roots.filter(r => r !== relPath);
+    await config.update('roots', updated, vscode.ConfigurationTarget.Workspace);
+    vscode.window.showInformationMessage(`CDD: "${relPath}" 已从扫描列表移除`);
+  } else {
+    // 情况 B：不在 roots 列表中 → 追加到 exclude
+    const pattern = `**/${relPath}/**`;
+    if (exclude.includes(pattern)) {
+      vscode.window.showInformationMessage(`CDD: "${relPath}" 已在排除列表中`);
+      return;
+    }
+    await config.update('exclude', [...exclude, pattern], vscode.ConfigurationTarget.Workspace);
+    vscode.window.showInformationMessage(`CDD: "${relPath}" 已加入排除列表`);
   }
-
-  const updated = current.filter(r => r !== relPath);
-  await config.update('roots', updated, vscode.ConfigurationTarget.Workspace);
-
-  const msg = `CDD: "${relPath}" 已移除`;
-  console.log(`[cdd.removeFromIntents] ${msg}`);
-  vscode.window.showInformationMessage(msg);
 }
