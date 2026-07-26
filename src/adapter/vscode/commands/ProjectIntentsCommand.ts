@@ -28,7 +28,9 @@ export async function handler(): Promise<void> {
   const container = VSCodeDIContainer.getInstance();
   const useCase = container.getCore().projectIntentsToFilesUseCase;
 
-  const excludePatterns = vscode.workspace.getConfiguration('cdd.intents').get<string[]>('exclude', []);
+  const config = vscode.workspace.getConfiguration('cdd.intents');
+  const sourceRoots = config.get<string[]>('roots', []);
+  const excludePatterns = config.get<string[]>('exclude', []);
 
   vscode.window.withProgress(
     {
@@ -38,7 +40,7 @@ export async function handler(): Promise<void> {
     },
     async () => {
       try {
-        const result = await useCase.fullSync({ sourceRoot: root, excludePatterns });
+        const result = await useCase.fullSync({ sourceRoot: root, sourceRoots, excludePatterns });
         const msg = `CDD: 意图投射完成 — ${result.filesCreated} 创建, ${result.filesUpdated} 更新, ${result.filesDeleted} 删除, ${result.indexesUpdated} 索引`;
         console.log(`[cdd.projectIntents] ${msg}`);
         vscode.window.showInformationMessage(msg);

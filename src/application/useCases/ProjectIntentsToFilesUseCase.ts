@@ -14,8 +14,10 @@ import picomatch from 'picomatch';
 // ==================== 类型定义 ====================
 
 export interface FullSyncInput {
-  /** 项目根目录（绝对路径） */
+  /** 项目根目录（绝对路径，用于定位 .cdd/intents/ 输出目录） */
   sourceRoot: string;
+  /** 要扫描的文件夹列表（相对 sourceRoot 的路径），为空时默认扫整个 sourceRoot */
+  sourceRoots?: string[];
   /** 额外的排除模式（glob 语法），叠加在默认排除之上 */
   excludePatterns?: string[];
 }
@@ -31,6 +33,8 @@ export interface SyncFileInput {
   sourceRoot: string;
   /** 发生变更的源文件绝对路径 */
   filePath: string;
+  /** 要扫描的文件夹列表，增量操作时传入以确保文件属于已选目录 */
+  sourceRoots?: string[];
   /** 额外的排除模式（glob 语法），叠加在默认排除之上 */
   excludePatterns?: string[];
 }
@@ -44,6 +48,8 @@ export interface RemoveFileInput {
   sourceRoot: string;
   /** 被删除的源文件绝对路径 */
   filePath: string;
+  /** 要扫描的文件夹列表，增量操作时传入以确保文件属于已选目录 */
+  sourceRoots?: string[];
   /** 额外的排除模式（glob 语法），叠加在默认排除之上 */
   excludePatterns?: string[];
 }
@@ -124,12 +130,25 @@ export class ProjectIntentsToFilesUseCase {
    * 副作用：写文件系统，清空 .cdd/intents/ 下过时的投射
    */
   async fullSync(input: FullSyncInput): Promise<FullSyncResult> {
-    const { sourceRoot, excludePatterns } = input;
+    const { sourceRoot, sourceRoots, excludePatterns } = input;
     const outputRoot = path.join(sourceRoot, '.cdd', 'intents');
     const result: FullSyncResult = { filesCreated: 0, filesUpdated: 0, filesDeleted: 0, indexesUpdated: 0 };
 
     // 1. 扫描所有源文件
-    const allFiles = await this.fileRepo.scanDirectory(sourceRoot, { recursive: true });
+    // 如果指定了 sourceRoots，只扫描这些子文件夹；否则全量扫描
+    const allFiles: string[] = [];
+    if (sourceRoots && sourceRoots.length > 0) {
+      for (const relRoot of sourceRoots) {
+        const absRoot = path.resolve(sourceRoot, relRoot);
+        const exists = await this.fileRepo.exists(absRoot).catch(() => false);
+        if (!exists) continue;
+        const files = await this.fileRepo.scanDirectory(absRoot, { recursive: true });
+        allFiles.push(...files);
+      }
+    } else {
+      const files = await this.fileRepo.scanDirectory(sourceRoot, { recursive: true });
+      allFiles.push(...files);
+    }
 
     // 2. 处理每个文件，收集目录索引数据
     const dirMap = new Map<string, DirIndex>();
@@ -190,10 +209,20 @@ export class ProjectIntentsToFilesUseCase {
    * 输入：sourceRoot + filePath（源文件绝对路径）
    * 输出：SyncFileResult
    */
+  /** 判断文件是否在指定的 sourceRoots 范围内 */
+  private isInRoots(relPath: string, sourceRoots?: string[]): boolean {
+    if (!sourceRoots || sourceRoots.length === 0) return true;
+    return sourceRoots.some(r => {
+      const normR = r.replace(/\\/g, '/');
+      const normP = relPath.replace(/\\/g, '/');
+      return normP === normR || normP.startsWith(normR + '/');
+    });
+  }
+
   async syncFile(input: SyncFileInput): Promise<SyncFileResult> {
-    const { sourceRoot, filePath, excludePatterns } = input;
+    const { sourceRoot, filePath, sourceRoots, excludePatterns } = input;
     const relPath = path.relative(sourceRoot, filePath);
-    if (!relPath || relPath.startsWith('..') || isExcluded(relPath, excludePatterns)) {
+    if (!relPath || relPath.startsWith('..') || isExcluded(relPath, excludePatterns) || !this.isInRoots(relPath, sourceRoots)) {
       return { projectionWritten: false, indexUpdated: false };
     }
 
@@ -233,9 +262,9 @@ export class ProjectIntentsToFilesUseCase {
    * 输出：RemoveFileResult
    */
   async removeFile(input: RemoveFileInput): Promise<RemoveFileResult> {
-    const { sourceRoot, filePath, excludePatterns } = input;
+    const { sourceRoot, filePath, sourceRoots, excludePatterns } = input;
     const relPath = path.relative(sourceRoot, filePath);
-    if (!relPath || relPath.startsWith('..') || isExcluded(relPath, excludePatterns)) {
+    if (!relPath || relPath.startsWith('..') || isExcluded(relPath, excludePatterns) || !this.isInRoots(relPath, sourceRoots)) {
       return { projectionDeleted: false, indexUpdated: false };
     }
 

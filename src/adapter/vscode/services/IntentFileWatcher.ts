@@ -24,6 +24,11 @@ export class IntentFileWatcher {
     return vscode.workspace.getConfiguration('cdd.intents').get<string[]>('exclude', []);
   }
 
+  /** 从 VS Code 设置读取已选中的源文件夹列表 */
+  private getSourceRoots(): string[] {
+    return vscode.workspace.getConfiguration('cdd.intents').get<string[]>('roots', []);
+  }
+
   /**
    * @contract
    * 启动监听：全量同步一次 + 注册文件变更事件。
@@ -32,21 +37,23 @@ export class IntentFileWatcher {
    */
   async start(context: vscode.ExtensionContext): Promise<void> {
     const excludePatterns = this.getExcludePatterns();
+    const sourceRoots = this.getSourceRoots();
 
     // 1. 全量同步
     try {
-      const result = await this.useCase.fullSync({ sourceRoot: this.sourceRoot, excludePatterns });
+      const result = await this.useCase.fullSync({ sourceRoot: this.sourceRoot, sourceRoots, excludePatterns });
       console.log(`[IntentFileWatcher] 全量同步完成: ${result.filesCreated} 创建, ${result.filesUpdated} 更新, ${result.filesDeleted} 删除, ${result.indexesUpdated} 索引`);
     } catch (err) {
       console.error('[IntentFileWatcher] 全量同步失败:', err);
     }
 
-    // 监听设置变更，触发重扫
+    // 监听设置变更（排除模式或已选文件夹），触发重扫
     context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('cdd.intents.exclude')) {
+        if (e.affectsConfiguration('cdd.intents')) {
           const newPatterns = this.getExcludePatterns();
-          this.useCase.fullSync({ sourceRoot: this.sourceRoot, excludePatterns: newPatterns }).catch(err => {
+          const newRoots = this.getSourceRoots();
+          this.useCase.fullSync({ sourceRoot: this.sourceRoot, sourceRoots: newRoots, excludePatterns: newPatterns }).catch(err => {
             console.error('[IntentFileWatcher] 设置变更后重扫失败:', err);
           });
         }
@@ -109,6 +116,7 @@ export class IntentFileWatcher {
         await this.useCase.syncFile({
           sourceRoot: this.sourceRoot,
           filePath,
+          sourceRoots: this.getSourceRoots(),
           excludePatterns: this.getExcludePatterns(),
         });
       } catch (err) {
@@ -134,6 +142,7 @@ export class IntentFileWatcher {
         await this.useCase.removeFile({
           sourceRoot: this.sourceRoot,
           filePath,
+          sourceRoots: this.getSourceRoots(),
           excludePatterns: this.getExcludePatterns(),
         });
       } catch (err) {

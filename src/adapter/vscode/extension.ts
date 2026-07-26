@@ -8,6 +8,7 @@ import * as RequirementTranslatorCommand from './commands/RequirementTranslatorC
 import * as CheckFileSizeCommand from './commands/CheckFileSizeCommand';
 import * as CapabilityMapCommand from './commands/CapabilityMapCommand';
 import * as ProjectIntentsCommand from './commands/ProjectIntentsCommand';
+import * as AddToIntentsCommand from './commands/AddToIntentsCommand';
 
 // Dry Run 功能导入
 import { DryRunManager } from './application/dryrun/DryRunManager';
@@ -80,6 +81,13 @@ export function activate(context: vscode.ExtensionContext) {
     ProjectIntentsCommand.handler
   );
   context.subscriptions.push(projectIntentsCommand);
+
+  // 注册右键菜单命令：添加文件夹到意图目录
+  const addToIntentsCommand = vscode.commands.registerCommand(
+    AddToIntentsCommand.command,
+    AddToIntentsCommand.handler
+  );
+  context.subscriptions.push(addToIntentsCommand);
 
   // 自动启动文件监听（仅在有工作区时）
   const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;

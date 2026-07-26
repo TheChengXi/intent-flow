@@ -65,6 +65,10 @@
       {
         "command": "cdd.projectIntents",
         "title": "CDD: 重建意图投射目录 (.cdd/intents/)"
+      },
+      {
+        "command": "cdd.addToIntents",
+        "title": "CDD: 添加到此意图目录"
       }
     ],
     "menus": {
@@ -118,6 +122,16 @@
         },
         {
           "command": "cdd.projectIntents"
+        },
+        {
+          "command": "cdd.addToIntents"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "cdd.addToIntents",
+          "when": "explorerResourceIsFolder",
+          "group": "cdd@1"
         }
       ]
     },
@@ -150,6 +164,12 @@
           "type": "string",
           "default": "",
           "description": "目标语言（可选，默认从文件扩展名推断。例如：TypeScript, Python, C++, ArkTS）"
+        },
+        "cdd.intents.roots": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "意图投射的源文件夹列表（相对工作区路径），右键文件夹 → 添加到此意图目录 自动写入"
         },
         "cdd.intents.exclude": {
           "type": "array",
