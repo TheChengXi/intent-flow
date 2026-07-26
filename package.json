@@ -69,6 +69,10 @@
       {
         "command": "cdd.addToIntents",
         "title": "CDD: 添加到此意图目录"
+      },
+      {
+        "command": "cdd.removeFromIntents",
+        "title": "CDD: 从意图目录移除"
       }
     ],
     "menus": {
@@ -125,6 +129,9 @@
         },
         {
           "command": "cdd.addToIntents"
+        },
+        {
+          "command": "cdd.removeFromIntents"
         }
       ],
       "explorer/context": [
@@ -132,6 +139,11 @@
           "command": "cdd.addToIntents",
           "when": "explorerResourceIsFolder",
           "group": "cdd@1"
+        },
+        {
+          "command": "cdd.removeFromIntents",
+          "when": "explorerResourceIsFolder",
+          "group": "cdd@2"
         }
       ]
     },
