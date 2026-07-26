@@ -169,6 +169,7 @@ export class ProjectIntentsToFilesUseCase {
   private isInRoots(relPath: string, sourceRoots?: string[]): boolean {
     if (!sourceRoots || sourceRoots.length === 0) return true;
     return sourceRoots.some(r => {
+      if (r === '.') return true; // 根目录匹配一切
       const normR = r.replace(/\\/g, '/');
       const normP = relPath.replace(/\\/g, '/');
       return normP === normR || normP.startsWith(normR + '/');

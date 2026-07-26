@@ -32,6 +32,11 @@ export async function handler(): Promise<void> {
   const sourceRoots = config.get<string[]>('roots', []);
   const excludePatterns = config.get<string[]>('exclude', []);
 
+  if (sourceRoots.length === 0) {
+    vscode.window.showWarningMessage('CDD: 未配置源文件夹，请在文件管理器右键文件夹 → 添加到此意图目录');
+    return;
+  }
+
   vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,

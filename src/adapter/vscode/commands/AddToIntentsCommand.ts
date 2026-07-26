@@ -25,12 +25,9 @@ export async function handler(uri: vscode.Uri): Promise<void> {
   }
 
   const folderPath = uri.fsPath;
-  // 计算相对工作区的路径
-  const relPath = folderPath.replace(root, '').replace(/^[/\\]/, '').replace(/\\/g, '/');
-  if (!relPath) {
-    vscode.window.showWarningMessage('CDD: 不能添加工作区根目录');
-    return;
-  }
+  // 计算相对工作区的路径（根目录用 '.' 表示）
+  let relPath = folderPath.replace(root, '').replace(/^[/\\]/, '').replace(/\\/g, '/');
+  if (!relPath) relPath = '.';
 
   const config = vscode.workspace.getConfiguration('cdd.intents');
   const current = config.get<string[]>('roots', []);
