@@ -156,6 +156,15 @@ export class FileSystemRepository implements IFileRepository {
     }
   }
 
+  // @contract: renameFile(oldPath: string, newPath: string) => Promise<void>
+  // @step: [重命名] 使用 fs.promises.rename 重命名/移动文件
+  // @step: [父目录] 自动创建目标父目录
+  // @boundary: 原文件不存在时抛错
+  async renameFile(oldPath: string, newPath: string): Promise<void> {
+    await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
+    await fs.promises.rename(oldPath, newPath);
+  }
+
   // @contract: listSubdirectories(dirPath: string) => Promise<string[]>
   // @step: [读取目录] 使用 fs.promises.readdir 读取目录条目
   // @step: [过滤目录] 只保留 isDirectory() 为 true 的条目

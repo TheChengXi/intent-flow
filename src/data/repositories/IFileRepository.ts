@@ -82,6 +82,13 @@ export interface IFileRepository {
   deleteFile(filePath: string): Promise<void>;
 
   /**
+   * 重命名/移动文件
+   * @param oldPath 原路径
+   * @param newPath 新路径
+   */
+  renameFile(oldPath: string, newPath: string): Promise<void>;
+
+  /**
    * 列出目录下的直接子目录名（非递归）。
    * 与 scanDirectory 形成对偶：scanDirectory 返回文件，listSubdirectories 返回子目录。
    * @param dirPath 目录路径

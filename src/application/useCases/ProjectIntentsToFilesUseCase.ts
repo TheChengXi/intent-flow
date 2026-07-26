@@ -143,15 +143,23 @@ export class ProjectIntentsToFilesUseCase {
       const projPath = path.join(outputRoot, relPath) + '.md';
 
       if (intent) {
+        // 有 intent → 写正常 .md
         const projContent = this.buildProjectionContent(relPath, intent);
         const exists = await this.fileRepo.exists(projPath);
         await this.fileRepo.writeFile(projPath, projContent);
         if (exists) result.filesUpdated++;
         else result.filesCreated++;
         activeProjectionPaths.add(projPath);
+        // 如果之前标记为 .lost.md，清除它（文件重新有了 intent）
+        const lostPath = projPath.replace(/\.md$/, '.lost.md');
+        if (await this.fileRepo.exists(lostPath)) {
+          await this.fileRepo.deleteFile(lostPath);
+        }
       } else {
+        // 无 intent → 重命名 .md 为 .lost.md（保留历史记录）
+        const lostPath = projPath.replace(/\.md$/, '.lost.md');
         if (await this.fileRepo.exists(projPath)) {
-          await this.fileRepo.deleteFile(projPath);
+          await this.fileRepo.renameFile(projPath, lostPath);
           result.filesDeleted++;
         }
       }
@@ -199,9 +207,16 @@ export class ProjectIntentsToFilesUseCase {
       const projContent = this.buildProjectionContent(relPath, intent);
       await this.fileRepo.ensureDir(path.dirname(projPath));
       await this.fileRepo.writeFile(projPath, projContent);
+      // 清除之前的 .lost.md 标记
+      const lostPath = projPath.replace(/\.md$/, '.lost.md');
+      if (await this.fileRepo.exists(lostPath)) {
+        await this.fileRepo.deleteFile(lostPath);
+      }
     } else {
+      // 无 intent → 转为 .lost.md（保留历史记录）
+      const lostPath = projPath.replace(/\.md$/, '.lost.md');
       if (await this.fileRepo.exists(projPath)) {
-        await this.fileRepo.deleteFile(projPath);
+        await this.fileRepo.renameFile(projPath, lostPath);
       }
     }
 
@@ -223,10 +238,12 @@ export class ProjectIntentsToFilesUseCase {
 
     const outputRoot = path.join(sourceRoot, '.cdd', 'intents');
     const projPath = path.join(outputRoot, relPath) + '.md';
+    const lostPath = projPath.replace(/\.md$/, '.lost.md');
 
     let deleted = false;
     if (await this.fileRepo.exists(projPath)) {
-      await this.fileRepo.deleteFile(projPath);
+      // 源文件被物理删除 → 转为 .lost.md 保留记录
+      await this.fileRepo.renameFile(projPath, lostPath);
       deleted = true;
     }
 
@@ -242,16 +259,20 @@ export class ProjectIntentsToFilesUseCase {
     return `# ${fileName}\n\n\`${normPath}\`\n\n**intent:** ${intent}\n`;
   }
 
-  /** 清除 .cdd/intents/ 下不在活跃列表中的 .md 文件 */
+  /** 清除 .cdd/intents/ 下不在活跃列表中的文件 */
   private async cleanupStaleProjections(
     outputRoot: string,
     activePaths: Set<string>
   ): Promise<void> {
     const allFiles = await this.fileRepo.scanDirectory(outputRoot, { recursive: true });
     for (const absPath of allFiles) {
-      if (!absPath.endsWith('.md')) continue;
-      if (!activePaths.has(absPath)) {
-        await this.fileRepo.deleteFile(absPath);
+      // 清理过时的 .md（不在本次扫描结果中且没有对应的 .lost.md）
+      if (absPath.endsWith('.md') && !activePaths.has(absPath)) {
+        // 检查是否有对应的 .lost.md（说明是故意保留的）
+        const lostPath = absPath.replace(/\.md$/, '.lost.md');
+        if (!await this.fileRepo.exists(lostPath)) {
+          await this.fileRepo.deleteFile(absPath);
+        }
       }
     }
   }
