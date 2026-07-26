@@ -42,7 +42,7 @@ export class IntentFileWatcher {
     // 1. 全量同步
     try {
       const result = await this.useCase.fullSync({ sourceRoot: this.sourceRoot, sourceRoots, excludePatterns });
-      console.log(`[IntentFileWatcher] 全量同步完成: ${result.filesCreated} 创建, ${result.filesUpdated} 更新, ${result.filesDeleted} 删除, ${result.indexesUpdated} 索引`);
+      console.log(`[IntentFileWatcher] 全量同步完成: ${result.filesCreated} 创建, ${result.filesUpdated} 更新, ${result.filesDeleted} 删除`);
     } catch (err) {
       console.error('[IntentFileWatcher] 全量同步失败:', err);
     }

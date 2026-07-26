@@ -26,39 +26,21 @@ npm run compile:vscode    # 构建扩展
 ```
 项目根/
 └── .cdd/intents/
-    ├── _index.md                     ← 根级索引
-    ├── src/
-    │   ├── _index.md                 ← src/ 索引
-    │   ├── application/
-    │   │   ├── _index.md             ← 列出所有文件和子目录
-    │   │   ├── CoreDIContainer.md    ← 单个文件意图
-    │   │   └── ...
-    │   └── ...
-    └── ...
+    └── src/
+        ├── application/
+        │   ├── CoreDIContainer.md    ← 单个文件意图
+        │   └── IntentPackageQueryService.md
+        └── data/
+            └── ...
 ```
 
-**每个 `.md` 文件内容：**
+**`.md` 文件内容示例：**
 ```markdown
 # CoreDIContainer.ts
 
 `src/application/CoreDIContainer.ts`
 
 **intent:** 核心依赖注入容器，管理所有适配器共享的核心依赖。
-```
-
-**每个 `_index.md` 索引内容：**
-```markdown
-# src/application/
-
-## Files
-
-- **CoreDIContainer.ts** — 核心依赖注入容器，管理所有适配器共享的核心依赖
-
-## Subdirectories
-
-- config/
-- services/
-- useCases/
 ```
 
 ### 用途

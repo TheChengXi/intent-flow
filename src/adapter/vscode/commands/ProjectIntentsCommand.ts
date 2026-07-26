@@ -41,7 +41,7 @@ export async function handler(): Promise<void> {
     async () => {
       try {
         const result = await useCase.fullSync({ sourceRoot: root, sourceRoots, excludePatterns });
-        const msg = `CDD: 意图投射完成 — ${result.filesCreated} 创建, ${result.filesUpdated} 更新, ${result.filesDeleted} 删除, ${result.indexesUpdated} 索引`;
+        const msg = `CDD: 意图投射完成 — ${result.filesCreated} 创建, ${result.filesUpdated} 更新, ${result.filesDeleted} 删除`;
         console.log(`[cdd.projectIntents] ${msg}`);
         vscode.window.showInformationMessage(msg);
       } catch (err) {
