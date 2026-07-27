@@ -39,7 +39,6 @@ export class CoreDIContainer {
   // @note: 这些用例不依赖任何适配器，可以被所有适配器复用
 
   // 上下文提取用例
-  public extractPartialContextUseCase: UseCases.ExtractPartialContextUseCase;
   public extractFullContextUseCase: UseCases.ExtractFullContextUseCase;
 
   // 分析用例
@@ -81,11 +80,6 @@ export class CoreDIContainer {
     // @note: 用例的依赖注入，确保依赖方向正确：用例 → 仓库
 
     // 上下文提取用例
-    this.extractPartialContextUseCase = new UseCases.ExtractPartialContextUseCase(
-      this.fileRepo,
-      this.parserRepo,
-      this.cacheRepo
-    );
     this.extractFullContextUseCase = new UseCases.ExtractFullContextUseCase(
       this.fileRepo,
       this.parserRepo,
