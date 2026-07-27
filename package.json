@@ -22,7 +22,7 @@
   },
   "contributes": {
     "commands": [
-      // @warn: compile/review/translate/requirementTranslator 命令已废弃
+      
       {
         "command": "cdd.checkFileSize",
         "title": "CDD: 扫描项目大文件"
@@ -61,11 +61,8 @@
       }
     ],
     "menus": {
-      "editor/context": [
-        // @warn: compile/review/translate/requirementTranslator 菜单项已废弃
-      ],
+      "editor/context": [],
       "commandPalette": [
-        // @warn: compile/review/translate/requirementTranslator 命令面板项已废弃
         {
           "command": "cdd.checkFileSize"
         },
