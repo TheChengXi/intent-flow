@@ -41,9 +41,7 @@ export class CoreDIContainer {
 
   // 缓存管理用例
 
-  // 能力清单生成用例
-  public analyzeCallGraphUseCase: UseCases.AnalyzeCallGraphUseCase;
-  // @warn: traceDependencyChainUseCase 已废弃
+  // @warn: analyzeCallGraphUseCase 和 traceDependencyChainUseCase 已废弃
 
   // 投射意图用例
   public projectIntentUseCase: UseCases.ProjectIntentUseCase;
@@ -78,10 +76,7 @@ export class CoreDIContainer {
     );
 
     // 能力清单生成用例
-    this.analyzeCallGraphUseCase = new UseCases.AnalyzeCallGraphUseCase(
-      this.fileRepo,
-      this.parserRepo
-    );
+    // @warn: analyzeCallGraphUseCase 初始化已废弃
     // @warn: traceDependencyChainUseCase 初始化已废弃
 
     // 投射意图用例
