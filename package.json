@@ -179,14 +179,20 @@
         },
         "cdd.intents.roots": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "description": "意图投射的源文件夹列表（相对工作区路径），右键文件夹 → 添加到此意图目录 自动写入"
         },
         "cdd.intents.exclude": {
           "type": "array",
-          "items": { "type": "string" },
-          "default": ["**/dist/**"],
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/dist/**"
+          ],
           "description": "意图投射的排除模式（glob 语法），匹配的文件/目录不会生成投射文件。默认排除 dist"
         }
       }
@@ -215,6 +221,7 @@
     "deploy:pi": "node scripts/deploy-pi.js"
   },
   "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.82.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^18.x",
     "@types/vscode": "^1.80.0",

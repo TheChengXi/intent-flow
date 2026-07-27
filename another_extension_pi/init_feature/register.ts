@@ -83,10 +83,6 @@ export function register(pi: ExtensionAPI) {
 			}
 		}
 
-		// 将 session 名称设为当前最靠前的 feature 名称
-		if (features.length > 0) {
-			pi.setSessionName(features[0].name);
-		}
 	});
 
 	// ── /init-feature 命令（手动触发 / 恢复 ──

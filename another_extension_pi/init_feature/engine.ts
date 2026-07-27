@@ -22,6 +22,15 @@ export interface FileState {
 	hasDesign: boolean;
 }
 
+// ── 系统目录（非 feature，自动跳过） ──
+
+const SYSTEM_DIRS = new Set([
+	"intents",
+	"packages",
+	"history",
+	"test-output",
+]);
+
 // ── 阶段优先级（用于排序） ──
 
 const PHASE_ORDER: Record<FeatureInfo["phase"], number> = {
@@ -42,7 +51,9 @@ export function scanAll(cddDir: string, specificName?: string): FeatureInfo[] {
 	if (!existsSync(cddDir)) return [];
 
 	const entries = readdirSync(cddDir, { withFileTypes: true });
-	const dirs = entries.filter((e) => e.isDirectory());
+	const dirs = entries.filter(
+		(e) => e.isDirectory() && !SYSTEM_DIRS.has(e.name)
+	);
 
 	let featureDirs = dirs;
 	if (specificName) {
