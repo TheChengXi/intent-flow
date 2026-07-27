@@ -1,8 +1,5 @@
 import { CoreDIContainer } from '../../application/CoreDIContainer';
-import { HookManager } from '../../application/hooks/HookManager';
-import { CacheHook } from '../../application/hooks/CacheHook';
-import { LoggingHook } from '../../application/hooks/LoggingHook';
-import { MetricsHook } from '../../application/hooks/MetricsHook';
+// @warn: HookManager/Hooks 已废弃（移至 .archive/retired-vscode.005/application/hooks）
 import * as Tools from './tools';
 
 /**
@@ -20,8 +17,7 @@ export class DIContainer {
   private core: CoreDIContainer;
 
   // ==================== MCP 特定依赖 ====================
-  // @note: HookManager 只在 MCP 适配器中使用，不污染 CoreDIContainer
-  public hookManager: HookManager;
+  // @warn: hookManager 已废弃
 
   // @note: MCP Tools 封装基础用例，提供 MCP 协议接口
   public checkFileSizeTool: Tools.CheckFileSizeTool;
@@ -36,9 +32,7 @@ export class DIContainer {
     // 初始化核心依赖容器
     this.core = new CoreDIContainer();
 
-    // 初始化 MCP 专属的 HookManager + 注册 Hooks
-    this.hookManager = new HookManager();
-    this.registerHooks();
+    // @warn: HookManager + Hooks 注册已废弃
 
     // 初始化 MCP Tools（使用核心容器中的用例和 MCP 的 HookManager）
     this.checkFileSizeTool = new Tools.CheckFileSizeTool(
@@ -64,41 +58,7 @@ export class DIContainer {
     );
   }
 
-  // @contract: registerHooks() => void
-  // @step: [读取配置] 从 ConfigManager 读取启用的 Hooks 列表
-  // @step: [注册 CacheHook] 如果配置中包含 'cache'，注册缓存 Hook
-  // @step: [注册 LoggingHook] 如果配置中包含 'logging'，注册日志 Hook
-  // @step: [注册 MetricsHook] 如果配置中包含 'metrics'，注册性能监控 Hook
-  // @boundary: 当配置为空时，不注册任何 Hook
-  private registerHooks(): void {
-    const config = this.core.configManager.get<string[]>('hooks.enabled') || [];
-
-    // 注册缓存 Hook
-    if (config.includes('cache')) {
-      const cacheHook = new CacheHook(this.core.cacheRepo);
-      this.hookManager.register('after_extract', cacheHook);
-      this.hookManager.register('after_search', cacheHook);
-    }
-
-    // 注册日志 Hook
-    if (config.includes('logging')) {
-      const loggingHook = new LoggingHook();
-      this.hookManager.register('before_extract', loggingHook);
-      this.hookManager.register('after_extract', loggingHook);
-      this.hookManager.register('before_search', loggingHook);
-      this.hookManager.register('after_search', loggingHook);
-      this.hookManager.register('on_error', loggingHook);
-    }
-
-    // 注册性能监控 Hook
-    if (config.includes('metrics')) {
-      const metricsHook = new MetricsHook();
-      this.hookManager.register('after_extract', metricsHook);
-      this.hookManager.register('after_search', metricsHook);
-      this.hookManager.register('on_cache_hit', metricsHook);
-      this.hookManager.register('on_cache_miss', metricsHook);
-    }
-  }
+  // @warn: registerHooks() 已废弃（hooks 全部移至 .archive/retired-vscode.005）
 
   // @contract: getInstance() => DIContainer
   // @step: [单例模式] 如果实例不存在，创建新实例
