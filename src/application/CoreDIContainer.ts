@@ -43,7 +43,7 @@ export class CoreDIContainer {
 
   // 能力清单生成用例
   public analyzeCallGraphUseCase: UseCases.AnalyzeCallGraphUseCase;
-  public traceDependencyChainUseCase: UseCases.TraceDependencyChainUseCase;
+  // @warn: traceDependencyChainUseCase 已废弃
 
   // 投射意图用例
   public projectIntentUseCase: UseCases.ProjectIntentUseCase;
@@ -82,10 +82,7 @@ export class CoreDIContainer {
       this.fileRepo,
       this.parserRepo
     );
-    this.traceDependencyChainUseCase = new UseCases.TraceDependencyChainUseCase(
-      this.parserRepo,
-      this.fileRepo
-    );
+    // @warn: traceDependencyChainUseCase 初始化已废弃
 
     // 投射意图用例
     this.projectIntentUseCase = new UseCases.ProjectIntentUseCase(

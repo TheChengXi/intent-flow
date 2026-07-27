@@ -1,6 +1,6 @@
 import { CoreDIContainer } from '../../application/CoreDIContainer';
 import { CheckFileSizeUseCase } from '../../application/useCases/CheckFileSizeUseCase';
-import { ITraceDependencyChainUseCase } from '../../application/useCases/TraceDependencyChainUseCase';
+// @warn: TraceDependencyChainUseCase 已废弃
 import { ProjectIntentUseCase } from '../../application/useCases/ProjectIntentUseCase';
 
 /**
@@ -44,10 +44,7 @@ export class CliDIContainer {
     return this.core.checkFileSizeUseCase;
   }
 
-  /** @contract 获取 TraceDependencyChainUseCase，用于依赖链追踪 */
-  get traceDependencyChainUseCase(): ITraceDependencyChainUseCase {
-    return this.core.traceDependencyChainUseCase;
-  }
+  // @warn: traceDependencyChainUseCase 已废弃
 
   /** @contract 获取 ProjectIntentUseCase，用于写入 @intent */
   get projectIntentUseCase(): ProjectIntentUseCase {
