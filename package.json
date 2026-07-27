@@ -106,11 +106,7 @@
       "title": "CDD",
       "properties": {
 
-        "cdd.targetLanguage": {
-          "type": "string",
-          "default": "",
-          "description": "目标语言（可选，默认从文件扩展名推断。例如：TypeScript, Python, C++, ArkTS）"
-        },
+
         "cdd.intents.roots": {
           "type": "array",
           "items": {
