@@ -3,13 +3,11 @@
 import { handler as checkFileSizeHandler } from './CheckFileSizeCommand';
 import { handler as traceDependencyChainHandler } from './TraceDependencyChainCommand';
 import { handler as projectIntentHandler } from './ProjectIntentCommand';
-import { handler as intentPackageHandler } from './IntentPackageCommand';
 import { handler as listFolderIntentsHandler } from './ListFolderIntentsCommand';
 
 export { command as checkFileSizeCmd, description as checkFileSizeDesc, usage as checkFileSizeUsage, handler as checkFileSizeHandler } from './CheckFileSizeCommand';
 export { command as traceDependencyChainCmd, description as traceDependencyChainDesc, usage as traceDependencyChainUsage, handler as traceDependencyChainHandler } from './TraceDependencyChainCommand';
 export { command as projectIntentCmd, description as projectIntentDesc, usage as projectIntentUsage, handler as projectIntentHandler } from './ProjectIntentCommand';
-export { command as intentPackageCmd, description as intentPackageDesc, usage as intentPackageUsage, handler as intentPackageHandler } from './IntentPackageCommand';
 export { command as listFolderIntentsCmd, description as listFolderIntentsDesc, usage as listFolderIntentsUsage, handler as listFolderIntentsHandler } from './ListFolderIntentsCommand';
 
 /**
