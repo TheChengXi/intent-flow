@@ -105,21 +105,7 @@
     "configuration": {
       "title": "CDD",
       "properties": {
-        "cdd.apiKey": {
-          "type": "string",
-          "default": "",
-          "description": "Claude API Key"
-        },
-        "cdd.apiBaseUrl": {
-          "type": "string",
-          "default": "https://api.anthropic.com",
-          "description": "API Base URL（使用中转时填写中转地址）"
-        },
-        "cdd.modelId": {
-          "type": "string",
-          "default": "claude-sonnet",
-          "description": "模型 ID（例如：claude-sonnet-4-20250514, claude-haiku-4-5-20251001）"
-        },
+
         "cdd.targetLanguage": {
           "type": "string",
           "default": "",
