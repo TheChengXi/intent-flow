@@ -4,6 +4,5 @@ export * from './IFileRepository';
 export * from './ICodeParserRepository';
 export * from './ICacheRepository';
 export * from './ICallGraphAnalyzer';
-export * from './ICallGraphRepository';
 export * from './IAgentRepository';
 export * from './ISubProcessRunner';
