@@ -1,10 +1,7 @@
 // @intent: VSCode 扩展入口。处理 activate/deactivate 生命周期，初始化 Dry Run 功能（Manager/Interceptor/UI），注册全部命令（含 4 个已废弃的遗留命令）
 
 import * as vscode from 'vscode';
-import * as CompileCommand from './commands/CompileCommand';
-import * as ReviewCommand from './commands/ReviewCommand';
-import * as TranslateCommand from './commands/TranslateCommand';
-import * as RequirementTranslatorCommand from './commands/RequirementTranslatorCommand';
+// @warn: CompileCommand/ReviewCommand/TranslateCommand/RequirementTranslatorCommand 已废弃
 import * as CheckFileSizeCommand from './commands/CheckFileSizeCommand';
 import * as CapabilityMapCommand from './commands/CapabilityMapCommand';
 import * as ProjectIntentsCommand from './commands/ProjectIntentsCommand';
@@ -41,11 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
   const toggleDryRunCommand = new ToggleDryRunCommand(dryRunManager);
   const toggleDryRunDisposable = vscode.commands.registerCommand('cdd.toggleDryRun', () => toggleDryRunCommand.execute());
 
-  // 注册命令
-  const compileCommand = vscode.commands.registerCommand('cdd.compile', CompileCommand.execute);
-  const reviewCommand = vscode.commands.registerCommand('cdd.review', ReviewCommand.execute);
-  const translateCommand = vscode.commands.registerCommand('cdd.translate', TranslateCommand.execute);
-  const requirementTranslatorCommand = vscode.commands.registerCommand('cdd.requirementTranslator', RequirementTranslatorCommand.execute);
+  // @warn: compile/review/translate/requirementTranslator 命令已废弃
   const checkFileSizeCommand = vscode.commands.registerCommand('cdd.checkFileSize', CheckFileSizeCommand.execute);
   const checkCurrentFileCommand = vscode.commands.registerCommand('cdd.checkCurrentFileWithDeps', CheckFileSizeCommand.checkCurrentFileWithDependencies);
 
@@ -58,10 +51,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(toggleDryRunDisposable);
   context.subscriptions.push(dryRunStatusBar);
   context.subscriptions.push(dryRunOutputChannel);
-  context.subscriptions.push(compileCommand);
-  context.subscriptions.push(reviewCommand);
-  context.subscriptions.push(translateCommand);
-  context.subscriptions.push(requirementTranslatorCommand);
+  // @warn: compile/review/translate/requirementTranslator 命令注册已移除
   context.subscriptions.push(checkFileSizeCommand);
   context.subscriptions.push(checkCurrentFileCommand);
   context.subscriptions.push(capabilityMapCommand);
