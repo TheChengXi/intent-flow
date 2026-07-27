@@ -10,7 +10,7 @@ import { FileSystemRepository } from '../data/services/fileSystem/FileSystemRepo
 import { CacheRepositoryImpl } from '../data/services/cache/CacheRepositoryImpl';
 import { CodeParserRepositoryImpl } from '../data/services/codeParser/CodeParserRepositoryImpl';
 
-import { ConfigManager } from './config/ConfigManager';
+// @warn: ConfigManager 已废弃
 import * as UseCases from './useCases';
 
 // @intent: 核心依赖注入容器，管理所有适配器共享的核心依赖
@@ -25,10 +25,7 @@ export class CoreDIContainer {
   public cacheRepo: ICacheRepository;
   public parserRepo: ICodeParserRepository;
 
-  // ==================== 核心应用层依赖 ====================
-  // @note: 核心应用层的管理器和配置，所有适配器共享
-
-  public configManager: ConfigManager;
+  // @warn: ConfigManager 已废弃（核心应用层依赖）
 
   // ==================== 基础用例 ====================
   // @note: 原子化的基础用例，提供最小粒度的业务操作
@@ -60,8 +57,7 @@ export class CoreDIContainer {
     this.cacheRepo = CacheRepositoryImpl.getInstance();
     this.parserRepo = new CodeParserRepositoryImpl();
 
-    // ==================== 初始化核心应用层 ====================
-    this.configManager = ConfigManager.getInstance();
+    // @warn: ConfigManager 初始化已废弃
 
     // ==================== 初始化基础用例 ====================
     // @note: 用例的依赖注入，确保依赖方向正确：用例 → 仓库
