@@ -22,7 +22,6 @@
   },
   "contributes": {
     "commands": [
-      
       {
         "command": "cdd.checkFileSize",
         "title": "CDD: 扫描项目大文件"
@@ -105,8 +104,6 @@
     "configuration": {
       "title": "CDD",
       "properties": {
-
-
         "cdd.intents.roots": {
           "type": "array",
           "items": {
