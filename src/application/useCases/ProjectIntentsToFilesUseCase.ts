@@ -241,10 +241,13 @@ export class ProjectIntentsToFilesUseCase {
     const lostPath = projPath.replace(/\.md$/, '.lost.md');
 
     let deleted = false;
+    // 源文件被物理删除 → 两种文件都删掉，不留垃圾
     if (await this.fileRepo.exists(projPath)) {
-      // 源文件被物理删除 → 转为 .lost.md 保留记录
-      await this.fileRepo.renameFile(projPath, lostPath);
+      await this.fileRepo.deleteFile(projPath);
       deleted = true;
+    }
+    if (await this.fileRepo.exists(lostPath)) {
+      await this.fileRepo.deleteFile(lostPath);
     }
 
     return { projectionDeleted: deleted };

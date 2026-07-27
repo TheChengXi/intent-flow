@@ -1,13 +1,13 @@
 ---
 name: report
-description: 聚合需求、设计、执行三阶段产出与对话上下文，输出关账报告，记录偏差、经验与后续待办。
+description: 聚合需求、设计、执行三阶段产出与对话上下文，输出关账报告，记录偏差、经验与后续待办，生成能力打包。
 ---
 
 # 关账报告
 
 以下规则具有最高优先级。
 
-四步执行：提取 → 生成 → 写入 → 提交。
+五步执行：提取 → 生成 → 写入 → 打包 → 提交。
 
 ---
 
@@ -69,11 +69,40 @@ description: 聚合需求、设计、执行三阶段产出与对话上下文，�
 
 写入 `.cdd/<feature-name>/report.md`。
 
-## 5. 提交 Git
+## 5. 生成能力打包
+
+代码执行后，所有变更文件均已带有 `@intent`。
+
+- 收集本次 feature 涉及的全部文件
+- 汇总每个文件的 `@intent` 描述
+- 按功能语义分组
+- 写入 `.cdd/packages/<feature-name>.yml`
+
+### 包格式
+
+```yaml
+packageName: <feature-name>
+summary: |
+  包职责、对外依赖、入口建议、当前状态。
+
+files:
+  - path: <相对项目根目录的路径>
+    intent: <文件 @intent 原文>
+
+groups:
+  - name: 分组名
+    summary: 分组描述
+    files:
+      - <文件名>
+```
+
+**完成标志**：`.cdd/packages/<feature-name>.yml` 存在且可读。
+
+## 6. 提交 Git
 
 在写入完成后执行：
 
-1. `git add .` — 纳入全部变更（代码 + 报告）
+1. `git add .` — 纳入全部变更（代码 + 报告 + 能力打包）
 2. `git commit -m "<scope>: <feature-name> 关账"` — 提交信息格式：
    - 新 feature → `feat(<feature-name>): 关账`
    - 修复/修改 → `fix(<feature-name>): 关账`

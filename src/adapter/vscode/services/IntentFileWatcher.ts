@@ -36,15 +36,19 @@ export class IntentFileWatcher {
    * 副作用：吞掉所有侦听错误，不影响 VS Code 稳定性
    */
   async start(context: vscode.ExtensionContext): Promise<void> {
-    const excludePatterns = this.getExcludePatterns();
     const sourceRoots = this.getSourceRoots();
 
-    // 1. 全量同步
-    try {
-      const result = await this.useCase.fullSync({ sourceRoot: this.sourceRoot, sourceRoots, excludePatterns });
-      console.log(`[IntentFileWatcher] 全量同步完成: ${result.filesCreated} 创建, ${result.filesUpdated} 更新, ${result.filesDeleted} 删除`);
-    } catch (err) {
-      console.error('[IntentFileWatcher] 全量同步失败:', err);
+    // 1. 全量同步（仅当用户已指定过文件夹时才扫）
+    if (sourceRoots.length > 0) {
+      const excludePatterns = this.getExcludePatterns();
+      try {
+        const result = await this.useCase.fullSync({ sourceRoot: this.sourceRoot, sourceRoots, excludePatterns });
+        console.log(`[IntentFileWatcher] 全量同步完成: ${result.filesCreated} 创建, ${result.filesUpdated} 更新, ${result.filesDeleted} 删除`);
+      } catch (err) {
+        console.error('[IntentFileWatcher] 全量同步失败:', err);
+      }
+    } else {
+      console.log('[IntentFileWatcher] 未配置源文件夹，跳过全量同步（右键文件夹 → 添加到此意图目录）');
     }
 
     // 监听设置变更（排除模式或已选文件夹），触发重扫
