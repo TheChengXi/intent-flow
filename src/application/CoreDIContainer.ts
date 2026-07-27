@@ -12,8 +12,7 @@ import { CacheRepositoryImpl } from '../data/services/cache/CacheRepositoryImpl'
 import { CodeParserRepositoryImpl } from '../data/services/codeParser/CodeParserRepositoryImpl';
 import { IntentHashService } from '../data/services/intentPackage/IntentHashService';
 import { IntentPackageRepositoryImpl } from '../data/services/intentPackage/IntentPackageRepositoryImpl';
-import { APIService } from '../data/services/aiAPIservice/APIService';
-import { build as buildSystemPrompt } from '../data/services/aiAPIservice/buildSystemPrompt';
+
 import { ConfigManager } from './config/ConfigManager';
 import * as UseCases from './useCases';
 import { IntentPackageQueryService } from './services/IntentPackageQueryService';
@@ -130,33 +129,7 @@ export class CoreDIContainer {
       process.cwd()
     );
     this.intentHashService = new IntentHashService(this.fileRepo);
-    // @step: 构建真实 LLM 回调
-    // system prompt 从注册表获取，user message 由 GenerateIntentPackageUseCase.buildPrompt() 生成
-    // API Key 优先级：环境变量 > 配置文件
-    const llmApiKey = process.env.OPENAI_API_KEY
-      || process.env.ANTHROPIC_API_KEY
-      || '';
-    const llmProvider = process.env.LLM_PROVIDER || 'openai';
-    const llmModel = process.env.LLM_MODEL || 'gpt-4o-mini';
-    const llmBaseURL = process.env.LLM_BASE_URL || undefined;
-    const clusterSystemPrompt = buildSystemPrompt('intent-clusterer');
-    const apiService = new APIService();
-
-    this.generateIntentPackageUseCase = new UseCases.GenerateIntentPackageUseCase(
-      async (userMessage: string) => {
-        const result = await apiService.call(
-          clusterSystemPrompt,
-          userMessage,
-          {
-            apiKey: llmApiKey,
-            provider: llmProvider as 'openai' | 'anthropic',
-            model: llmModel,
-            baseURL: llmBaseURL,
-          }
-        );
-        return result.content;
-      }
-    );
+    // @warn: generateIntentPackageUseCase 的 LLM 回调已被废弃（aiAPIservice 已移除），需要后续重构
     this.maintainIntentPackagesUseCase = new UseCases.MaintainIntentPackagesUseCase(
       this.generateIntentPackageUseCase,
       this.intentPackageRepo,

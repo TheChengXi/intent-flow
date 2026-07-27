@@ -13,8 +13,7 @@ import * as RemoveFromIntentsCommand from './commands/RemoveFromIntentsCommand';
 
 // Dry Run 功能导入
 import { DryRunManager } from './application/dryrun/DryRunManager';
-import { APIService } from '../../data/services/aiAPIservice/APIService';
-import { APIInterceptor } from './application/dryrun/APIInterceptor';
+// @warn: APIService 和 APIInterceptor 已废弃（转至 .archive/retired-vscode.005）
 import { ToggleDryRunCommand } from './commands/ToggleDryRunCommand';
 import { DryRunStatusBarItem } from './ui/DryRunStatusBarItem';
 import { DryRunOutputChannel } from './ui/DryRunOutputChannel';
@@ -32,20 +31,13 @@ import { VSCodeDIContainer } from './VSCodeDIContainer';
 export function activate(context: vscode.ExtensionContext) {
   console.log('CDD Validator 已激活');
 
-  // 初始化 Dry Run 功能
+  // @warn: Dry Run 功能（apiService/APIInterceptor）已废弃，待后续清理
+  // 保留 DryRunManager/ToggleDryRunCommand 的注册以防破坏性变更
   const dryRunManager = DryRunManager.getInstance();
-  const apiService = new APIService();
-  const apiInterceptor = new APIInterceptor(apiService, dryRunManager);
-
-  // 创建 Dry Run UI 组件
   const dryRunStatusBar = new DryRunStatusBarItem(dryRunManager);
   const dryRunOutputChannel = new DryRunOutputChannel(dryRunManager);
-
-  // 初始化 UI 组件
   dryRunStatusBar.initialize();
   dryRunOutputChannel.initialize();
-
-  // 注册 Dry Run 命令
   const toggleDryRunCommand = new ToggleDryRunCommand(dryRunManager);
   const toggleDryRunDisposable = vscode.commands.registerCommand('cdd.toggleDryRun', () => toggleDryRunCommand.execute());
 

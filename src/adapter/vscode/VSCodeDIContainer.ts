@@ -1,6 +1,6 @@
 import { CoreDIContainer } from '../../application/CoreDIContainer';
 import { VSCodeConfigAdapter } from './application/config/VSCodeConfigAdapter';
-import { VSCodeAIService } from './application/services/VSCodeAIService';
+// @warn: VSCodeAIService 已废弃（转至 .archive/retired-vscode.005）
 
 // @intent: VSCode 适配器的依赖注入容器
 // @note: 使用 CoreDIContainer 管理核心依赖，添加 VSCode 特定的依赖
@@ -16,7 +16,6 @@ export class VSCodeDIContainer {
   // @note: VSCode 特定的服务和配置
 
   public configAdapter: VSCodeConfigAdapter;
-  public aiService: VSCodeAIService;
 
   // ==================== VSCode 特定用例（未来） ====================
   // @note: 高级用例将在阶段 3 添加
@@ -30,7 +29,7 @@ export class VSCodeDIContainer {
 
     // 初始化 VSCode 特定依赖
     this.configAdapter = new VSCodeConfigAdapter(this.core.configManager);
-    this.aiService = new VSCodeAIService(this.configAdapter);
+    // @warn: aiService 已废弃（VSCodeAIService 已移至 .archive/retired-vscode.005）
 
     // 未来：初始化 VSCode 特定用例
     // this.compileCodeUseCase = new CompileCodeUseCase(
