@@ -1,5 +1,5 @@
 import { IUseCase } from '../../../../application/useCases/IUseCase';
-import { IAIService, AIRequest } from '../services/IAIService';
+// @warn: IAIService 已废弃，AI 调用功能已移除
 import { ExtractFullContextUseCase } from '../../../../application/useCases/ExtractFullContextUseCase';
 import { IFileRepository } from '../../../../data/repositories/IFileRepository';
 import { CDDComment } from '../../../../data/entities/CDDComment';
@@ -41,7 +41,6 @@ export const NEEDS_SPLIT = Symbol('NEEDS_SPLIT');
 export class CompileCodeUseCase implements IUseCase<CompileCodeInput, CompileCodeOutput> {
   constructor(
     private extractFullContextUseCase: ExtractFullContextUseCase,
-    private aiService: IAIService,
     private fileRepo: IFileRepository
   ) {}
 
@@ -78,14 +77,8 @@ export class CompileCodeUseCase implements IUseCase<CompileCodeInput, CompileCod
     // 3. 检测语言
     const language = this.detectLanguage(input.filePath, input.targetLanguage);
 
-    // 4. 构建 AI 请求
-    const aiRequest = this.buildAIRequest(input, language);
-
-    // 5. 调用 AI 服务
-    const aiResponse = await this.aiService.generate(aiRequest);
-
-    // 6. 清理代码
-    let code = this.cleanCode(aiResponse.content, language);
+    // @warn: AI 服务调用已废弃（IAIService 已移除），使用空代码占位
+    let code = '';  // TODO: 需要重构以移除此 useCase 或替换 AI 调用方式
 
     // 7. 提取依赖
     const dependencies = await this.extractDependencies(
