@@ -5,8 +5,7 @@ export * from './CheckFileSizeUseCase';
 export * from './AnalyzeCallGraphUseCase';
 export * from './TraceDependencyChainUseCase';
 export * from './ProjectIntentUseCase';
-export * from './GenerateIntentPackageUseCase';
-export * from './MaintainIntentPackagesUseCase';
+// @warn: GenerateIntentPackageUseCase/MaintainIntentPackagesUseCase 已废弃
 export * from './ListFolderIntentsUseCase';
 export * from './DiscoverAgentsUseCase';
 export * from './SpawnAgentUseCase';

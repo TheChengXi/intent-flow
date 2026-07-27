@@ -6,16 +6,12 @@
 import { IFileRepository } from '../data/repositories/IFileRepository';
 import { ICodeParserRepository } from '../data/repositories/ICodeParserRepository';
 import { ICacheRepository } from '../data/repositories/ICacheRepository';
-import { IIntentPackageRepository } from '../data/repositories/IIntentPackageRepository';
 import { FileSystemRepository } from '../data/services/fileSystem/FileSystemRepository';
 import { CacheRepositoryImpl } from '../data/services/cache/CacheRepositoryImpl';
 import { CodeParserRepositoryImpl } from '../data/services/codeParser/CodeParserRepositoryImpl';
-import { IntentHashService } from '../data/services/intentPackage/IntentHashService';
-import { IntentPackageRepositoryImpl } from '../data/services/intentPackage/IntentPackageRepositoryImpl';
 
 import { ConfigManager } from './config/ConfigManager';
 import * as UseCases from './useCases';
-import { IntentPackageQueryService } from './services/IntentPackageQueryService';
 
 // @intent: 核心依赖注入容器，管理所有适配器共享的核心依赖
 // @note: 这个容器只包含纯粹的核心依赖，不包含任何适配器特定的依赖
@@ -58,13 +54,7 @@ export class CoreDIContainer {
   // 意图文件投射用例（将 @intent 实时映射到 .cdd/intents/ 目录树）
   public projectIntentsToFilesUseCase: UseCases.ProjectIntentsToFilesUseCase;
 
-  // ==================== 意图包 ====================
-
-  public intentPackageRepo: IIntentPackageRepository;
-  public intentHashService: IntentHashService;
-  public generateIntentPackageUseCase: UseCases.GenerateIntentPackageUseCase;
-  public maintainIntentPackagesUseCase: UseCases.MaintainIntentPackagesUseCase;
-  public intentPackageQueryService: IntentPackageQueryService;
+  // @warn: 意图包相关（GenerateIntentPackage/MaintainIntentPackages/IntentPackageQueryService）已废弃
 
   constructor() {
     // ==================== 初始化数据层 ====================
@@ -112,22 +102,7 @@ export class CoreDIContainer {
       this.fileRepo
     );
 
-    // ==================== 意图包 ====================
-    this.intentPackageRepo = new IntentPackageRepositoryImpl(
-      this.fileRepo,
-      process.cwd()
-    );
-    this.intentHashService = new IntentHashService(this.fileRepo);
-    // @warn: generateIntentPackageUseCase 的 LLM 回调已被废弃（aiAPIservice 已移除），需要后续重构
-    this.maintainIntentPackagesUseCase = new UseCases.MaintainIntentPackagesUseCase(
-      this.generateIntentPackageUseCase,
-      this.intentPackageRepo,
-      this.intentHashService,
-      this.listFolderIntentsUseCase
-    );
-    this.intentPackageQueryService = new IntentPackageQueryService(
-      this.intentPackageRepo
-    );
+    // @warn: 意图包初始化（GenerateIntentPackage/MaintainIntentPackages 等）已废弃
   }
 
 }

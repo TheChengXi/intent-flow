@@ -54,16 +54,6 @@ export class CliDIContainer {
     return this.core.projectIntentUseCase;
   }
 
-  /** @contract 获取 MaintainIntentPackagesUseCase，用于增量维护 */
-  get maintainIntentPackagesUseCase(): import('../../application/useCases/MaintainIntentPackagesUseCase').MaintainIntentPackagesUseCase {
-    return this.core.maintainIntentPackagesUseCase;
-  }
-
-  /** @contract 获取 IntentPackageQueryService，用于查询 */
-  get intentPackageQueryService(): import('../../application/services/IntentPackageQueryService').IntentPackageQueryService {
-    return this.core.intentPackageQueryService;
-  }
-
   /** @contract 获取 ListFolderIntentsUseCase，用于文件夹意图扫描 */
   get listFolderIntentsUseCase(): import('../../application/useCases/ListFolderIntentsUseCase').ListFolderIntentsUseCase {
     return this.core.listFolderIntentsUseCase;
