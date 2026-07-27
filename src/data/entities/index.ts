@@ -9,7 +9,6 @@ export * from './DependencyBranch';
 export * from './IntentResult';
 export * from './CacheStats';
 export * from './FileSizeCheckResult';
-export * from './ContractSearchResult';
 export * from './CallDependency';
 export * from './AgentDefinition';
 export * from './AgentRunResult';
