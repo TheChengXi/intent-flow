@@ -22,22 +22,7 @@
   },
   "contributes": {
     "commands": [
-      {
-        "command": "cdd.compile",
-        "title": "CDD: 编译注释为代码"
-      },
-      {
-        "command": "cdd.review",
-        "title": "CDD: 审查代码"
-      },
-      {
-        "command": "cdd.translate",
-        "title": "CDD: 转译代码为注释"
-      },
-      {
-        "command": "cdd.requirementTranslator",
-        "title": "CDD: 需求转译为注释"
-      },
+      // @warn: compile/review/translate/requirementTranslator 命令已废弃
       {
         "command": "cdd.checkFileSize",
         "title": "CDD: 扫描项目大文件"
@@ -77,44 +62,10 @@
     ],
     "menus": {
       "editor/context": [
-        {
-          "command": "cdd.compile",
-          "group": "cdd@1",
-          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
-        },
-        {
-          "command": "cdd.review",
-          "group": "cdd@2",
-          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
-        },
-        {
-          "command": "cdd.translate",
-          "group": "cdd@3",
-          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
-        },
-        {
-          "command": "cdd.requirementTranslator",
-          "group": "cdd@4",
-          "when": "editorHasSelection"
-        }
+        // @warn: compile/review/translate/requirementTranslator 菜单项已废弃
       ],
       "commandPalette": [
-        {
-          "command": "cdd.compile",
-          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
-        },
-        {
-          "command": "cdd.review",
-          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
-        },
-        {
-          "command": "cdd.translate",
-          "when": "editorHasSelection && (editorLangId == typescript || editorLangId == typescriptreact || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == python || editorLangId == cpp || editorLangId == c || editorLangId == java || editorLangId == go || editorLangId == rust || editorLangId == kotlin || editorLangId == swift || editorLangId == csharp || editorLangId == ruby || editorLangId == php)"
-        },
-        {
-          "command": "cdd.requirementTranslator",
-          "when": "editorHasSelection"
-        },
+        // @warn: compile/review/translate/requirementTranslator 命令面板项已废弃
         {
           "command": "cdd.checkFileSize"
         },
