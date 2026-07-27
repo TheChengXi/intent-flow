@@ -23,9 +23,6 @@ export class DIContainer {
   public checkFileSizeTool: Tools.CheckFileSizeTool;
   public traceDependencyChainTool: Tools.TraceDependencyChainTool;
   public projectIntentTool: Tools.ProjectIntentTool;
-  public getIntentPackageTool: Tools.GetIntentPackageTool;
-  public listIntentPackagesTool: Tools.ListIntentPackagesTool;
-  public searchIntentPackagesTool: Tools.SearchIntentPackagesTool;
   public listFolderIntentsTool: Tools.ListFolderIntentsTool;
 
   private constructor() {
@@ -43,15 +40,6 @@ export class DIContainer {
     );
     this.projectIntentTool = new Tools.ProjectIntentTool(
       this.core.projectIntentUseCase
-    );
-    this.getIntentPackageTool = new Tools.GetIntentPackageTool(
-      this.core.intentPackageQueryService
-    );
-    this.listIntentPackagesTool = new Tools.ListIntentPackagesTool(
-      this.core.intentPackageQueryService
-    );
-    this.searchIntentPackagesTool = new Tools.SearchIntentPackagesTool(
-      this.core.intentPackageQueryService
     );
     this.listFolderIntentsTool = new Tools.ListFolderIntentsTool(
       this.core.listFolderIntentsUseCase
@@ -73,15 +61,12 @@ export class DIContainer {
 
   // @contract: getAllTools() => MCPToolHandler[]
   // @step: [返回工具列表] 返回所有 MCP Tools
-  // @boundary: 返回的工具列表现在是 7 个工具
+  // @boundary: 返回的工具列表现在是 4 个工具
   getAllTools() {
     return [
       this.checkFileSizeTool,
       this.traceDependencyChainTool,
       this.projectIntentTool,
-      this.getIntentPackageTool,
-      this.listIntentPackagesTool,
-      this.searchIntentPackagesTool,
       this.listFolderIntentsTool
     ];
   }
