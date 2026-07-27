@@ -1,7 +1,6 @@
 // @intent: 应用层用例统一导出
 
 export * from './IUseCase';
-export * from './ExtractFullContextUseCase';
 export * from './CheckFileSizeUseCase';
 export * from './AnalyzeCallGraphUseCase';
 export * from './TraceDependencyChainUseCase';

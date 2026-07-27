@@ -38,8 +38,7 @@ export class CoreDIContainer {
   // @note: 原子化的基础用例，提供最小粒度的业务操作
   // @note: 这些用例不依赖任何适配器，可以被所有适配器复用
 
-  // 上下文提取用例
-  public extractFullContextUseCase: UseCases.ExtractFullContextUseCase;
+  // @warn: extractFullContextUseCase 已废弃
 
   // 分析用例
   public checkFileSizeUseCase: UseCases.CheckFileSizeUseCase;
@@ -80,11 +79,7 @@ export class CoreDIContainer {
     // @note: 用例的依赖注入，确保依赖方向正确：用例 → 仓库
 
     // 上下文提取用例
-    this.extractFullContextUseCase = new UseCases.ExtractFullContextUseCase(
-      this.fileRepo,
-      this.parserRepo,
-      this.cacheRepo
-    );
+    // @warn: extractFullContextUseCase 初始化已废弃
 
     // 分析用例
     this.checkFileSizeUseCase = new UseCases.CheckFileSizeUseCase(
