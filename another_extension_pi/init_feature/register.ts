@@ -46,6 +46,8 @@ export function register(pi: ExtensionAPI) {
 						{ deliverAs: "followUp" }
 					);
 				} else if (current.hasReq) {
+					// feature 名已在 requirement 阶段确定，同步到 session 名
+					pi.setSessionName(f.name);
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的需求分析已完成。\n\n` +
 						`请按 **design skill** 执行架构设计，输出 \`.cdd/${f.name}/design.md\` 和 \`.cdd/${f.name}/later-on.md\`。`,
@@ -63,6 +65,8 @@ export function register(pi: ExtensionAPI) {
 						{ deliverAs: "followUp" }
 					);
 				} else if (current.hasReq && !prev.hasReq) {
+					// feature 名已在 requirement 阶段确定，同步到 session 名
+					pi.setSessionName(f.name);
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的需求分析已完成。\n\n` +
 						`请按 **design skill** 执行架构设计，输出 \`.cdd/${f.name}/design.md\` 和 \`.cdd/${f.name}/later-on.md\`。`,
