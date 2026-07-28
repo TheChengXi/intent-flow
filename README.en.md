@@ -75,7 +75,7 @@ My @intent approach assumes by default that when an AI seeks to understand code,
 
 #### Why @intent is written in code files, not an external PRD
 
-External documents like PRDs (Product Requirement Documents) have an unavoidable problem: **file rot**. Once code and documentation are maintained separately, you must maintain two copies of the content — the code itself and the PRD. In reality, most people won't look at the document again after writing the code, nor do they read it before writing code. PRDs are a burden for non-professionals, and professionals are unwilling to read them either.
+External documents like PRDs (Product Requirement Documents) have an unavoidable problem: **file rot**. Once code and documentation are maintained separately, you must maintain two copies of the content — the code itself and the PRD. In reality, most people won't look at the document again after writing the code, nor do they read it before writing code. PRDs are a burden for non-professionals.
 
 A more realistic problem: what if, while writing, you suddenly think of a better optimization? Do you then need to update both the code file and the PRD simultaneously? It's a huge hassle.
 
