@@ -2,7 +2,7 @@
 
 **Comment-Driven Development** — A comment-driven development framework
 
-> This is just a set of local, personal design ideas. There is no need to actually read the code in this repository — reading this README or looking at other people's approaches is fine. The content merely explains the design rationale; there is no need to copy it exactly. After all, it hasn't been scientifically verified that this approach will work forever. By the way, this README was also written by an AI, and I haven't really read it much myself. Yeah, this sentence too.
+> This is just a set of local, personal design ideas. There is no need to actually read the code in this repository — reading this README or looking at other people's approaches is fine. The content merely explains the design rationale; there is no need to copy it exactly. After all, it hasn't been scientifically verified that this approach will work forever. By the way, this README was also written by an AI, and I haven't really read it much myself. Yeah, this sentence too.By the way, the name "Comment-Driven Development" was also suggested by an AI. Of course it was.
 
 CDD Framework is an AI-assisted development workflow framework centered on **@intent comments** as the core contract. It offers three adaptation forms: a VS Code extension, a CLI, and an MCP Server.
 
