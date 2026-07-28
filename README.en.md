@@ -71,6 +71,8 @@ A personal opinion (not scientifically verified, merely a design starting point)
 
 This is especially true for low-level code: the more efficient, capable, and hardware-close the writing style, the further it deviates from the token distribution in the model's knowledge base. Let alone humans, the cost for a large language model to understand it is not small. At this point, adding comments as aids can save enormous overhead when the model subsequently analyzes the same code repeatedly.
 
+My @intent approach assumes by default that when an AI seeks to understand code, it does not analyze it chunk by chunk — it reads the entire file through first, and only later, when modifications are needed, processes it in batches.
+
 #### Why @intent is written in code files, not an external PRD
 
 External documents like PRDs (Product Requirement Documents) have an unavoidable problem: **file rot**. Once code and documentation are maintained separately, you must maintain two copies of the content — the code itself and the PRD. In reality, most people won't look at the document again after writing the code, nor do they read it before writing code. PRDs are a burden for non-professionals, and professionals are unwilling to read them either.
