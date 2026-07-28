@@ -1,15 +1,16 @@
-# 源代码（已被 webpack 打包到 dist/）
+# 源代码（已被打包到 dist/）
 src/**
 scripts/**
 _source/**
 
-# 开发依赖（已被 webpack 打包）
+# 开发依赖（已被打包）
 node_modules/**
 
 # 配置文件
 .vscode/**
 .gitignore
 .gitattributes
+gitattributes.txt
 tsconfig.json
 vite.config.*
 
@@ -23,3 +24,25 @@ out/**
 
 # 其他
 .vscodeignore
+
+# 旧代码归档（已废弃）
+.archive/**
+
+# 备忘录/意图投射（仅开发用）
+.cdd/**
+
+# 另一个扩展（无关）
+another_extension_pi/**
+
+# 杂项无用文件
+LICENSE.txt
+nul
+
+# MCP 配置（仅开发用）
+.mcp.json
+
+# CLI、MCP、pi（扩展运行时不需要）
+dist/cli/**
+dist/mcp-server.js
+dist/mcp-server.js.map
+dist/pi/**
