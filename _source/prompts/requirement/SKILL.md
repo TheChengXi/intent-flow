@@ -80,6 +80,8 @@ description: 在对话中收集需求，生成 feature 名，建立 .cdd/<featur
 - ❌ 以手段命名：`repair-with-template-method`、`migrate-by-batch`
 - ✅ 以对象命名：`tool-repair`、`database-migration`
 
+**核心意图**：feature 名是检索键，用于后续聚合和搜索。以「修正/新增了什么对象」命名，确保同领域的关键词可统一检索；以「以什么方式修」命名会稀释关键词，导致同一对象的不同改动无法被聚合。
+
 生成 kebab-case 短名 → 展示确认。
 
 确认后创建 `.cdd/<feature-name>/` 目录。

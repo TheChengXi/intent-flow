@@ -74,8 +74,8 @@ description: 执行完成后关账。读取 logs/ 下子 agent 工作报告，�
 代码执行后，所有变更文件均已带有 `@intent`。
 
 - 收集本次 feature 涉及的全部文件
-- 汇总每个文件的 `@intent` 描述
-- 按功能语义分组
+- 每个文件记录**在这 feature 中的具体改动**（而非 @intent 原文——@intent 可通过 `rg @intent <path>` 原地读取）
+- 按**功能内聚**分组（跨层关联），而非按目录层级分组（按层分组是目录结构的投影，零信息增量）
 - 写入 `.cdd/packages/<feature-name>.yml`
 
 ### 包格式
@@ -87,16 +87,22 @@ summary: |
 
 files:
   - path: <相对项目根目录的路径>
-    intent: <文件 @intent 原文>
+    change: <这个文件在这个 feature 中的具体改动>
 
 groups:
   - name: 分组名
-    summary: 分组描述
+    summary: 功能内聚描述——为什么这些文件在一个组，维护者通过这个分组能理解什么能力关联
     files:
       - <文件名>
 ```
 
 **完成标志**：`.cdd/packages/<feature-name>.yml` 存在且可读。
+
+### 分组原则
+
+- ✅ 按功能内聚分组：跨层聚合功能强相关的文件，让维护者理解「这些文件共同构成了什么能力」
+- ✅ 分组是对能力关联的语义注释，不是目录结构的重复
+- 一个组内的文件可能分布在 data、application、adapter 不同层——这正是分组的信息增量
 
 ## 6. 提交 Git
 
