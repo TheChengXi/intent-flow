@@ -225,7 +225,7 @@ function extractIntentWithRegex(content: string, maxLines: number): string | nul
 /**
  * 从行数组中提取 @intent（复用逻辑，避免重复实现）。
  */
-function extractIntentFromLines(lines: string[]): string | null {
+export function extractIntentFromLines(lines: string[]): string | null {
   let inIntent = false;
   let parts: string[] = [];
 

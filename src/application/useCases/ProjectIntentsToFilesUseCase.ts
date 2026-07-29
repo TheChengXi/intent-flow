@@ -7,6 +7,7 @@
  */
 
 import { IFileRepository } from '../../data/repositories/IFileRepository';
+import { extractIntentFromLines } from '../../data/services/codeContext/extractors/IntentExtractor';
 import * as path from 'path';
 import picomatch from 'picomatch';
 
@@ -56,24 +57,8 @@ export interface RemoveFileResult {
 }
 
 // ==================== 默认 intent 提取器 ====================
-
-/** 从文件内容中提取 @intent 文本，支持两种格式 */
-function extractIntent(content: string): string | null {
-  // 匹配 /** @intent\n * 多行内容\n */ 块注释格式
-  const blockMatch = content.match(/\/\*\*\s*\n\s*\*\s*@intent\s*\n([\s\S]*?)\s*\*\//);
-  if (blockMatch) {
-    const lines = blockMatch[1].split('\n');
-    const cleaned = lines
-      .map(l => l.replace(/^\s*\*\s?/, '').trim())
-      .filter(l => l.length > 0)
-      .join(' ');
-    return cleaned || null;
-  }
-
-  // 匹配行内注释格式: // @intent: ... 或 # @intent: ...
-  const lineMatch = content.match(/@intent[:\s]+(.+)/);
-  return lineMatch?.[1]?.trim() ?? null;
-}
+// 委托给 IntentExtractor.extractIntentFromLines，支持多格式 /** */、//、# 等。
+// 不自己实现 regex，避免与 IntentExtractor 能力不一致。
 
 /**
  * 判断文件是否应该被排除（不扫描、不投射）
@@ -139,7 +124,7 @@ export class ProjectIntentsToFilesUseCase {
       if (isExcluded(relPath, excludePatterns)) continue;
 
       const content = await this.fileRepo.readFile(absPath);
-      const intent = extractIntent(content);
+      const intent = extractIntentFromLines(content.split('\n'));
       const projPath = path.join(outputRoot, relPath) + '.md';
 
       if (intent) {
@@ -201,7 +186,7 @@ export class ProjectIntentsToFilesUseCase {
     const projPath = path.join(outputRoot, relPath) + '.md';
 
     const content = await this.fileRepo.readFile(filePath);
-    const intent = extractIntent(content);
+    const intent = extractIntentFromLines(content.split('\n'));
 
     if (intent) {
       const projContent = this.buildProjectionContent(relPath, intent);
