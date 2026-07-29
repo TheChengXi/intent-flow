@@ -6,7 +6,7 @@ tools: read,write,edit,bash
 
 ## 前置阅读（必须）
 task 中指定了 feature 目录，读取该目录下的：
-- `design.md`（架构设计）
+- `design.md`（设计文档）
 - `requirement.md`（需求文档）
 - `logs/test-report.md`（接口签名，来自 test-writer）
 
@@ -23,14 +23,7 @@ task 中指定了 feature 目录，读取该目录下的：
 ### 2. 写实现
 - 实现让测试通过的最少代码
 - 不要超前实现未测试的功能
-- 标注规范参考 include 中的 ANNOTATIONS
-- **严格遵循分层与 DIP**：
-  - 当前文件所在层（adapter / application / data）决定了它能 import 哪些层
-  - adapter 层可以 import application 层和 data 层的**接口**，不能跨层直接 import data 层的**实现**
-  - application 层可以 import data 层的接口
-  - data 层不能 import 任何外层的代码
-  - 依赖通过构造函数注入（接口在构造参数中声明，实现由调用方传入）
-  - 不确定分层归属时，查阅 `design.md`（task 指定的 feature 目录下）中的模块清单和依赖链
+- **遵循依赖方向**：上层可依赖下层，下层绝不能依赖上层，不允许跨层依赖。不确定分层归属时，从 task 上下文中确认
 
 ### 3. GREEN 验证
 跑测试，确认全绿通过。
@@ -49,3 +42,53 @@ task 中指定了 feature 目录，读取该目录下的：
 ```
 work done → .cdd/<feature-name>/logs/code-report.md
 ```
+
+---
+
+## 注释规范参考
+
+实现代码中可参考以下注释规范标注关键信息，辅助后续代码审查和理解流程。
+
+### @contract
+
+方法契约，描述输入、输出、副作用。
+
+位置：方法签名上方。
+
+包含：
+- 输入参数的约束
+- 返回值的格式
+- 可能抛出的错误
+- 副作用（写库、调外部 API 等）
+
+示例：
+```
+@contract
+根据用户 ID 查询用户信息。
+输入：id - 用户唯一标识（UUID 格式）
+输出：User | null - 不存在时返回 null
+错误：DatabaseError - 数据库查询失败
+副作用：无
+```
+
+### @step
+
+实现步骤，描述方法的执行流程。
+
+位置：方法体内部，标注关键步骤。
+
+包含：
+- 按顺序的执行步骤
+- 每个步骤的目的
+- 条件分支的关键判断点
+
+### @boundary
+
+边界定义，描述输入验证、输出格式、错误处理。
+
+位置：方法签名上方或方法体内部。
+
+包含：
+- 输入验证规则
+- 输出格式规范
+- 错误类型和处理方式
