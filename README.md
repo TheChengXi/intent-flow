@@ -275,4 +275,8 @@ These standards follow the same reasoning above — as models become stronger, t
 
 ## License
 
+<<<<<<< HEAD
 MIT
+=======
+MIT
+>>>>>>> 3118520158986d312d70d6b1b554d7a43f92ba29
