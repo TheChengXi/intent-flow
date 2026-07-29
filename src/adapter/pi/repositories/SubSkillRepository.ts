@@ -1,12 +1,14 @@
 /**
- * @intent IAgentRepository 的 pi 特有实现。按 sub-skill 优先
+ * @intent
+ * IAgentRepository 的 pi 特有实现。按 sub-skill 优先
  * （skills/<skill>/sub-skill/ 下递归查找 SUB-SKILL.md）→
  * ~/.pi/agent/agents/*.md 回退的优先级发现 agent。
- * 支持 include/ 知识库注入、frontmatter 解析、同名去重（后覆盖前）。
+ * 支持 frontmatter 解析、同名去重（后覆盖前）。
  * @location adapter/pi/repositories/
  * 构造函数接受可选的 paths 参数，方便测试注入临时目录。
  * Phase 1 完整实现。
  */
+
 
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join, basename } from 'node:path';
@@ -50,66 +52,6 @@ function parseFrontmatter(content: string): ParsedFrontmatter | null {
   return { fields, body: match[2].trim() };
 }
 
-// ==================== include/ 知识库加载 ====================
-
-/** 递归收集 include 目录下所有 .md 文件的路径 */
-async function collectIncludeFiles(dir: string): Promise<string[]> {
-  const files: string[] = [];
-  let entries: string[];
-  try {
-    entries = await readdir(dir);
-  } catch {
-    return files;
-  }
-
-  for (const name of entries.sort()) {
-    const fullPath = join(dir, name);
-    let entryStat;
-    try {
-      entryStat = await stat(fullPath);
-    } catch {
-      continue;
-    }
-
-    if (entryStat.isFile() && name.endsWith('.md')) {
-      files.push(fullPath);
-    } else if (entryStat.isDirectory()) {
-      // 递归子目录
-      const subFiles = await collectIncludeFiles(fullPath);
-      files.push(...subFiles);
-    }
-  }
-
-  return files;
-}
-
-async function loadIncludes(includeDir: string): Promise<{ text: string; errors: string[] }> {
-  const mdFiles = await collectIncludeFiles(includeDir);
-  if (mdFiles.length === 0) {
-    return { text: '', errors: [] };
-  }
-
-  const sections: string[] = [];
-  const errors: string[] = [];
-
-  for (const filePath of mdFiles) {
-    const fileName = filePath.replace(/\\/g, '/').split('/').pop() || '';
-    try {
-      const content = await readFile(filePath, 'utf-8');
-      const parsed = parseFrontmatter(content);
-      const title = parsed?.fields['name'] || fileName.replace(/\.md$/, '');
-      const desc = parsed?.fields['description'] || '';
-      const body = parsed?.body || content.trim();
-      const header = desc ? `${title} — ${desc}` : title;
-      sections.push(`## ${header}\n\n${body}`);
-    } catch (err: any) {
-      errors.push(`${filePath}: ${err.message}`);
-    }
-  }
-
-  return { text: sections.join('\n\n'), errors };
-}
-
 // ==================== Agent 文件解析 ====================
 
 async function parseAgentFile(
@@ -143,16 +85,6 @@ async function parseAgentFile(
     filePath,
   };
 
-  // 加载 include/ 知识库
-  const includeDir = join(filePath.replace(/SUB-SKILL\.md$/i, ''), 'include');
-  const { text: includeText, errors: includeErrors } = await loadIncludes(includeDir);
-  if (includeText) {
-    agent.systemPrompt = `${agent.systemPrompt}\n\n## 参考规范\n\n${includeText}`;
-  }
-  if (includeErrors.length > 0) {
-    agent.includeErrors = includeErrors;
-  }
-
   return agent;
 }
 
@@ -185,7 +117,7 @@ async function scanSubSkillDir(
       // 直接是 SUB-SKILL.md 文件
       const agent = await parseAgentFile(fullPath, skillName, 'sub_skill');
       if (agent) agents.push(agent);
-    } else if (entryStat.isDirectory() && entry !== 'include') {
+    } else if (entryStat.isDirectory()) {
       // 递归子目录
       const subAgents = await scanSubSkillDir(fullPath, skillName);
       agents.push(...subAgents);

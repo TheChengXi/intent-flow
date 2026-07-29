@@ -9,7 +9,7 @@ import type { AgentRunResult } from '../entities/AgentRunResult';
 export interface SubProcessRunParams {
   /** Agent 名称（仅用于结果标识） */
   agentName: string;
-  /** 系统提示词（含 include/ 知识库） */
+  /** 系统提示词 */
   systemPrompt: string;
   /** 任务描述 */
   task: string;

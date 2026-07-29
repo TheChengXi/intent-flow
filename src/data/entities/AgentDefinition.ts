@@ -1,13 +1,11 @@
 /**
- * @intent pi agent 定义实体。表示一个从 SUB-SKILL.md 或 agents/*.md 发现的 agent，
- * 含 frontmatter 字段（name/description/tools/model）、合并后的 systemPrompt
- * （含 include/ 知识库）、来源追踪（source/skillName/filePath/includeErrors）。
+ * @intent
+ * pi agent 定义实体。表示一个从 SUB-SKILL.md 或 agents/*.md 发现的 agent，
+ * 含 frontmatter 字段（name/description/tools/model）、合并后的 systemPrompt、
+ * 来源追踪（source/skillName/filePath）。
  * Phase 1 完整实现。
  */
 
-// ==================== Agent 来源类型 ====================
-
-/** Agent 来源类型 */
 export type AgentSource = 'sub_skill' | 'user_agent' | 'project_agent';
 
 /** Agent 发现作用域 */
@@ -24,7 +22,7 @@ export interface AgentDefinition {
   tools?: string[];
   /** 模型覆盖，无则使用主线模型 */
   model?: string;
-  /** 系统提示词（frontmatter body + include/ 知识库合并） */
+  /** 系统提示词（frontmatter body 合并） */
   systemPrompt: string;
   /** 来源类型 */
   source: AgentSource;
@@ -32,8 +30,7 @@ export interface AgentDefinition {
   skillName?: string;
   /** SUB-SKILL.md 或 .md 文件路径 */
   filePath: string;
-  /** 知识库加载错误列表 */
-  includeErrors?: string[];
+
 }
 
 // ==================== 发现结果 ====================

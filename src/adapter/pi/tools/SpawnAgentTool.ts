@@ -102,8 +102,7 @@ export class SpawnAgentTool {
       label: 'Spawn Agent',
       description: [
         '在隔离子进程中运行一个 agent。',
-        'agent 由 skills/<skill>/sub-skill/<agent>/SUB-SKILL.md 定义，',
-        'include/ 目录下的 .md 自动注入为参考规范。',
+        'agent 由 skills/<skill>/sub-skill/<agent>/SUB-SKILL.md 定义。',
       ].join(' '),
       promptSnippet: 'Spawn isolated sub-agents for delegated work',
       promptGuidelines: [
