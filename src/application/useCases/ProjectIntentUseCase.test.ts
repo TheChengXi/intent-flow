@@ -16,6 +16,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mocked } from 'vitest';
 import { ProjectIntentUseCase } from './ProjectIntentUseCase';
 import type { ProjectIntentInput, ProjectIntentResult } from './ProjectIntentUseCase';
 import type { IFileRepository } from '../../data/repositories/IFileRepository';
@@ -23,23 +24,22 @@ import type { IFileRepository } from '../../data/repositories/IFileRepository';
 // ----------------------------------------------------------------
 // Helper: 创建完整 mock 的 IFileRepository
 // ----------------------------------------------------------------
-function createMockFileRepo(): IFileRepository {
+function createMockFileRepo(): Mocked<IFileRepository> {
   return {
-    exists: vi.fn<[string], Promise<boolean>>(),
-    readFile: vi.fn<[string], Promise<string>>(),
-    writeFile: vi.fn<[string, string], Promise<void>>(),
-    getModifiedTime: vi.fn<[string], Promise<number>>(),
-    watchFile: vi.fn<[string, (path: string) => void], void>(),
-    unwatchFile: vi.fn<[string], void>(),
-    getLineCount: vi.fn<[string], Promise<number>>(),
-    ensureDir: vi.fn<[string], Promise<void>>(),
+    exists: vi.fn<(filePath: string) => Promise<boolean>>(),
+    readFile: vi.fn<(filePath: string) => Promise<string>>(),
+    writeFile: vi.fn<(filePath: string, content: string) => Promise<void>>(),
+    getModifiedTime: vi.fn<(filePath: string) => Promise<number>>(),
+    watchFile: vi.fn<(filePath: string, callback: (filePath: string) => void) => void>(),
+    unwatchFile: vi.fn<(filePath: string) => void>(),
+    getLineCount: vi.fn<(filePath: string) => Promise<number>>(),
+    ensureDir: vi.fn<(dirPath: string) => Promise<void>>(),
     scanDirectory: vi.fn<
-      [string, { extensions?: string[]; recursive?: boolean } | undefined],
-      Promise<string[]>
+      (dirPath: string, options?: { extensions?: string[]; recursive?: boolean }) => Promise<string[]>
     >(),
-    deleteFile: vi.fn<[string], Promise<void>>(),
-    renameFile: vi.fn<[string, string], Promise<void>>(),
-    listSubdirectories: vi.fn<[string], Promise<string[]>>(),
+    deleteFile: vi.fn<(filePath: string) => Promise<void>>(),
+    renameFile: vi.fn<(oldPath: string, newPath: string) => Promise<void>>(),
+    listSubdirectories: vi.fn<(dirPath: string) => Promise<string[]>>(),
   };
 }
 
@@ -475,7 +475,7 @@ describe('ProjectIntentUseCase', () => {
       expect(updated).toContain('import { foo } from "./foo"');
       expect(updated).toContain('foo();');
       // 确认旧标题所在位置被替换而非追加
-      expect(updated.split('\n').filter(l => l.includes('@intent')).length).toBeGreaterThanOrEqual(1);
+      expect(updated.split('\n').filter((l: string) => l.includes('@intent')).length).toBeGreaterThanOrEqual(1);
     });
   });
 });

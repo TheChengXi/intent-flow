@@ -1,8 +1,8 @@
 /**
  * @intent
- * 能力地图 Webview 面板。管理面板生命周期、Webview 消息通信。
- * 读取 webview/index.html 作为 UI，运行时通过 webview.asWebviewUri 解析资源路径。
+ * 能力地图 Webview 面板。管理面板生命周期、Webview 消息通信。读取 webview/index.html 作为 UI，运行时通过 webview.asWebviewUri 解析资源路径。意图包能力已废弃（saveGroups/loadGroups 消息处理已移除），面板仅服务文件夹意图浏览与展示。
  */
+
 
 import * as vscode from 'vscode';
 import * as path from 'path';
@@ -189,19 +189,13 @@ code {
           this.postMessage({ type: 'folderPathUpdated', folder: this.currentAbsFolder });
           // 直接加载
           const dialogResult = await core.listFolderIntentsUseCase.execute(this.currentAbsFolder);
-          const dialogPackageName = path.basename(this.currentAbsFolder);
-          let dialogGroups: any[] = [];
-          try {
-            const pkg = await core.intentPackageRepo.load(dialogPackageName);
-            if (pkg) dialogGroups = pkg.groups;
-          } catch { /* skip */ }
           this.postMessage({
             type: 'folderData',
             data: {
               folder: dialogResult.folder,
               subdirectories: dialogResult.subdirectories,
               files: dialogResult.files,
-              groups: dialogGroups,
+              groups: [],
             },
           });
           break;
@@ -211,13 +205,6 @@ code {
         case 'openSubfolder': {
           this.currentAbsFolder = this.resolvePath(msg.folder);
           const result = await core.listFolderIntentsUseCase.execute(this.currentAbsFolder);
-          const packageName = path.basename(this.currentAbsFolder);
-
-          let groups: any[] = [];
-          try {
-            const pkg = await core.intentPackageRepo.load(packageName);
-            if (pkg) groups = pkg.groups;
-          } catch { /* skip */ }
 
           this.postMessage({
             type: 'folderData',
@@ -225,7 +212,7 @@ code {
               folder: result.folder,
               subdirectories: result.subdirectories,
               files: result.files,
-              groups,
+              groups: [],
             },
           });
           break;
@@ -257,22 +244,6 @@ code {
           } catch {
             this.postMessage({ type: 'intentDetail', fileName: msg.fileName, intent: null });
           }
-          break;
-        }
-
-        case 'saveGroups': {
-          const hash = await core.intentHashService.calcHashForFolder(this.currentAbsFolder);
-          await core.intentPackageRepo.save({
-            packageName: msg.packageName,
-            summary: '',
-            groups: msg.groups,
-            crossRefs: msg.crossRefs || [],
-            hash,
-            pinned: false,
-            deprecated: false,
-            embedding: [],
-          });
-          this.postMessage({ type: 'saveResult', success: true, message: '已保存' });
           break;
         }
 

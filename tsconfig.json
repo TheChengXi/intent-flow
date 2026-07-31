@@ -13,5 +13,5 @@
     "types": ["vscode", "node"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", ".vscode-test", "scripts", "src/adapter/vscode/ui/webview/vite.config.mts"]
+  "exclude": ["node_modules", ".vscode-test", "scripts", "src/adapter/vscode/ui/webview/vite.config.mts", "src/adapter/vscode/ui/webview/src"]
 }
