@@ -7,7 +7,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
+import { writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir, platform } from 'node:os';
@@ -140,7 +140,6 @@ export class SubProcessRunner implements ISubProcessRunner {
           env: childEnv,
         });
 
-        let stdout = '';
         let stderr = '';
         const outputParts: string[] = [];
         const messages: unknown[] = [];

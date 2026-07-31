@@ -189,7 +189,7 @@ export class SubAgentView {
   private wrapLine(
     content: string,
     innerWidth: number,
-    themeFg: ThemeFg,
+    _themeFg: ThemeFg,
   ): string {
     const trimmed = truncateToWidth(content, innerWidth);
     const pad = innerWidth - visibleWidth(trimmed);

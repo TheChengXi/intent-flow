@@ -76,7 +76,6 @@ export class TypeScriptResolver implements ImportResolver {
   // @step: 只处理相对路径
   // @boundary: 与 AST 路径的 shouldResolve 一致
   extractRegex(code: string, workspaceRoot: string): string[] {
-    const path = require('path');
     const files: string[] = [];
 
     const importRegex = /import\s+.*?\s+from\s+['"]([^'"]+)['"]/g;

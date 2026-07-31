@@ -4,7 +4,7 @@
  * 稳定性策略：固定行高（防边框破坏）+ 指纹去重（防重复输出）+ 行缓存（减少重建）。
  */
 
-import { matchesKey, Key, truncateToWidth, wrapTextWithAnsi } from '@earendil-works/pi-tui';
+import { matchesKey, Key, wrapTextWithAnsi } from '@earendil-works/pi-tui';
 import type { AgentRunState, LogEntry } from './AgentRunTracker';
 import { fmtTime, logIcon, trunc, type ThemeFg } from './tui-utils';
 
@@ -69,7 +69,7 @@ export class LogPanel {
   render(
     run: AgentRunState | undefined,
     innerWidth: number,
-    isFocused: boolean,
+    _isFocused: boolean,
     themeFg: ThemeFg,
   ): string[] {
     // 1. 提取展示日志

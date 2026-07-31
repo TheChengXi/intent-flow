@@ -64,7 +64,7 @@ export class CacheRepositoryImpl implements ICacheRepository {
     }
   }
 
-  async set<T>(key: string, value: T, ttl?: number): Promise<void> {
+  async set<T>(key: string, value: T, _ttl?: number): Promise<void> {
     const [type, ...rest] = key.split(':');
     const identifier = rest.join(':');
 

@@ -179,7 +179,7 @@ export class LanguageConfig {
     return this.BUILTIN_FUNCTIONS[language.toLowerCase()] || new Set();
   }
 
-  static getBuiltinTypes(language: string): Set<string> {
+  static getBuiltinTypes(_language: string): Set<string> {
     return this.BUILTIN_TYPES;
   }
 

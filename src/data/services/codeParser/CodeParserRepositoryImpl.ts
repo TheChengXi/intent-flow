@@ -5,7 +5,6 @@ import { TypeDefinitionSearcher } from '../codeContext/searchers/TypeDefinitionS
 import { FunctionCallExtractor } from '../codeContext/extractors/FunctionCallExtractor';
 import { TypeReferenceExtractor } from '../codeContext/extractors/TypeReferenceExtractor';
 import { ImportExtractor } from '../codeContext/extractors/import/ImportExtractor';
-import { ContractSearcher } from '../codeContext/searchers/ContractSearcher';
 import { TreeSitterManager } from '../tree-sitter/TreeSitterManager';
 import { LanguageConfig } from '../tree-sitter/LanguageConfig';
 import * as path from 'path';
@@ -84,8 +83,8 @@ export class CodeParserRepositoryImpl implements ICodeParserRepository {
   }
 
   async searchContract(
-    functionName: string,
-    workspaceRoot: string
+    _functionName: string,
+    _workspaceRoot: string
   ): Promise<string | null> {
     throw new Error('searchContract is a VSCode-specific method. Use VSCodeContractSearcher directly.');
   }

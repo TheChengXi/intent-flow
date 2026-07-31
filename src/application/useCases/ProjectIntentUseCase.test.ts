@@ -18,7 +18,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Mocked } from 'vitest';
 import { ProjectIntentUseCase } from './ProjectIntentUseCase';
-import type { ProjectIntentInput, ProjectIntentResult } from './ProjectIntentUseCase';
+import type { ProjectIntentResult } from './ProjectIntentUseCase';
 import type { IFileRepository } from '../../data/repositories/IFileRepository';
 
 // ----------------------------------------------------------------

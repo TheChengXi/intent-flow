@@ -1,5 +1,5 @@
 import { DryRunConfig, createDefaultConfig } from '../../../../data/entities/DryRunConfig';
-import { DryRunRecord, createDryRunRecord } from '../../../../data/entities/DryRunRecord';
+import { createDryRunRecord } from '../../../../data/entities/DryRunRecord';
 import { DryRunRepository } from '../../../../data/repositories/DryRunRepository';
 import { DryRunStatisticsService } from '../../../../data/services/DryRunStatisticsService';
 

@@ -5,7 +5,7 @@
  */
 
 export class VSCodeContractSearcher {
-  static async searchInWorkspace(functionName: string, workspaceRoot: string): Promise<string | null> {
+  static async searchInWorkspace(functionName: string, _workspaceRoot: string): Promise<string | null> {
     const vscode = require('vscode');
     const fs = require('fs').promises;
 

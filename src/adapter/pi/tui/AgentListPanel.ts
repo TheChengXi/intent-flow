@@ -4,7 +4,7 @@
  * 通过回调向外发送 kill/retry 指令。
  */
 
-import { matchesKey, Key, truncateToWidth, visibleWidth } from '@earendil-works/pi-tui';
+import { matchesKey, Key, truncateToWidth } from '@earendil-works/pi-tui';
 import type { AgentRunState } from './AgentRunTracker';
 import { fmtDuration, fmtCost, statusIcon, trunc, type ThemeFg } from './tui-utils';
 
@@ -41,7 +41,7 @@ export class AgentListPanel {
   selectLast(total: number): void {
     if (total === 0) return;
     this.selectedIndex = total - 1;
-    this.ensureVisible(total);
+    this.ensureVisible();
   }
 
   // ==================== 键盘事件 ====================
@@ -55,10 +55,10 @@ export class AgentListPanel {
 
     if (matchesKey(data, Key.up)) {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
-      this.ensureVisible(total);
+      this.ensureVisible();
     } else if (matchesKey(data, Key.down)) {
       this.selectedIndex = Math.min(total - 1, this.selectedIndex + 1);
-      this.ensureVisible(total);
+      this.ensureVisible();
     } else if (matchesKey(data, Key.enter)) {
       return true; // 切换到日志视图
     } else if (matchesKey(data, 'k') || data === 'K') {
@@ -177,7 +177,7 @@ export class AgentListPanel {
 
   // ==================== 内部 ====================
 
-  private ensureVisible(total: number): void {
+  private ensureVisible(): void {
     if (this.selectedIndex < this.scrollOffset) {
       this.scrollOffset = this.selectedIndex;
     } else if (this.selectedIndex >= this.scrollOffset + MAX_VISIBLE_AGENTS) {

@@ -15,15 +15,13 @@ export async function execute(): Promise<void> {
     return;
   }
 
-  const container = VSCodeDIContainer.getInstance();
-
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
       title: '正在扫描项目文件...',
       cancellable: false
     },
-    async (progress) => {
+    async (_progress) => {
       try {
         // TODO: Implement project-wide file size check
         // For now, just show a placeholder message
@@ -51,7 +49,7 @@ export async function checkCurrentFileWithDependencies(): Promise<void> {
       title: '正在检查文件大小...',
       cancellable: false
     },
-    async (progress) => {
+    async (_progress) => {
       try {
         const checkFileSizeUseCase = container.getCore().checkFileSizeUseCase;
         const results = await checkFileSizeUseCase.execute({

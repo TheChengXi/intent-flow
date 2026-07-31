@@ -16,7 +16,7 @@ import type { ThemeFg } from '../tui/tui-utils';
 
 // ==================== 渲染辅助函数 ====================
 
-function formatUsage(result: AgentRunResult, theme: { fg: ThemeFg }): string {
+function formatUsage(result: AgentRunResult): string {
   const parts: string[] = [];
   if (result.usage.turns) parts.push(`${result.usage.turns} 轮`);
   if (result.usage.input) parts.push(`↑${result.usage.input}`);
@@ -187,7 +187,7 @@ export class SpawnAgentTool {
             container.addChild(new Text(theme.fg('muted', '─── Output ───'), 0, 0));
             container.addChild(new Markdown(finalOutput.trim(), 0, 0, mdTheme));
           }
-          const usageStr = formatUsage(r, theme);
+          const usageStr = formatUsage(r);
           if (usageStr) {
             container.addChild(new Spacer(1));
             container.addChild(new Text(theme.fg('dim', usageStr), 0, 0));
@@ -208,7 +208,7 @@ export class SpawnAgentTool {
           }
           if (displayItems.length > 5) text += `\n${theme.fg('muted', `... ${displayItems.length - 5} more items (Ctrl+O)`)}`;
         }
-        const usageStr = formatUsage(r, theme);
+        const usageStr = formatUsage(r);
         if (usageStr) text += `\n${theme.fg('dim', usageStr)}`;
         return new Text(text, 0, 0);
       },

@@ -1,5 +1,4 @@
 import { FunctionDefinition } from '../entities/FunctionDefinition';
-import { TypeDefinition } from '../entities/TypeDefinition';
 
 /**
  * @intent

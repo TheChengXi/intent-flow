@@ -7,7 +7,6 @@
  */
 
 import * as vscode from 'vscode';
-import { VSCodeDIContainer } from '../VSCodeDIContainer';
 
 export const command = 'cdd.removeFromIntents';
 export const description = '从意图目录移除';

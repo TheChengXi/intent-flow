@@ -5,10 +5,10 @@
  * 守卫与策略的串联流程。
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { ScopePolicy } from '../services/ScopePolicy';
 import { ToolAccessGuard } from './ToolAccessGuard';
-import type { ExtensionAPI, ToolCallEventResult } from '@earendil-works/pi-coding-agent';
+import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 
 // ==================== Mock ExtensionAPI ====================
 
@@ -18,15 +18,6 @@ function createMockPI(): {
 } {
   const calls: Array<{ toolName: string; event: unknown; ctx: unknown }> = [];
   const handlers: Array<(event: unknown, ctx: unknown) => void | Promise<void>> = [];
-
-  const mockCtx = {
-    ui: {
-      confirm: async () => true,
-      input: async () => '',
-      notify: () => {},
-    },
-    mode: 'tui',
-  };
 
   const pi = {
     on: (event: string, handler: (event: unknown, ctx: unknown) => void | Promise<void>) => {
@@ -70,7 +61,6 @@ describe('ToolAccessGuard + ScopePolicy 集成', () => {
   it('shouldSkip 返回 true 时所有拦截直接放行', async () => {
     process.env.PI_EXT_SKIP = 'confirm-edit';
     const policy = new ScopePolicy();
-    const guard = new ToolAccessGuard(policy);
 
     expect(policy.shouldSkip('confirm-edit')).toBe(true);
   });

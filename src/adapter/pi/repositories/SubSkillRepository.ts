@@ -11,7 +11,7 @@
 
 
 import { readFile, readdir, stat } from 'node:fs/promises';
-import { join, basename } from 'node:path';
+import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { IAgentRepository } from '../../../data/repositories/IAgentRepository';
 import type { AgentDefinition, AgentDiscoveryResult, AgentScope } from '../../../data/entities/AgentDefinition';

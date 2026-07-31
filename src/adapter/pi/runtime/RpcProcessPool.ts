@@ -99,7 +99,6 @@ export class RpcProcessPool {
       taskText = `${taskText}\n\n## 上下文\n\n${params.context}`;
     }
 
-    const started = Date.now();
     managed.state = 'busy';
 
     return new Promise<AgentRunResult>((resolve, reject) => {
@@ -171,7 +170,7 @@ export class RpcProcessPool {
    */
   async shutdown(): Promise<void> {
     // 先清理所有 pending 任务
-    for (const [agent, pending] of this.pending) {
+    for (const [, pending] of this.pending) {
       clearTimeout(pending.timer);
       pending.reject(new Error('RPC 进程池已关闭'));
     }
