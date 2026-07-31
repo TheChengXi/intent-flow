@@ -37,11 +37,6 @@ export const commandMap: Record<string, CommandEntry> = {
     usage: 'cdd project-intent <path> --intent <desc> [--force] [--json]',
     handler: projectIntentHandler,
   },
-  'intent-package': {
-    description: '意图包管理：增量更新、列举、查看、语义检索',
-    usage: 'cdd intent-package <subcommand> [args]',
-    handler: intentPackageHandler,
-  },
   'list-folder-intents': {
     description: '列出文件夹内所有文件的 @intent 意图清单',
     usage: 'cdd list-folder-intents <folder> [--json]',
