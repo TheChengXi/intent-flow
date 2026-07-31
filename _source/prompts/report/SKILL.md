@@ -1,6 +1,6 @@
 ---
 name: report
-description: 执行完成后关账。读取 logs/ 下子 agent 工作报告，聚合需求、设计与执行产出，输出关账报告，记录偏差、经验与后续待办，生成能力打包并提交 Git。
+description: 执行完成后关账。聚合需求、设计与执行产出（隔离 TDD 执行时读取 logs/ 子 agent 工作报告），输出关账报告，记录偏差、经验与后续待办，生成能力打包并提交 Git。
 ---
 
 # 关账报告
@@ -13,7 +13,7 @@ description: 执行完成后关账。读取 logs/ 下子 agent 工作报告，�
 
 ## 1. 读取子 agent 工作报告
 
-读取 `.cdd/<feature-name>/logs/` 下全部报告：
+仅当 `.cdd/<feature-name>/logs/` 存在时读取（隔离 TDD 模式执行产生；直接模式执行不产生）：
 
 | 文件 | 内容 |
 |------|------|
@@ -22,6 +22,8 @@ description: 执行完成后关账。读取 logs/ 下子 agent 工作报告，�
 | `review-report.md` | 审查结论、findings |
 
 读取后将各报告的内容映射到生成步骤的对应节。
+
+logs/ 不存在（直接模式执行）时跳过本节，第 2~7 节基于 git diff、@intent 与对话上下文生成，对应节无内容时写"无"。
 
 ## 2. 纳入后续待办
 
