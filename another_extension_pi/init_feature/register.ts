@@ -5,6 +5,9 @@
  * session_start / turn_end 事件和 /init-feature 命令。
  *
  * @intent 将 feature 状态机绑定到 pi 扩展体系上，负责事件响应与用户通知。
+ * turn_end 自动检测 req/design/package.yml 新出现并通知阶段推进（含完成关账）。
+ * /init-feature 带参数时以参数为意图上下文引导 requirement 开新 feature；
+ * 无参数时恢复流水线，跳过 complete 引导第一个未完成 feature。
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -19,9 +22,11 @@ export function register(pi: ExtensionAPI) {
 
 	// ── session 启动时初始化文件状态快照 ──
 	pi.on("session_start", async (_event, ctx) => {
-		const features = scanAll(join(ctx.cwd, ".cdd"));
+		const cddDir = join(ctx.cwd, ".cdd");
+		const packagesDir = join(cddDir, "packages");
+		const features = scanAll(cddDir);
 		for (const f of features) {
-			lastFiles.set(f.name, readFileState(f.dir));
+			lastFiles.set(f.name, readFileState(f.dir, packagesDir));
 		}
 	});
 
@@ -30,14 +35,21 @@ export function register(pi: ExtensionAPI) {
 		const cddDir = join(ctx.cwd, ".cdd");
 		if (!existsSync(cddDir)) return;
 
+		const packagesDir = join(cddDir, "packages");
 		const features = scanAll(cddDir);
 		for (const f of features) {
-			const current = readFileState(f.dir);
+			const current = readFileState(f.dir, packagesDir);
 			const prev = lastFiles.get(f.name);
 
 			if (!prev) {
 				// 新 feature 目录首次出现（本轮 session 中刚创建）
-				if (current.hasDesign && current.hasReq) {
+				if (current.hasPackage) {
+					pi.sendUserMessage(
+						`Feature **${f.name}** 已完成关账。\n\n` +
+						`能力打包：\`.cdd/packages/${f.name}.yml\`。`,
+						{ deliverAs: "followUp" }
+					);
+				} else if (current.hasDesign && current.hasReq) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
 						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +
@@ -56,7 +68,13 @@ export function register(pi: ExtensionAPI) {
 				}
 			} else {
 				// 已有 feature → 检测新文件出现
-				if (current.hasDesign && current.hasReq && !prev.hasDesign) {
+				if (current.hasPackage && !prev.hasPackage) {
+					pi.sendUserMessage(
+						`Feature **${f.name}** 已完成关账。\n\n` +
+						`能力打包：\`.cdd/packages/${f.name}.yml\`。`,
+						{ deliverAs: "followUp" }
+					);
+				} else if (current.hasDesign && current.hasReq && !prev.hasDesign) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
 						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +
@@ -89,25 +107,40 @@ export function register(pi: ExtensionAPI) {
 
 	});
 
-	// ── /init-feature 命令（手动触发 / 恢复 ──
+	// ── /init-feature 命令（带参数 = 新 feature；无参数 = 恢复流水线）──
 	pi.registerCommand("init-feature", {
 		description:
-			"Feature 开发状态机。手动启动流水线或恢复到下一阶段。自动检测模式下只需启动一次。",
+			"Feature 开发状态机。带参数：以参数为意图上下文开始新 feature；无参数：恢复到下一未完成阶段。",
 		handler: async (args, ctx) => {
 			const cddDir = join(ctx.cwd, ".cdd");
+			const intent = args.trim();
 
-			const features = scanAll(cddDir, args.trim() || undefined);
-
-			// 无 feature → 启动 requirement
-			if (features.length === 0) {
+			// 带参数 → 参数作为新 feature 的意图上下文，直接进 requirement
+			if (intent) {
 				pi.sendUserMessage(
 					"开始新的 feature 开发。请按 **requirement skill** 执行需求分析。\n\n" +
+					`用户意图：${intent}\n\n` +
 					"先与用户讨论意图，按步骤生成 feature 名称，创建 `.cdd/<feature-name>/` 目录并输出需求文档。"
 				);
 				return;
 			}
 
-			const feature = features[0];
+			// 无参数 → 状态驱动：有未完成则恢复流水线，没有则提示（区分“从来没有” vs “全部完成”）
+			const features = scanAll(cddDir);
+			const pending = features.filter((f) => f.phase !== "complete");
+
+			if (pending.length === 0) {
+				const msg =
+					features.length === 0
+						? "开始新的 feature 开发。请按 **requirement skill** 执行需求分析。\n\n" +
+						  "先与用户讨论意图，按步骤生成 feature 名称，创建 `.cdd/<feature-name>/` 目录并输出需求文档。"
+						: "所有 feature 均已完成关账。\n\n" +
+						  "如需开发新 feature，请使用 `/init-feature <意图描述>`，以意图为上下文直接开始需求分析。";
+				pi.sendUserMessage(msg);
+				return;
+			}
+
+			const feature = pending[0];
 
 			// 将 session 名称设为当前 feature 名称
 			pi.setSessionName(feature.name);
@@ -134,10 +167,6 @@ export function register(pi: ExtensionAPI) {
 						`\n\n` +
 						`请按 **execute skill** 进入实现阶段：先投射 @intent，再 TDD 逐文件对齐，最后集成验证。`
 					);
-					break;
-
-				case "complete":
-					ctx.ui.notify(`Feature "${feature.name}" 所有阶段已完成`, "success");
 					break;
 			}
 		},

@@ -17,3 +17,6 @@ node_modules/
 
 # MCP构建
 .mcp.json
+
+# 本地部署脚本（不入仓库）
+scripts/
