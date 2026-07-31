@@ -86,7 +86,7 @@ export class CodeParserRepositoryImpl implements ICodeParserRepository {
     _functionName: string,
     _workspaceRoot: string
   ): Promise<string | null> {
-    throw new Error('searchContract is a VSCode-specific method. Use VSCodeContractSearcher directly.');
+    throw new Error('searchContract is a VSCode-specific method and is not supported in the data layer.');
   }
 
   // ──────────────────────────────────────────────
