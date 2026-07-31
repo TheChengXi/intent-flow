@@ -2,24 +2,26 @@ import { IUseCase } from './IUseCase';
 import { IFileRepository } from '../../data/repositories/IFileRepository';
 import { LanguageConfig } from '../../data/services/tree-sitter/LanguageConfig';
 import { TreeSitterManager } from '../../data/services/tree-sitter/TreeSitterManager';
+import { escapeBlockCommentText, escapeLineCommentText } from '../../data/services/codeContext/intentTextEscaping';
 import * as path from 'path';
 
 /**
  * @intent
  * 投射意图用例，创建/更新文件中的 @intent 注释。
- * 替换策略：优先通过 tree-sitter 解析 AST 定位 @intent 注释节点并替换；
- * 不支持 tree-sitter 时静默回退到正则匹配。
+ * 替换策略：优先通过 tree-sitter 解析 AST 定位 @intent 注释节点并替换；不支持时静默回退到正则匹配。
  * 保护机制：仅替换注释节点内的 @intent，不触及字符串/数据中的 @intent 文本。
- *
+ * 生成安全：块注释场景自动转义终止序列（星号斜杠）与行首 @ 前缀，行注释场景转义行首 @，规则委托 intentTextEscaping，防生成语法错误与提取截断。
+ * 
  * 边界：
  * - 文件已存在且 force=false 时跳过
  * - force=true 时在已有文件中查找并替换 @intent 注释，不覆盖其他内容
- * - 查找以 @intent 内容标识为锚点，不限注释风格 (line-comment, block-comment, hash-comment)
  * - tree-sitter 失败时静默回退到正则
  * - 多行注释整体替换，不残留旧行
- *
+ * - 裸文本文件（md/yaml/json 等无注释语法）不做转义
+ * 
  * 验收条件：
- * - 行注释 // @intent: 风格能被找到并替换为块注释 @intent 风格
+ * - 投射含星号斜杠终止序列的 intent 到块注释语言文件，生成内容无语法错误
+ * - 投射含行首 @ 的 intent 到任意注释语言文件，提取侧可完整还原
  * - 字符串/数据中的 @intent 文本不被误匹配
  * - tree-sitter 不可用时自动回退到正则且结果正确
  */
@@ -52,7 +54,9 @@ function generateIntentBlock(pathname: string, intent: string): string {
     // 块注释语言（C 风格 /** */）：TypeScript、Java、Go、CSS 等
     const blockDelim = LanguageConfig.getCommentBlockDelimiters(language);
     if (blockDelim) {
-      const lines = intent.split('\n');
+      // @step: 块注释场景先转义（终止序列星号斜杠全量替换、行首 @ 转义），再按行拆分，防生成语法错误
+      const escapedIntent = escapeBlockCommentText(intent);
+      const lines = escapedIntent.split('\n');
       const body = lines.map(l => `${blockDelim.linePrefix} ${l}`).join('\n');
       return `${blockDelim.start}\n${blockDelim.linePrefix} @intent\n${body}\n${blockDelim.end}\n`;
     }
@@ -60,8 +64,10 @@ function generateIntentBlock(pathname: string, intent: string): string {
     // 行注释语言：Python（#）、Ruby（#）等
     const prefixes = LanguageConfig.getCommentPrefixes(language);
     if (prefixes.length > 0) {
+      // @step: 行注释场景仅转义行首 @（无终止符风险），再按行拆分，防提取侧标签误判截断
       const prefix = prefixes[0];
-      const lines = intent.split('\n');
+      const escapedIntent = escapeLineCommentText(intent);
+      const lines = escapedIntent.split('\n');
       const body = lines.map(l => `${prefix} ${l}`).join('\n');
       return `${prefix} @intent\n${body}\n`;
     }
