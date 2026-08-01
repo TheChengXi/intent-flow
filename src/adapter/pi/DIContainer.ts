@@ -1,7 +1,7 @@
 /**
  * @intent
  * pi 适配器依赖注入容器。管理 pi 特定依赖的实例化：
- * SubSkillRepository（发现，自 pi-adapter-layer-reorg 起经 CoreDIContainer 获取，adapter 不直接 new data 实现）、RpcProcessPool（进程池）、SubProcessRunner（运行器）、DiscoverAgentsUseCase、SpawnAgentUseCase。
+ * AgentRepositoryImpl（发现，自 pi-adapter-layer-reorg 起经 CoreDIContainer 获取，adapter 不直接 new data 实现）、RpcProcessPool（进程池）、SubProcessRunner（运行器）、DiscoverAgentsUseCase、SpawnAgentUseCase。
  * Phase 1 仅有 SubProcessRunner(spawn 一次性)，Phase 1.5 注入 RpcProcessPool。
  * 边界：本容器不 import data 层任何模块；data 实现统一经 CoreDIContainer（application）获取。
  */

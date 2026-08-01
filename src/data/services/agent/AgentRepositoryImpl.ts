@@ -2,7 +2,8 @@
  * @intent
  * IAgentRepository 的 data 层实现。按 sub-skill 优先（skills/<skill>/sub-skill/ 下递归查找 SUB-SKILL.md）→ ~/.pi/agent/agents/*.md 回退的优先级发现 agent。
  * 支持 frontmatter 解析、同名去重（后覆盖前）。
- * 原位于 adapter/pi/repositories/，因数据访问实现归属 data 层而下沉（adapter 层承载接口实现必然产生跨层依赖）。
+ * 原名 SubSkillRepository：随 pi-adapter-layer-reorg 下沉 data 层时保留旧名，
+ * 后因与 data/services 下实现类惯例（CacheRepositoryImpl 等“接口名+Impl”）不一致而更名为 AgentRepositoryImpl。
  * 构造函数接受可选的 paths 参数，方便测试注入临时目录。
  * 边界：目录不存在或文件不可读时静默跳过并计入 errors，不向上抛异常；无 frontmatter 或无 name 字段的文件忽略。
  * 验收条件：
@@ -25,7 +26,7 @@ const DEFAULT_USER_AGENTS_DIR = join(homedir(), '.pi', 'agent', 'agents');
 
 // ==================== 仓库选项（用于测试注入） ====================
 
-export interface SubSkillRepositoryOptions {
+export interface AgentRepositoryImplOptions {
   /** skills 根目录（默认 ~/.pi/agent/skills） */
   skillsDir?: string;
   /** user agents 目录（默认 ~/.pi/agent/agents） */
@@ -187,11 +188,11 @@ function deduplicate(agents: AgentDefinition[]): AgentDefinition[] {
 
 // ==================== 仓库实现 ====================
 
-export class SubSkillRepository implements IAgentRepository {
+export class AgentRepositoryImpl implements IAgentRepository {
   private skillsDir: string;
   private agentsDir: string;
 
-  constructor(options?: SubSkillRepositoryOptions) {
+  constructor(options?: AgentRepositoryImplOptions) {
     this.skillsDir = options?.skillsDir ?? DEFAULT_SKILLS_DIR;
     this.agentsDir = options?.agentsDir ?? DEFAULT_USER_AGENTS_DIR;
   }

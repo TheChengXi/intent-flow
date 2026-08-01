@@ -12,7 +12,7 @@ describe('DIContainer 组装冒烟（pi-adapter-layer-reorg）', () => {
 
   it('agentRepo 来自 CoreDIContainer（data 层实现）', () => {
     const c = DIContainer.getInstance();
-    expect(c.agentRepo.constructor.name).toBe('SubSkillRepository');
+    expect(c.agentRepo.constructor.name).toBe('AgentRepositoryImpl');
   });
 
   it('accessPolicy 为 application 层 ScopePolicy', () => {

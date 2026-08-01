@@ -1,7 +1,7 @@
 /**
  * @intent
- * 核心依赖注入容器，管理所有适配器共享的核心依赖：data 层实现（FileSystemRepository、CacheRepositoryImpl、CodeParserRepositoryImpl、SubSkillRepository）+ 基础用例。
- * SubSkillRepository（agent 发现）自 pi-adapter-layer-reorg 起在此组装：data 层实现统一在 application 组装，避免 adapter 层 DIContainer 跨层 import data。若 agent 发现被其他适配器使用则天然共享。
+ * 核心依赖注入容器，管理所有适配器共享的核心依赖：data 层实现（FileSystemRepository、CacheRepositoryImpl、CodeParserRepositoryImpl、AgentRepositoryImpl）+ 基础用例。
+ * AgentRepositoryImpl（agent 发现）自 pi-adapter-layer-reorg 起在此组装：data 层实现统一在 application 组装，避免 adapter 层 DIContainer 跨层 import data。若 agent 发现被其他适配器使用则天然共享。
  * 容器只包含纯粹的核心依赖，不包含任何适配器特定的依赖。
  */
 
@@ -12,7 +12,7 @@ import { ICacheRepository } from '../data/repositories/ICacheRepository';
 import { FileSystemRepository } from '../data/services/fileSystem/FileSystemRepository';
 import { CacheRepositoryImpl } from '../data/services/cache/CacheRepositoryImpl';
 import { CodeParserRepositoryImpl } from '../data/services/codeParser/CodeParserRepositoryImpl';
-import { SubSkillRepository } from '../data/services/agent/SubSkillRepository';
+import { AgentRepositoryImpl } from '../data/services/agent/AgentRepositoryImpl';
 import type { IAgentRepository } from '../data/repositories/IAgentRepository';
 
 // @warn: ConfigManager 已废弃
@@ -63,7 +63,7 @@ export class CoreDIContainer {
     this.fileRepo = new FileSystemRepository();
     this.cacheRepo = CacheRepositoryImpl.getInstance();
     this.parserRepo = new CodeParserRepositoryImpl();
-    this.agentRepo = new SubSkillRepository();
+    this.agentRepo = new AgentRepositoryImpl();
 
     // @warn: ConfigManager 初始化已废弃
 

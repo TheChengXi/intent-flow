@@ -27,14 +27,14 @@ src/adapter/pi/
 └── DIContainer.ts
 ```
 
-> 注：`ScopePolicy`（访问策略实现）已下沉至 `application/services/`，`SubSkillRepository`（Agent 发现）已下沉至 `data/services/agent/`。adapter 层不直接 import data 层，data 实现统一经 `CoreDIContainer`（application）组装。
+> 注：`ScopePolicy`（访问策略实现）已下沉至 `application/services/`，`AgentRepositoryImpl`（Agent 发现）已下沉至 `data/services/agent/`。adapter 层不直接 import data 层，data 实现统一经 `CoreDIContainer`（application）组装。
 
 ### 依赖关系（三层架构）
 
 ```
 extension.ts (adapter/pi)
   → DIContainer
-    → CoreDIContainer (application/) → SubSkillRepository (data/services/agent/)   ← data 实现统一在 application 组装
+    → CoreDIContainer (application/) → AgentRepositoryImpl (data/services/agent/)   ← data 实现统一在 application 组装
     → DiscoverAgentsUseCase / SpawnAgentUseCase (application/useCases)
       → IAgentRepository (data/repositories/)          ← application → data，合法
       → ISubProcessRunner (application/services/)      ← 同层
@@ -306,7 +306,7 @@ npx vitest run src/adapter/pi/
 npx vitest run src/application/useCases/*Agent*
 
 # 当前覆盖（14 文件 85 测试全绿）
-#   - SubSkillRepository 集成测试（11 条）
+#   - AgentRepositoryImpl 集成测试（11 条）
 #   - SpawnAgentUseCase 单元测试（4 条）
 #   - DiscoverAgentsUseCase 单元测试（1 条）
 #   - ScopePolicy 单元测试（8 条）
