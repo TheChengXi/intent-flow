@@ -1,14 +1,12 @@
 /**
- * register — Feature 开发状态机的 pi 注册层
- *
- * 职责：依赖 pi ExtensionAPI，管理 lastFiles 内存快照，注册
- * session_start / turn_end 事件和 /init-feature 命令。
- *
- * @intent 将 feature 状态机绑定到 pi 扩展体系上，负责事件响应与用户通知。
- * turn_end 自动检测 req/design/package.yml 新出现并通知阶段推进（含完成关账）。
+ * @intent
+ * 将 feature 状态机绑定到 pi 扩展体系上，负责事件响应与用户通知。
+ * turn_end 自动检测 req/design 新出现并通知阶段推进。
  * /init-feature 带参数时以参数为意图上下文引导 requirement 开新 feature；
  * 无参数时恢复流水线，跳过 complete 引导第一个未完成 feature。
  */
+
+
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { existsSync } from "node:fs";
@@ -43,13 +41,7 @@ export function register(pi: ExtensionAPI) {
 
 			if (!prev) {
 				// 新 feature 目录首次出现（本轮 session 中刚创建）
-				if (current.hasPackage) {
-					pi.sendUserMessage(
-						`Feature **${f.name}** 已完成关账。\n\n` +
-						`能力打包：\`.cdd/packages/${f.name}.yml\`。`,
-						{ deliverAs: "followUp" }
-					);
-				} else if (current.hasDesign && current.hasReq) {
+				if (current.hasDesign && current.hasReq) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
 						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +
@@ -68,13 +60,7 @@ export function register(pi: ExtensionAPI) {
 				}
 			} else {
 				// 已有 feature → 检测新文件出现
-				if (current.hasPackage && !prev.hasPackage) {
-					pi.sendUserMessage(
-						`Feature **${f.name}** 已完成关账。\n\n` +
-						`能力打包：\`.cdd/packages/${f.name}.yml\`。`,
-						{ deliverAs: "followUp" }
-					);
-				} else if (current.hasDesign && current.hasReq && !prev.hasDesign) {
+				if (current.hasDesign && current.hasReq && !prev.hasDesign) {
 					pi.sendUserMessage(
 						`Feature **${f.name}** 的设计已完成。\n\n` +
 						`Feature 目录：\`.cdd/${f.name}/\`（含 requirement.md 和 design.md）。` +
