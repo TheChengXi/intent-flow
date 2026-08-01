@@ -209,6 +209,7 @@ session_start  ──→ 不启动任何进程
 | `spawn_agent` | `spawn_agent` | 隔离子进程运行 agent，返回结构化结果，含实时可视化 |
 | `list_agents` | `list_agents` | 查询可用 sub-agent 列表，LLM 主动调用 |
 | `/sub-agent` | `sub-agent` | 打开子 agent 监控视图（自动弹出 / /sub-agent命令） |
+| `/clear-subagent-cache` | `clear-subagent-cache` | 清理子 agent 残留的临时目录（cdd-agent-* / cdd-rpc-*） |
 
 ## 工具访问守卫
 
@@ -303,15 +304,10 @@ npm test
 
 # 只跑 Pi 适配层相关测试
 npx vitest run src/adapter/pi/
-npx vitest run src/application/useCases/*Agent*
 
-# 当前覆盖（14 文件 85 测试全绿）
-#   - AgentRepositoryImpl 集成测试（11 条）
-#   - SpawnAgentUseCase 单元测试（4 条）
-#   - DiscoverAgentsUseCase 单元测试（1 条）
-#   - ScopePolicy 单元测试（8 条）
-#   - ToolAccessGuard 单元测试（30 条）
-#   - ToolAccessGuard 集成测试（3 条）
+# 当前实际测试覆盖
+#   - dicontainer.smoke.test.ts（组装冒烟，5 条）
+#   - ToolAccessGuard.integration.test.ts（守卫+策略集成，3 条）
 ```
 
 ## 开发指南
