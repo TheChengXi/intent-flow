@@ -30,6 +30,7 @@ description: 向文件投射 @intent 规格，逐文件对齐实现，集成验�
 #### 已有文件：更新 @intent
 
 设计文档指定修改的已有文件，先更新其 @intent（规格先变，实现后跟）：
+- git mv 再投射 @intent
 
 ```
 project_intent(
