@@ -8,7 +8,7 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 import { Type } from 'typebox';
 import type { IDiscoverAgentsUseCase } from '../../../application/useCases/DiscoverAgentsUseCase';
-import type { AgentDefinition } from '../../../data/entities/AgentDefinition';
+import type { AgentDefinition } from '../../../application/services/agentRepository';
 
 export class ListAgentsTool {
   constructor(private discoverAgents: IDiscoverAgentsUseCase) {}

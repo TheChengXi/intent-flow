@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest';
-import { ScopePolicy } from '../services/ScopePolicy';
+import { ScopePolicy } from '../../../application/services/ScopePolicy';
 import { ToolAccessGuard } from './ToolAccessGuard';
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 

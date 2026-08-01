@@ -7,7 +7,7 @@
 import type { IUseCase } from './IUseCase';
 import type { AgentRunResult } from '../../data/entities/AgentRunResult';
 import type { IAgentRepository } from '../../data/repositories/IAgentRepository';
-import type { ISubProcessRunner } from '../../data/repositories/ISubProcessRunner';
+import type { ISubProcessRunner } from '../services/ISubProcessRunner';
 
 // ==================== 输入/输出类型 ====================
 

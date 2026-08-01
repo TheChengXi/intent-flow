@@ -10,7 +10,7 @@ import { Type } from 'typebox';
 import { Container, Markdown, Spacer, Text } from '@earendil-works/pi-tui';
 import { getMarkdownTheme } from '@earendil-works/pi-coding-agent';
 import type { ISpawnAgentUseCase } from '../../../application/useCases/SpawnAgentUseCase';
-import type { AgentRunResult } from '../../../data/entities/AgentRunResult';
+import type { AgentRunResult } from '../../../application/services/ISubProcessRunner';
 import type { AgentRunTracker } from '../tui/AgentRunTracker';
 import type { ThemeFg } from '../tui/tui-utils';
 

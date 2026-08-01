@@ -11,10 +11,8 @@ import { writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir, platform } from 'node:os';
-import { SCOPE_SKIP_ENV } from '../../../data/services/scope/policy';
-import type { ISubProcessRunner, SubProcessRunParams, SubProcessChainStep, SubProcessChainResult } from '../../../data/repositories/ISubProcessRunner';
-import type { AgentRunResult } from '../../../data/entities/AgentRunResult';
-import type { AgentUsage } from '../../../data/entities/AgentUsage';
+import { SCOPE_SKIP_ENV } from '../../../application/services/IAccessPolicyService';
+import type { ISubProcessRunner, SubProcessRunParams, SubProcessChainStep, SubProcessChainResult, AgentRunResult, AgentUsage } from '../../../application/services/ISubProcessRunner';
 import { RpcProcessPool } from './RpcProcessPool';
 
 // ==================== 工具函数 ====================

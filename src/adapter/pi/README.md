@@ -15,8 +15,6 @@ src/adapter/pi/
 │   ├── index.ts              ← 工具统一导出
 │   ├── SpawnAgentTool.ts     ← spawn_agent 工具（含实时可视化）
 │   ├── ToolAccessGuard.ts    ← 工具访问守卫（拦截确认）
-├── services/
-│   ├── ScopePolicy.ts        ← 访问策略桥接（IAccessPolicy 实现）
 ├── tui/
 │   ├── index.ts              ← TUI 组件统一导出
 │   ├── AgentRunTracker.ts    ← 子 agent 状态管理中心（数据源）
@@ -24,27 +22,28 @@ src/adapter/pi/
 ├── runtime/
 │   ├── RpcProcessPool.ts     ← 常驻进程池管理（按需初始化）
 │   └── SubProcessRunner.ts   ← 子进程运行器（RPC 池优先 → spawn 一次性回退）
-├── repositories/
-│   └── SubSkillRepository.ts ← Agent 发现（sub-skill 递归扫描）
 ├── commands/
 │   ├── index.ts
 └── DIContainer.ts
 ```
+
+> 注：`ScopePolicy`（访问策略实现）已下沉至 `application/services/`，`SubSkillRepository`（Agent 发现）已下沉至 `data/services/agent/`。adapter 层不直接 import data 层，data 实现统一经 `CoreDIContainer`（application）组装。
 
 ### 依赖关系（三层架构）
 
 ```
 extension.ts (adapter/pi)
   → DIContainer
-    → SpawnAgentTool
-      → SpawnAgentUseCase / DiscoverAgentsUseCase (application/)
-        → SubSkillRepository / SubProcessRunner / RpcProcessPool (adapter.pi.agents/)
-          → IAgentRepository / ISubProcessRunner (data/repositories/)
-            → AgentDefinition / AgentRunResult / AgentUsage (data/entities/)
+    → CoreDIContainer (application/) → SubSkillRepository (data/services/agent/)   ← data 实现统一在 application 组装
+    → DiscoverAgentsUseCase / SpawnAgentUseCase (application/useCases)
+      → IAgentRepository (data/repositories/)          ← application → data，合法
+      → ISubProcessRunner (application/services/)      ← 同层
+    → SubProcessRunner / RpcProcessPool (adapter/pi/runtime)
+      → ISubProcessRunner / agentRepository 透出 / IAccessPolicyService 透出 (application/services/)  ← adapter → application，合法
     → ToolAccessGuard
-      → IAccessPolicy (data/services/scope/)
-        → ScopePolicy (adapter/pi/services/ 实现)
-          → shouldSkip() (data/services/scope/ 同域引用)
+      → IAccessPolicyService (application/services/)
+        → ScopePolicy (application/services/ 实现)
+          → shouldSkip() (data/services/scope/ 纯函数)
 ```
 
 ### 外部依赖（pi 运行时提供，不打包进产物）
@@ -238,14 +237,14 @@ export PI_EXT_SKIP="confirm-edit"
 ```
 
 子 agent 环境下 `shouldSkip("confirm-edit")` 返回 `true`，所有拦截直接放行。
-策略定义在 `data/services/scope/policy.ts`，通过 `IAccessPolicy` 接口注入。
+策略定义在 `data/services/scope/policy.ts`，经 `IAccessPolicyService`（application/services/）接口注入，实现类 `ScopePolicy` 同位于 application 层。
 
 ### 架构
 
 ```
 ToolAccessGuard (adapter/pi/tools/)
-  → IAccessPolicy (application/services/ 接口)
-    → ScopePolicy (adapter/pi/services/ 桥接)
+  → IAccessPolicyService (application/services/ 接口)
+    → ScopePolicy (application/services/ 实现)
       → shouldSkip() (data/services/scope/ 纯函数)
 ```
 
@@ -360,10 +359,11 @@ execute: async (toolCallId, params, signal, onUpdate, ctx) => {
 
 ### 路径注意事项
 
-文件在 `src/adapter/pi/agents/` 下，引用 `src/data/` 需要 `../../../data/`（3 层上跳）：
+adapter 层禁止直接 import `src/data/`（含 type-only）。
+agent 域类型经 `application/services/agentRepository.ts` 透出，运行结果类型经 `application/services/ISubProcessRunner.ts` 透出，跳过策略常量经 `application/services/IAccessPolicyService.ts` 透出：
 
 ```typescript
-import type { IAgentRepository } from '../../../data/repositories/IAgentRepository';
+import type { IAgentRepository } from '../../application/services/agentRepository';
 ```
 
 ### 调试

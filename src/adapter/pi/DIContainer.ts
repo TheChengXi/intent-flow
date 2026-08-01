@@ -1,11 +1,12 @@
 /**
- * @intent pi 适配器依赖注入容器。管理 pi 特定依赖的实例化：
- * SubSkillRepository（发现）、RpcProcessPool（进程池）、SubProcessRunner（运行器）、
- * DiscoverAgentsUseCase、SpawnAgentUseCase。
+ * @intent
+ * pi 适配器依赖注入容器。管理 pi 特定依赖的实例化：
+ * SubSkillRepository（发现，自 pi-adapter-layer-reorg 起经 CoreDIContainer 获取，adapter 不直接 new data 实现）、RpcProcessPool（进程池）、SubProcessRunner（运行器）、DiscoverAgentsUseCase、SpawnAgentUseCase。
  * Phase 1 仅有 SubProcessRunner(spawn 一次性)，Phase 1.5 注入 RpcProcessPool。
+ * 边界：本容器不 import data 层任何模块；data 实现统一经 CoreDIContainer（application）获取。
  */
 
-import { SubSkillRepository } from './repositories/SubSkillRepository';
+
 import { RpcProcessPool } from './runtime/RpcProcessPool';
 import { SubProcessRunner } from './runtime/SubProcessRunner';
 import { DiscoverAgentsUseCase } from '../../application/useCases/DiscoverAgentsUseCase';
@@ -14,17 +15,22 @@ import { SpawnAgentTool } from './tools/SpawnAgentTool';
 import { ToolAccessGuard } from './tools/ToolAccessGuard';
 import { ListAgentsTool } from './tools/ListAgentsTool';
 import { AgentRunTracker } from './tui/AgentRunTracker';
-import { ScopePolicy } from './services/ScopePolicy';
+import { ScopePolicy } from '../../application/services/ScopePolicy';
+import { CoreDIContainer } from '../../application/CoreDIContainer';
 import type { IAccessPolicyService } from '../../application/services/IAccessPolicyService';
+import type { IAgentRepository } from '../../application/services/agentRepository';
 
 export class DIContainer {
   private static instance: DIContainer;
 
+  /** 核心容器（data 实现统一经此获取） */
+  private core: CoreDIContainer;
+
   // ==================== 状态管理 ====================
   public agentTracker: AgentRunTracker;
 
-  // ==================== 仓库 ====================
-  public agentRepo: SubSkillRepository;
+  // ==================== 仓库（经 CoreDIContainer 获取，不直接 new data 实现） ====================
+  public agentRepo: IAgentRepository;
 
   // ==================== 进程池 (Phase 1.5+) ====================
   public rpcPool: RpcProcessPool;
@@ -48,8 +54,11 @@ export class DIContainer {
     // 初始化状态管理
     this.agentTracker = new AgentRunTracker();
 
+    // 初始化核心容器（data 实现统一在 application 组装）
+    this.core = new CoreDIContainer();
+
     // 初始化仓库
-    this.agentRepo = new SubSkillRepository();
+    this.agentRepo = this.core.agentRepo;
 
     // 初始化进程池（需要 warmUp 才会启动子进程）
     this.rpcPool = new RpcProcessPool(this.agentRepo);

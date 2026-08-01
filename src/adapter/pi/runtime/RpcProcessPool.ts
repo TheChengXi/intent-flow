@@ -11,10 +11,9 @@ import { writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir, platform } from 'node:os';
-import type { IAgentRepository } from '../../../data/repositories/IAgentRepository';
-import type { AgentRunResult } from '../../../data/entities/AgentRunResult';
-import type { AgentUsage } from '../../../data/entities/AgentUsage';
-import { SCOPE_SKIP_ENV } from '../../../data/services/scope/policy';
+import type { IAgentRepository } from '../../../application/services/agentRepository';
+import type { AgentRunResult, AgentUsage } from '../../../application/services/ISubProcessRunner';
+import { SCOPE_SKIP_ENV } from '../../../application/services/IAccessPolicyService';
 
 // ==================== 类型定义 ====================
 

@@ -1,9 +1,21 @@
 /**
- * @intent 子进程运行器接口。Phase 1 定义 run() 运行单个 agent。
- * 预留 runParallel() 和 runChain() 给 Phase 2+。
+ * @intent
+ * 子进程运行器接口，从 data/repositories/ 上移至此。原因：唯一实现 SubProcessRunner 是 pi 平台适配代码（spawn pi 进程、RPC 进程池），必须留在 adapter 层；接口留在 data 会导致 adapter 实现跨层引用 data。上移后接口与用例（SpawnAgentUseCase）同层，adapter 实现依赖 application 合法。
+ * 同时作为 AgentRunResult / AgentUsage 实体类型的 application 出口（re-export），供 adapter 层 runtime 组件引用。
+ * 边界：runChain 需要 RPC 进程池支持，无池时实现抛错。
+ * 验收条件：
+ * - 接口签名与上移前完全一致，无行为变化
+ * - re-export 的实体类型可被 adapter 层直接引用且不出现 data/ 路径
  */
 
-import type { AgentRunResult } from '../entities/AgentRunResult';
+
+import type { AgentRunResult } from '../../data/entities/AgentRunResult';
+
+// ==================== 实体类型透出 ====================
+// adapter 层 runtime 组件（RpcProcessPool / SubProcessRunner）经此引用实体类型，避免直接跨层 import data。
+
+export type { AgentRunResult } from '../../data/entities/AgentRunResult';
+export type { AgentUsage } from '../../data/entities/AgentUsage';
 
 /** 子进程运行参数 */
 export interface SubProcessRunParams {

@@ -1,20 +1,22 @@
 /**
  * @intent
- * IAgentRepository 的 pi 特有实现。按 sub-skill 优先
- * （skills/<skill>/sub-skill/ 下递归查找 SUB-SKILL.md）→
- * ~/.pi/agent/agents/*.md 回退的优先级发现 agent。
+ * IAgentRepository 的 data 层实现。按 sub-skill 优先（skills/<skill>/sub-skill/ 下递归查找 SUB-SKILL.md）→ ~/.pi/agent/agents/*.md 回退的优先级发现 agent。
  * 支持 frontmatter 解析、同名去重（后覆盖前）。
- * @location adapter/pi/repositories/
+ * 原位于 adapter/pi/repositories/，因数据访问实现归属 data 层而下沉（adapter 层承载接口实现必然产生跨层依赖）。
  * 构造函数接受可选的 paths 参数，方便测试注入临时目录。
- * Phase 1 完整实现。
+ * 边界：目录不存在或文件不可读时静默跳过并计入 errors，不向上抛异常；无 frontmatter 或无 name 字段的文件忽略。
+ * 验收条件：
+ * - discoverAll 按 scope（sub_skill/user/both）返回去重后的 agent 列表，both 模式下 sub-skill 覆盖同名 user agent
+ * - 所有 I/O 错误被捕获为 errors 数组返回，不抛异常
  */
+
 
 
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import type { IAgentRepository } from '../../../data/repositories/IAgentRepository';
-import type { AgentDefinition, AgentDiscoveryResult, AgentScope } from '../../../data/entities/AgentDefinition';
+import type { IAgentRepository } from '../../repositories/IAgentRepository';
+import type { AgentDefinition, AgentDiscoveryResult, AgentScope } from '../../entities/AgentDefinition';
 
 // ==================== 默认路径 ====================
 
