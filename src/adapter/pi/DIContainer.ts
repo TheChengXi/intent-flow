@@ -3,8 +3,10 @@
  * pi 适配器依赖注入容器。管理 pi 特定依赖的实例化：
  * AgentRepositoryImpl（发现，自 pi-adapter-layer-reorg 起经 CoreDIContainer 获取，adapter 不直接 new data 实现）、RpcProcessPool（进程池）、SubProcessRunner（运行器）、DiscoverAgentsUseCase、SpawnAgentUseCase。
  * Phase 1 仅有 SubProcessRunner(spawn 一次性)，Phase 1.5 注入 RpcProcessPool。
+ * guard-toggle 起：guardToggleService（经 core 获取）注入 ToolAccessGuard，并暴露给 GuardToggleCommand。
  * 边界：本容器不 import data 层任何模块；data 实现统一经 CoreDIContainer（application）获取。
  */
+
 
 
 import { RpcProcessPool } from './runtime/RpcProcessPool';
@@ -18,6 +20,7 @@ import { AgentRunTracker } from './tui/AgentRunTracker';
 import { ScopePolicy } from '../../application/services/ScopePolicy';
 import { CoreDIContainer } from '../../application/CoreDIContainer';
 import type { IAccessPolicyService } from '../../application/services/IAccessPolicyService';
+import type { IGuardToggleService } from '../../application/services/IGuardToggleService';
 import type { IAgentRepository } from '../../application/services/agentRepository';
 
 export class DIContainer {
@@ -50,6 +53,9 @@ export class DIContainer {
   public accessPolicy: IAccessPolicyService;
   public toolAccessGuard: ToolAccessGuard;
 
+  // ==================== 守卫开关 (guard-toggle) ====================
+  public guardToggleService: IGuardToggleService;
+
   private constructor() {
     // 初始化状态管理
     this.agentTracker = new AgentRunTracker();
@@ -76,7 +82,10 @@ export class DIContainer {
 
     // 初始化访问策略
     this.accessPolicy = new ScopePolicy();
-    this.toolAccessGuard = new ToolAccessGuard(this.accessPolicy);
+
+    // 初始化守卫开关（data 实现统一在 core 组装，经此获取）
+    this.guardToggleService = this.core.guardToggleService;
+    this.toolAccessGuard = new ToolAccessGuard(this.accessPolicy, this.guardToggleService);
   }
 
   static getInstance(): DIContainer {

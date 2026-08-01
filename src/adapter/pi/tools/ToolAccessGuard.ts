@@ -1,14 +1,29 @@
 /**
  * @intent
- * 工具访问守卫。监听 pi 的 tool_call 事件，拦截 edit/write/bash 操作并弹确认框。 依赖 IAccessPolicyService（application 层接口）做作用域跳过判断（子 agent 环境放行）。 规则以私有方法组织，当前含 confirm-edit 和 confirm-bash 两条规则，后续可扩展。 边界： - shouldSkip("confirm-edit") 返回 true 时直接放行所有操作 - 用户拒绝修改时返回 { block: true, reason } 阻止工具调用 - isDangerousBash 匹配规则与原始 confirm-edit.ts 保持完全一致 验收条件： - edit/write 操作弹确认框，取消则 block - bash 危险命令弹确认框，取消则 block - 应跳过时不弹任何框，直接放行
+ * 工具访问守卫。监听 pi 的 tool_call 事件，拦截 edit/write/bash 操作并弹确认框。 依赖 IAccessPolicyService（application 层接口）做作用域跳过判断（子 agent 环境放行）；guard-toggle 起新增依赖 IGuardToggleService：用户开关关闭时放行全部操作。
+ * 放行判定为 OR 关系：shouldSkip("confirm-edit") 返回 true 或 guardToggle.isEnabled() 返回 false → 直接放行。
+ * 边界：
+ * - shouldSkip("confirm-edit") 返回 true 时直接放行所有操作
+ * - 用户拒绝修改时返回 { block: true, reason } 阻止工具调用
+ * - isDangerousBash 匹配规则与原始 confirm-edit.ts 保持完全一致
+ * - 开关关闭时跳过全部确认（含危险 bash 检查）
+ * 验收条件：
+ * - edit/write 操作弹确认框，取消则 block
+ * - bash 危险命令弹确认框，取消则 block
+ * - 应跳过时不弹任何框，直接放行（PI_EXT_SKIP 或 开关关闭）
  */
 
 
+
 import type { IAccessPolicyService } from '../../../application/services/IAccessPolicyService';
+import type { IGuardToggleService } from '../../../application/services/IGuardToggleService';
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 
 export class ToolAccessGuard {
-  constructor(private accessPolicy: IAccessPolicyService) {}
+  constructor(
+    private accessPolicy: IAccessPolicyService,
+    private guardToggle: IGuardToggleService,
+  ) {}
 
   /**
    * @contract
@@ -23,8 +38,8 @@ export class ToolAccessGuard {
      * 2. handler 内部根据 toolName 分派到对应拦截逻辑
      */
     pi.on('tool_call', async (event, ctx) => {
-      // 应跳过时不弹任何框，直接放行
-      if (this.accessPolicy.shouldSkip('confirm-edit')) {
+      // 应跳过时不弹任何框，直接放行（PI_EXT_SKIP 子 agent 环境 或 用户关闭守卫开关）
+      if (this.accessPolicy.shouldSkip('confirm-edit') || !this.guardToggle.isEnabled()) {
         return;
       }
 

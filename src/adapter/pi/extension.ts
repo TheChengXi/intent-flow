@@ -1,13 +1,17 @@
 /**
- * @intent pi 扩展入口。仅做注册编排，不包含实现逻辑。
+ * @intent
+ * pi 扩展入口。仅做注册编排，不包含实现逻辑。
  * 委托给 tools/（工具）、commands/（斜杠命令）和 tui/（TUI 组件）。
  * 进程池采用按需初始化，session_shutdown 时清理。
  * Phase 2 新增：AgentRunTracker + SubAgentView（子 agent 监控视图）。
+ * guard-toggle 起新增：GuardToggleCommand（/guard-auto 开关命令）注册。
  */
+
 
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 import { DIContainer } from './DIContainer';
 import { ClearSubagentCacheCommand } from './commands/ClearSubagentCacheCommand';
+import { GuardToggleCommand } from './commands/GuardToggleCommand';
 import { openSubAgentView } from './tui/SubAgentView';
 
 export default function (pi: ExtensionAPI) {
@@ -44,6 +48,7 @@ export default function (pi: ExtensionAPI) {
 
   // ── 斜杠命令注册 ──
   new ClearSubagentCacheCommand().register(pi);
+  new GuardToggleCommand(container.guardToggleService).register(pi);
 
   // ── /sub-agent 命令 ──
   pi.registerCommand('sub-agent', {
