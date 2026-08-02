@@ -5,7 +5,7 @@
  * pi 会自动发现 init_feature/index.ts 并加载。
  *
  * @intent 对 pi 暴露 /init-feature 命令和 auto-detect 能力，
- * 驱动 CDD 三层架构下的 Feature 开发流水线。
+ * 驱动 IntentFlow 三层架构下的 Feature 开发流水线。
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";

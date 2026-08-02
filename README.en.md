@@ -1,10 +1,10 @@
-# CDD Framework
+# IntentFlow
 
 **Comment-Driven Development** — A comment-driven development framework
 
 > This is just a set of local, personal design ideas. There is no need to actually read the code in this repository — reading this README or looking at other people's approaches is fine. The content merely explains the design rationale; there is no need to copy it exactly. After all, it hasn't been scientifically verified that this approach will work forever. By the way, this README was also written by an AI, and I haven't really read it much myself. Yeah, this sentence too.By the way, the name "Comment-Driven Development" was also suggested by an AI. Of course it was.
 
-CDD Framework is an AI-assisted development workflow framework centered on **@intent comments** as the core contract. It offers three adaptation forms: a VS Code extension, a CLI, and an MCP Server.
+IntentFlow is an AI-assisted development workflow framework centered on **@intent comments** as the core contract. It offers three adaptation forms: a VS Code extension, a CLI, and an MCP Server.
 
 ---
 
@@ -50,7 +50,7 @@ In essence, the report suite is the context used to **globally unify intent** in
 
 The four phases describe the "static structure" of the workflow, but development is an ongoing process — how do you know when to move to the next phase?
 
-The essence of the Loop is: **you have infinite tokens and a local codebase; changing code costs practically nothing, and you have endless requirements that can trigger the loop on a timer**. After each round of conversation, it automatically scans the feature folders under the `.cdd/` directory, checking for file status changes (has `requirement.md` appeared? has `design.md` appeared?). Once a new file is detected, it automatically pushes a notification prompting entry into the next phase.
+The essence of the Loop is: **you have infinite tokens and a local codebase; changing code costs practically nothing, and you have endless requirements that can trigger the loop on a timer**. After each round of conversation, it automatically scans the feature folders under the `.intentflow/` directory, checking for file status changes (has `requirement.md` appeared? has `design.md` appeared?). Once a new file is detected, it automatically pushes a notification prompting entry into the next phase.
 
 For ordinary developers, this mechanism might seem "overly extravagant," but its core meaning is sound: **a timed, phase-triggered state machine that drives skill execution**.
 
@@ -59,7 +59,7 @@ In implementation, this is embodied in the `another_extension_pi/init_feature/` 
 - `register.ts` — Pi extension registration: listens for `session_start` to initialize snapshots, `turn_end` to auto-detect changes, and `/init-feature` command for manual trigger
 - `index.ts` — Unified export entry
 
-Many AI development tools have similar ideas, some tampering with prompts, some tampering with code. CDD chooses the code path — implementing a lightweight state machine through the event mechanism of the Pi extension.
+Many AI development tools have similar ideas, some tampering with prompts, some tampering with code. IntentFlow chooses the code path — implementing a lightweight state machine through the event mechanism of the Pi extension.
 
 ### No Fallback Philosophy
 
@@ -98,7 +98,7 @@ Write a paragraph of natural language @intent at the top of each file, explainin
 
 ### CLI Commands
 
-`cdd check-file-size`, `cdd trace-dependency-chain`, `cdd project-intent`, `cdd list-folder-intents`, `cdd intent-package`
+`iflow check-file-size`, `iflow trace-dependency-chain`, `iflow project-intent`, `iflow list-folder-intents`, `iflow intent-package`
 
 ### VS Code Commands
 
@@ -113,7 +113,7 @@ Sub-process agent scheduling (SpawnAgent/ListAgents), access policy control, RPC
 ## Project Structure
 
 ```
-.cdd/                     # Workflow artifacts (requirements/design/report/intent packages)
+.intentflow/                     # Workflow artifacts (requirements/design/report/intent packages)
 _source/                  # Skill definitions
 src/
   data/                   # Entities + interfaces + implementations

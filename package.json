@@ -1,13 +1,13 @@
 {
-  "name": "cdd-framework",
-  "displayName": "CDD Framework",
+  "name": "intent-flow",
+  "displayName": "IntentFlow",
   "description": "Comment-Driven Development Framework - 注释驱动开发框架",
   "version": "0.5.0",
   "publisher": "TheChengXi",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/TheChengXi/cdd-framework.git"
+    "url": "https://github.com/TheChengXi/intent-flow.git"
   },
   "engines": {
     "vscode": "^1.80.0"
@@ -18,93 +18,93 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "bin": {
-    "cdd": "./dist/cli/cdd.js"
+    "iflow": "./dist/cli/iflow.js"
   },
   "contributes": {
     "commands": [
       {
-        "command": "cdd.checkFileSize",
-        "title": "CDD: 扫描项目大文件"
+        "command": "iflow.checkFileSize",
+        "title": "IntentFlow: 扫描项目大文件"
       },
       {
-        "command": "cdd.checkCurrentFileWithDeps",
-        "title": "CDD: 检查当前文件及依赖大小"
+        "command": "iflow.checkCurrentFileWithDeps",
+        "title": "IntentFlow: 检查当前文件及依赖大小"
       },
       {
-        "command": "cdd.toggleDryRun",
-        "title": "CDD: Toggle Dry Run Mode"
+        "command": "iflow.toggleDryRun",
+        "title": "IntentFlow: Toggle Dry Run Mode"
       },
       {
-        "command": "cdd.openCapabilityMap",
-        "title": "CDD: 打开能力地图"
+        "command": "iflow.openCapabilityMap",
+        "title": "IntentFlow: 打开能力地图"
       },
       {
-        "command": "cdd.toggleSelectionMode",
-        "title": "CDD: 切换框选模式"
+        "command": "iflow.toggleSelectionMode",
+        "title": "IntentFlow: 切换框选模式"
       },
       {
-        "command": "cdd.clearSelection",
-        "title": "CDD: 清除选中"
+        "command": "iflow.clearSelection",
+        "title": "IntentFlow: 清除选中"
       },
       {
-        "command": "cdd.projectIntents",
-        "title": "CDD: 重建意图投射目录 (.cdd/intents/)"
+        "command": "iflow.projectIntents",
+        "title": "IntentFlow: 重建意图投射目录 (.intentflow/intents/)"
       },
       {
-        "command": "cdd.addToIntents",
-        "title": "CDD: 添加到此意图目录"
+        "command": "iflow.addToIntents",
+        "title": "IntentFlow: 添加到此意图目录"
       },
       {
-        "command": "cdd.removeFromIntents",
-        "title": "CDD: 从意图目录移除"
+        "command": "iflow.removeFromIntents",
+        "title": "IntentFlow: 从意图目录移除"
       }
     ],
     "menus": {
       "editor/context": [],
       "commandPalette": [
         {
-          "command": "cdd.checkFileSize"
+          "command": "iflow.checkFileSize"
         },
         {
-          "command": "cdd.checkCurrentFileWithDeps"
+          "command": "iflow.checkCurrentFileWithDeps"
         },
         {
-          "command": "cdd.openCapabilityMap"
+          "command": "iflow.openCapabilityMap"
         },
         {
-          "command": "cdd.projectIntents"
+          "command": "iflow.projectIntents"
         },
         {
-          "command": "cdd.addToIntents"
+          "command": "iflow.addToIntents"
         },
         {
-          "command": "cdd.removeFromIntents"
+          "command": "iflow.removeFromIntents"
         }
       ],
       "explorer/context": [
         {
-          "command": "cdd.addToIntents",
+          "command": "iflow.addToIntents",
           "when": "explorerResourceIsFolder",
-          "group": "cdd@1"
+          "group": "iflow@1"
         },
         {
-          "command": "cdd.removeFromIntents",
+          "command": "iflow.removeFromIntents",
           "when": "explorerResourceIsFolder",
-          "group": "cdd@2"
+          "group": "iflow@2"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "cdd.toggleSelectionMode",
+        "command": "iflow.toggleSelectionMode",
         "key": "b",
-        "when": "activeWebviewPanelId == 'cdd.capabilityMap'"
+        "when": "activeWebviewPanelId == 'iflow.capabilityMap'"
       }
     ],
     "configuration": {
-      "title": "CDD",
+      "title": "IntentFlow",
       "properties": {
-        "cdd.intents.roots": {
+        "iflow.intents.roots": {
           "type": "array",
           "items": {
             "type": "string"
@@ -112,7 +112,7 @@
           "default": [],
           "description": "意图投射的源文件夹列表（相对工作区路径），右键文件夹 → 添加到此意图目录 自动写入"
         },
-        "cdd.intents.exclude": {
+        "iflow.intents.exclude": {
           "type": "array",
           "items": {
             "type": "string"
@@ -134,16 +134,16 @@
     "test:watch": "vitest",
     "precompile": "echo \"[warn] generate-prompts script has been retired\"",
     "compile": "npm run compile:vscode && npm run compile:mcp && npm run compile:cli && npm run compile:pi",
-    "watch": "set CDD_BUILD=extension && npx vite build --watch",
+    "watch": "set IFLOW_BUILD=extension && npx vite build --watch",
     "package": "npx vite build && cd src/adapter/vscode/ui/webview && npx vite build --config vite.config.mts",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "mcp": "node dist/mcp-server.js",
     "mcp:dev": "ts-node src/adapter/mcp/MCPServer.ts",
-    "compile:vscode": "set CDD_BUILD=extension && npx vite build && cd src/adapter/vscode/ui/webview && npx vite build --config vite.config.mts",
-    "compile:mcp": "set CDD_BUILD=mcp-server && npx vite build",
-    "compile:cli": "set CDD_BUILD=cli/cdd && npx vite build",
-    "compile:pi": "set CDD_BUILD=pi/extension && npx vite build",
+    "compile:vscode": "set IFLOW_BUILD=extension && npx vite build && cd src/adapter/vscode/ui/webview && npx vite build --config vite.config.mts",
+    "compile:mcp": "set IFLOW_BUILD=mcp-server && npx vite build",
+    "compile:cli": "set IFLOW_BUILD=cli/iflow && npx vite build",
+    "compile:pi": "set IFLOW_BUILD=pi/extension && npx vite build",
     "deploy:pi": "node scripts/deploy-pi.js"
   },
   "devDependencies": {

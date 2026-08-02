@@ -62,8 +62,8 @@ description: 为需求做结构设计，输出模块划分和接口边界。新�
 
 ### 3. 产出
 
-- `.cdd/<feature-name>/design.md` — 本次设计文档
-- `.cdd/<feature-name>/later-on.md` — 后续想法备忘
+- `.intentflow/<feature-name>/design.md` — 本次设计文档
+- `.intentflow/<feature-name>/later-on.md` — 后续想法备忘
 
 ---
 

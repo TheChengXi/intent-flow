@@ -20,7 +20,7 @@ if (typeof window.acquireVsCodeApi !== 'function') {
     ],
     groups: [{
       name: '核心能力',
-      summary: 'CDD 框架核心功能集合',
+      summary: 'IntentFlow 框架核心功能集合',
       files: [
         { path: 'CommentParser.ts' },
         { path: 'IntentExtractor.ts' },

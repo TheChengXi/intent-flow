@@ -1,7 +1,7 @@
 /**
  * GuardToggleStore 单元测试
  *
- * 不 mock 被测类，使用真实文件系统验证 .cdd/guard-state.json 的读写行为。
+ * 不 mock 被测类，使用真实文件系统验证 .intentflow/guard-state.json 的读写行为。
  * 测试通过 process.chdir() 切换到 mkdtemp 临时目录隔离 cwd，
  * afterEach 恢复原 cwd 并清理临时目录。
  */
@@ -34,11 +34,11 @@ describe('GuardToggleStore', () => {
   });
 
   /** 当前 cwd 下配置文件的固定路径 */
-  const configPath = (): string => join(process.cwd(), '.cdd', 'guard-state.json');
+  const configPath = (): string => join(process.cwd(), '.intentflow', 'guard-state.json');
 
   /** 直接向配置文件路径写入指定内容（绕过被测类，用于构造边界场景） */
   const seedConfig = (content: string): void => {
-    mkdirSync(join(process.cwd(), '.cdd'), { recursive: true });
+    mkdirSync(join(process.cwd(), '.intentflow'), { recursive: true });
     writeFileSync(configPath(), content, 'utf-8');
   };
 
@@ -105,7 +105,7 @@ describe('GuardToggleStore', () => {
 
   // ==================== 文件落盘位置 ====================
 
-  it('配置文件固定落盘在 <process.cwd()>/.cdd/guard-state.json', async () => {
+  it('配置文件固定落盘在 <process.cwd()>/.intentflow/guard-state.json', async () => {
     const store = new GuardToggleStore();
     await store.write(false);
 
@@ -113,7 +113,7 @@ describe('GuardToggleStore', () => {
     expect(JSON.parse(readFileSync(configPath(), 'utf-8'))).toEqual({ enabled: false });
   });
 
-  it('read() 读取的是 .cdd/guard-state.json 中持久化的 enabled 值', () => {
+  it('read() 读取的是 .intentflow/guard-state.json 中持久化的 enabled 值', () => {
     seedConfig('{ "enabled": false }');
     expect(new GuardToggleStore().read()).toBe(false);
 

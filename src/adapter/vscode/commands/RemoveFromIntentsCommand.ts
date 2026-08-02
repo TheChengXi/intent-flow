@@ -8,7 +8,7 @@
 
 import * as vscode from 'vscode';
 
-export const command = 'cdd.removeFromIntents';
+export const command = 'iflow.removeFromIntents';
 export const description = '从意图目录移除';
 
 /**
@@ -16,12 +16,12 @@ export const description = '从意图目录移除';
  * 将文件夹从 intent 扫描中排除。
  * 输入：uri - 右键选中的文件夹 URI
  * 输出：void
- * 副作用：更新 cdd.intents.roots 或 cdd.intents.exclude，触发重扫
+ * 副作用：更新 iflow.intents.roots 或 iflow.intents.exclude，触发重扫
  */
 export async function handler(uri: vscode.Uri): Promise<void> {
   const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;
   if (!root) {
-    vscode.window.showWarningMessage('CDD: 未打开工作区');
+    vscode.window.showWarningMessage('IntentFlow: 未打开工作区');
     return;
   }
 
@@ -29,7 +29,7 @@ export async function handler(uri: vscode.Uri): Promise<void> {
   let relPath = folderPath.replace(root, '').replace(/^[/\\]/, '').replace(/\\/g, '/');
   if (!relPath) relPath = '.';
 
-  const config = vscode.workspace.getConfiguration('cdd.intents');
+  const config = vscode.workspace.getConfiguration('iflow.intents');
   const roots = config.get<string[]>('roots', []);
   const exclude = config.get<string[]>('exclude', []);
 
@@ -37,15 +37,15 @@ export async function handler(uri: vscode.Uri): Promise<void> {
     // 情况 A：在 roots 列表中 → 直接移除
     const updated = roots.filter(r => r !== relPath);
     await config.update('roots', updated, vscode.ConfigurationTarget.Workspace);
-    vscode.window.showInformationMessage(`CDD: "${relPath}" 已从扫描列表移除`);
+    vscode.window.showInformationMessage(`IntentFlow: "${relPath}" 已从扫描列表移除`);
   } else {
     // 情况 B：不在 roots 列表中 → 追加到 exclude
     const pattern = `**/${relPath}/**`;
     if (exclude.includes(pattern)) {
-      vscode.window.showInformationMessage(`CDD: "${relPath}" 已在排除列表中`);
+      vscode.window.showInformationMessage(`IntentFlow: "${relPath}" 已在排除列表中`);
       return;
     }
     await config.update('exclude', [...exclude, pattern], vscode.ConfigurationTarget.Workspace);
-    vscode.window.showInformationMessage(`CDD: "${relPath}" 已加入排除列表`);
+    vscode.window.showInformationMessage(`IntentFlow: "${relPath}" 已加入排除列表`);
   }
 }

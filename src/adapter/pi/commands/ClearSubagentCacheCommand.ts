@@ -1,6 +1,6 @@
 /**
  * @intent /clear-subagent-cache 命令。清理子 agent 运行时遗留的临时目录。
- * 目录以 cdd-agent- 或 cdd-rpc- 开头，位于系统临时目录下。
+ * 目录以 iflow-agent- 或 iflow-rpc- 开头，位于系统临时目录下。
  * 正常情况下进程退出时会自动清理，此命令用于手动清理残留。
  */
 
@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 export class ClearSubagentCacheCommand {
   register(pi: any): void {
     pi.registerCommand('clear-subagent-cache', {
-      description: '清理子 agent 残留的临时目录（cdd-agent-* / cdd-rpc-*）',
+      description: '清理子 agent 残留的临时目录（iflow-agent-* / iflow-rpc-*）',
       handler: async (_args: string, ctx: any) => {
         const tmpBase = tmpdir();
         let entries: string[];
@@ -24,7 +24,7 @@ export class ClearSubagentCacheCommand {
         }
 
         const targets = entries.filter(
-          (name) => name.startsWith('cdd-agent-') || name.startsWith('cdd-rpc-'),
+          (name) => name.startsWith('iflow-agent-') || name.startsWith('iflow-rpc-'),
         );
 
         if (targets.length === 0) {

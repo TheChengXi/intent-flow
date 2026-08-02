@@ -3,7 +3,7 @@ import { DryRunManager } from '../application/dryrun/DryRunManager';
 
 /**
  * @intent
- * VSCode 命令处理器，将 cdd.dryrun-toggle 命令绑定到 DryRunManager.toggle()，并通过 VSCode 通知机制向用户反馈切换结果
+ * VSCode 命令处理器，将 iflow.dryrun-toggle 命令绑定到 DryRunManager.toggle()，并通过 VSCode 通知机制向用户反馈切换结果
  */
 export class ToggleDryRunCommand {
   private dryRunManager: DryRunManager;
@@ -28,7 +28,7 @@ export class ToggleDryRunCommand {
   private showNotification(enabled: boolean): void {
     if (enabled) {
       vscode.window.showInformationMessage(
-        'Dry Run mode enabled. API calls will be intercepted and saved to .cdd/test-output/'
+        'Dry Run mode enabled. API calls will be intercepted and saved to .intentflow/test-output/'
       );
     } else {
       vscode.window.showInformationMessage(

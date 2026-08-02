@@ -1,6 +1,6 @@
 ---
 name: requirement
-description: 在对话中收集需求，生成 feature 名，建立 .cdd/<feature-name>/ 目录并输出需求文档。
+description: 在对话中收集需求，生成 feature 名，建立 .intentflow/<feature-name>/ 目录并输出需求文档。
 ---
 
 # 需求分析
@@ -83,13 +83,13 @@ description: 在对话中收集需求，生成 feature 名，建立 .cdd/<featur
 
 生成 kebab-case 短名 → 展示确认。
 
-确认后创建 `.cdd/<feature-name>/` 目录。
+确认后创建 `.intentflow/<feature-name>/` 目录。
 
 ---
 
 ## 交付物
 
-保存为 `.cdd/<feature-name>/requirement.md`，按以下格式输出：
+保存为 `.intentflow/<feature-name>/requirement.md`，按以下格式输出：
 
 ```markdown
 # 需求文档：[功能名称]

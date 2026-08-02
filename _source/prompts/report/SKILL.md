@@ -13,7 +13,7 @@ description: 执行完成后关账。聚合需求、设计与执行产出（隔�
 
 ## 1. 读取子 agent 工作报告
 
-仅当 `.cdd/<feature-name>/logs/` 存在时读取（隔离 TDD 模式执行产生；直接模式执行不产生）：
+仅当 `.intentflow/<feature-name>/logs/` 存在时读取（隔离 TDD 模式执行产生；直接模式执行不产生）：
 
 - `test-report.md`：测试覆盖、接口签名
 - `code-report.md`：实现决策、疑虑、卡点
@@ -67,7 +67,7 @@ logs/ 不存在（直接模式执行）时跳过本节，第 2~7 节基于 git d
 
 ## 4. 写入文件
 
-写入 `.cdd/<feature-name>/report.md`。
+写入 `.intentflow/<feature-name>/report.md`。
 
 ## 5. 生成能力打包
 
@@ -76,7 +76,7 @@ logs/ 不存在（直接模式执行）时跳过本节，第 2~7 节基于 git d
 - 收集本次 feature 涉及的全部文件
 - 每个文件记录**在这 feature 中的具体改动**（而非 @intent 原文——@intent 可通过 `rg @intent <path>` 原地读取）
 - 按**功能内聚**分组（跨层关联），而非按目录层级分组（按层分组是目录结构的投影，零信息增量）
-- 写入 `.cdd/packages/<feature-name>.yml`
+- 写入 `.intentflow/packages/<feature-name>.yml`
 
 ### 包格式
 
@@ -96,7 +96,7 @@ groups:
       - <文件名>
 ```
 
-**完成标志**：`.cdd/packages/<feature-name>.yml` 存在且可读。
+**完成标志**：`.intentflow/packages/<feature-name>.yml` 存在且可读。
 
 ### 分组原则
 

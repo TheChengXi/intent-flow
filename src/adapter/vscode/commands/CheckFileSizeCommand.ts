@@ -57,7 +57,7 @@ export async function checkCurrentFileWithDependencies(): Promise<void> {
           threshold: 400
         });
 
-        const outputChannel = vscode.window.createOutputChannel('CDD - 文件大小检查');
+        const outputChannel = vscode.window.createOutputChannel('IntentFlow - 文件大小检查');
         outputChannel.clear();
         outputChannel.appendLine('=== 文件大小检查报告 ===\n');
 

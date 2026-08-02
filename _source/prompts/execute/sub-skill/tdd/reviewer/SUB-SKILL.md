@@ -68,7 +68,7 @@ task 中指定了 feature 目录，读取该目录下的：
 
 ### 写工作报告
 
-写入 `.cdd/<feature-name>/logs/review-report.md`：
+写入 `.intentflow/<feature-name>/logs/review-report.md`：
 
 - 文件路径
 - VERDICT（PASS / REVISE）

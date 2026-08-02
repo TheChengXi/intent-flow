@@ -1,8 +1,8 @@
 /**
  * @intent
- * 将项目中每个文件的 @intent 注释实时映射到 .cdd/intents/ 目录树。
+ * 将项目中每个文件的 @intent 注释实时映射到 .intentflow/intents/ 目录树。
  * 每个源文件 → 一个 .md 文件（含路径 + @intent 原文）。
- * agent 可直接用 ls/cat/grep 扫 .cdd/intents/ 快速了解项目全貌。
+ * agent 可直接用 ls/cat/grep 扫 .intentflow/intents/ 快速了解项目全貌。
  * 不含 LLM 调用，纯 IO + 字符串匹配。
  */
 
@@ -14,7 +14,7 @@ import picomatch from 'picomatch';
 // ==================== 类型定义 ====================
 
 export interface FullSyncInput {
-  /** 项目根目录（绝对路径，用于定位 .cdd/intents/ 输出目录） */
+  /** 项目根目录（绝对路径，用于定位 .intentflow/intents/ 输出目录） */
   sourceRoot: string;
   /** 要扫描的文件夹列表（相对 sourceRoot 的路径），为空时默认扫整个 sourceRoot */
   sourceRoots?: string[];
@@ -90,14 +90,14 @@ export class ProjectIntentsToFilesUseCase {
 
   /**
    * @contract
-   * 全量扫描 sourceRoot，重建 .cdd/intents/ 投射文件树。
+   * 全量扫描 sourceRoot，重建 .intentflow/intents/ 投射文件树。
    * 输入：sourceRoot - 项目根目录绝对路径
    * 输出：FullSyncResult - 创建/更新/删除了多少投射文件
    * 副作用：写文件系统，清理过时投射文件
    */
   async fullSync(input: FullSyncInput): Promise<FullSyncResult> {
     const { sourceRoot, sourceRoots, excludePatterns } = input;
-    const outputRoot = path.join(sourceRoot, '.cdd', 'intents');
+    const outputRoot = path.join(sourceRoot, '.intentflow', 'intents');
     const result: FullSyncResult = { filesCreated: 0, filesUpdated: 0, filesDeleted: 0 };
 
     // 1. 扫描源文件
@@ -150,7 +150,7 @@ export class ProjectIntentsToFilesUseCase {
       }
     }
 
-    // 4. 清 .cdd/intents/ 下所有过时的 .md 文件
+    // 4. 清 .intentflow/intents/ 下所有过时的 .md 文件
     await this.cleanupStaleProjections(outputRoot, activeProjectionPaths);
 
     return result;
@@ -182,7 +182,7 @@ export class ProjectIntentsToFilesUseCase {
       return { projectionWritten: false };
     }
 
-    const outputRoot = path.join(sourceRoot, '.cdd', 'intents');
+    const outputRoot = path.join(sourceRoot, '.intentflow', 'intents');
     const projPath = path.join(outputRoot, relPath) + '.md';
 
     const content = await this.fileRepo.readFile(filePath);
@@ -221,7 +221,7 @@ export class ProjectIntentsToFilesUseCase {
       return { projectionDeleted: false };
     }
 
-    const outputRoot = path.join(sourceRoot, '.cdd', 'intents');
+    const outputRoot = path.join(sourceRoot, '.intentflow', 'intents');
     const projPath = path.join(outputRoot, relPath) + '.md';
     const lostPath = projPath.replace(/\.md$/, '.lost.md');
 
@@ -247,7 +247,7 @@ export class ProjectIntentsToFilesUseCase {
     return `# ${fileName}\n\n\`${normPath}\`\n\n**intent:** ${intent}\n`;
   }
 
-  /** 清除 .cdd/intents/ 下不在活跃列表中的文件 */
+  /** 清除 .intentflow/intents/ 下不在活跃列表中的文件 */
   private async cleanupStaleProjections(
     outputRoot: string,
     activePaths: Set<string>

@@ -1,6 +1,6 @@
 /**
  * @intent
- * VS Code 文件监听器，监听工作区文件变更并触发 .cdd/intents/ 投射更新。
+ * VS Code 文件监听器，监听工作区文件变更并触发 .intentflow/intents/ 投射更新。
  * 激活时执行全量同步，之后监听文件增/删/改做增量更新。
  * 避免冗余触发：同一个文件 500ms 内的多次变更只执行一次。
  */
@@ -21,12 +21,12 @@ export class IntentFileWatcher {
 
   /** 从 VS Code 设置读取排除模式 */
   private getExcludePatterns(): string[] {
-    return vscode.workspace.getConfiguration('cdd.intents').get<string[]>('exclude', []);
+    return vscode.workspace.getConfiguration('iflow.intents').get<string[]>('exclude', []);
   }
 
   /** 从 VS Code 设置读取已选中的源文件夹列表 */
   private getSourceRoots(): string[] {
-    return vscode.workspace.getConfiguration('cdd.intents').get<string[]>('roots', []);
+    return vscode.workspace.getConfiguration('iflow.intents').get<string[]>('roots', []);
   }
 
   /**
@@ -54,7 +54,7 @@ export class IntentFileWatcher {
     // 监听设置变更（排除模式或已选文件夹），触发重扫
     context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('cdd.intents')) {
+        if (e.affectsConfiguration('iflow.intents')) {
           const newPatterns = this.getExcludePatterns();
           const newRoots = this.getSourceRoots();
           this.useCase.fullSync({ sourceRoot: this.sourceRoot, sourceRoots: newRoots, excludePatterns: newPatterns }).catch(err => {
@@ -112,9 +112,9 @@ export class IntentFileWatcher {
 
     const timer = setTimeout(async () => {
       this.debounceTimers.delete(key);
-      // 跳过 .cdd/ 下的文件（避免循环触发）
+      // 跳过 .intentflow/ 下的文件（避免循环触发）
       const relPath = filePath.replace(this.sourceRoot, '').replace(/^[/\\]/, '');
-      if (relPath.startsWith('.cdd')) return;
+      if (relPath.startsWith('.intentflow')) return;
 
       try {
         await this.useCase.syncFile({
@@ -140,7 +140,7 @@ export class IntentFileWatcher {
     const timer = setTimeout(async () => {
       this.debounceTimers.delete(key);
       const relPath = filePath.replace(this.sourceRoot, '').replace(/^[/\\]/, '');
-      if (relPath.startsWith('.cdd')) return;
+      if (relPath.startsWith('.intentflow')) return;
 
       try {
         await this.useCase.removeFile({

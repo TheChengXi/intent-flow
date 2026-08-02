@@ -11,7 +11,7 @@ import { parseArgs, hasFlag } from './utils';
 
 export const command = 'check-file-size';
 export const description = '检查文件及其依赖树的大小，识别需要重构的文件';
-export const usage = `cdd check-file-size <filePath> [--threshold <number>] [--json]`;
+export const usage = `iflow check-file-size <filePath> [--threshold <number>] [--json]`;
 
 /**
  * @contract

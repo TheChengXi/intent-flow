@@ -1,10 +1,10 @@
-# CDD Framework
+# IntentFlow
 
 **Comment-Driven Development** — 注释驱动开发框架
 
-> 这只是一套本地的个人设计思路。读一读本 README 也好，参考别人的方案也好，实际本仓库的代码内容没有必要一定要读。内容只是讲解设计思路，不必照抄——毕竟并没有科学验证过这套思路是永久可行的，顺便说一下这个README也是ai写的，我自己也没怎么看，嗯，这句话也是，再顺便说一下其实我叫这个cdd框架的原因也是ai写的。
+> 这只是一套本地的个人设计思路。读一读本 README 也好，参考别人的方案也好，实际本仓库的代码内容没有必要一定要读。内容只是讲解设计思路，不必照抄——毕竟并没有科学验证过这套思路是永久可行的，顺便说一下这个README也是ai写的，我自己也没怎么看，嗯，这句话也是，再顺便说一下其实我叫这个iflow框架的原因也是ai写的。
 
-CDD Framework 是一套以 **@intent 注释**为核心契约的 AI 辅助开发工作流框架，提供 VS Code 扩展、CLI 和 MCP Server 三种适配形态。
+IntentFlow 是一套以 **@intent 注释**为核心契约的 AI 辅助开发工作流框架，提供 VS Code 扩展、CLI 和 MCP Server 三种适配形态。
 
 ---
 
@@ -50,7 +50,7 @@ Prompt 和 Skill 的核心价值不是什么精巧的措辞技巧，它的本质
 
 四个阶段描述了工作流的"静态结构"，但开发是一个持续的过程——你怎么知道什么时候该进入下一个阶段？
 
-Loop 的本质是：**你拥有无穷的 token 和一套本地的代码库，改代码不需要花什么钱，并且你有无穷的需求可以让 loop 定时去触发**。每轮对话结束后自动扫描 `.cdd/` 目录下的 feature 文件夹，检查文件状态变化（requirement.md 出现没有？design.md 出现没有？），一旦检测到新文件出现，自动推送消息提醒进入下一阶段。
+Loop 的本质是：**你拥有无穷的 token 和一套本地的代码库，改代码不需要花什么钱，并且你有无穷的需求可以让 loop 定时去触发**。每轮对话结束后自动扫描 `.intentflow/` 目录下的 feature 文件夹，检查文件状态变化（requirement.md 出现没有？design.md 出现没有？），一旦检测到新文件出现，自动推送消息提醒进入下一阶段。
 
 对于普通开发者来说这个机制可能显得"过于贵重"，但它的核心含义是好的：**定时的、按阶段触发的状态机，驱动 skill 执行**。
 
@@ -59,7 +59,7 @@ Loop 的本质是：**你拥有无穷的 token 和一套本地的代码库，改
 - `register.ts` — pi 扩展注册：监听 `session_start` 初始化快照、`turn_end` 自动检测变化、`/init-feature` 命令手动触发
 - `index.ts` — 统一导出入口
 
-这套思路很多 AI 开发工具都有，有些是在提示词里做手脚，有些是在代码里做手脚。CDD 的选择是在代码里——通过 pi 扩展的事件机制实现一个轻量状态机。
+这套思路很多 AI 开发工具都有，有些是在提示词里做手脚，有些是在代码里做手脚。IntentFlow 的选择是在代码里——通过 pi 扩展的事件机制实现一个轻量状态机。
 
 ### 不兜底哲学
 
@@ -98,7 +98,7 @@ PRD（产品需求文档）这类外部文档有一个绕不开的问题：**文
 
 ### CLI 命令
 
-`cdd check-file-size`、`cdd trace-dependency-chain`、`cdd project-intent`、`cdd list-folder-intents`、`cdd intent-package`
+`iflow check-file-size`、`iflow trace-dependency-chain`、`iflow project-intent`、`iflow list-folder-intents`、`iflow intent-package`
 
 ### VS Code 命令
 
@@ -113,7 +113,7 @@ PRD（产品需求文档）这类外部文档有一个绕不开的问题：**文
 ## 项目结构
 
 ```
-.cdd/                     # 工作流产出（需求/设计/报告/意图包）
+.intentflow/                     # 工作流产出（需求/设计/报告/意图包）
 _source/                  # Skill 定义
 src/
   data/                   # 实体 + 接口 + 实现
@@ -137,13 +137,13 @@ another_extension_pi/     # Pi 扩展插件
 ## License
 
 MIT
-# CDD Framework
+# IntentFlow
 
 **Comment-Driven Development** — A comment-driven development framework
 
 > This is just a set of local, personal design ideas. There is no need to actually read the code in this repository — reading this README or looking at other people's approaches is fine. The content merely explains the design rationale; there is no need to copy it exactly. After all, it hasn't been scientifically verified that this approach will work forever. By the way, this README was also written by an AI, and I haven't really read it much myself. Yeah, this sentence too.By the way, the name "Comment-Driven Development" was also suggested by an AI. Of course it was.
 
-CDD Framework is an AI-assisted development workflow framework centered on **@intent comments** as the core contract. It offers three adaptation forms: a VS Code extension, a CLI, and an MCP Server.
+IntentFlow is an AI-assisted development workflow framework centered on **@intent comments** as the core contract. It offers three adaptation forms: a VS Code extension, a CLI, and an MCP Server.
 
 ---
 
@@ -189,7 +189,7 @@ In essence, the report suite is the context used to **globally unify intent** in
 
 The four phases describe the "static structure" of the workflow, but development is an ongoing process — how do you know when to move to the next phase?
 
-The essence of the Loop is: **you have infinite tokens and a local codebase; changing code costs practically nothing, and you have endless requirements that can trigger the loop on a timer**. After each round of conversation, it automatically scans the feature folders under the `.cdd/` directory, checking for file status changes (has `requirement.md` appeared? has `design.md` appeared?). Once a new file is detected, it automatically pushes a notification prompting entry into the next phase.
+The essence of the Loop is: **you have infinite tokens and a local codebase; changing code costs practically nothing, and you have endless requirements that can trigger the loop on a timer**. After each round of conversation, it automatically scans the feature folders under the `.intentflow/` directory, checking for file status changes (has `requirement.md` appeared? has `design.md` appeared?). Once a new file is detected, it automatically pushes a notification prompting entry into the next phase.
 
 For ordinary developers, this mechanism might seem "overly extravagant," but its core meaning is sound: **a timed, phase-triggered state machine that drives skill execution**.
 
@@ -198,7 +198,7 @@ In implementation, this is embodied in the `another_extension_pi/init_feature/` 
 - `register.ts` — Pi extension registration: listens for `session_start` to initialize snapshots, `turn_end` to auto-detect changes, and `/init-feature` command for manual trigger
 - `index.ts` — Unified export entry
 
-Many AI development tools have similar ideas, some tampering with prompts, some tampering with code. CDD chooses the code path — implementing a lightweight state machine through the event mechanism of the Pi extension.
+Many AI development tools have similar ideas, some tampering with prompts, some tampering with code. IntentFlow chooses the code path — implementing a lightweight state machine through the event mechanism of the Pi extension.
 
 ### No Fallback Philosophy
 
@@ -237,7 +237,7 @@ Write a paragraph of natural language @intent at the top of each file, explainin
 
 ### CLI Commands
 
-`cdd check-file-size`, `cdd trace-dependency-chain`, `cdd project-intent`, `cdd list-folder-intents`, `cdd intent-package`
+`iflow check-file-size`, `iflow trace-dependency-chain`, `iflow project-intent`, `iflow list-folder-intents`, `iflow intent-package`
 
 ### VS Code Commands
 
@@ -252,7 +252,7 @@ Sub-process agent scheduling (SpawnAgent/ListAgents), access policy control, RPC
 ## Project Structure
 
 ```
-.cdd/                     # Workflow artifacts (requirements/design/report/intent packages)
+.intentflow/                     # Workflow artifacts (requirements/design/report/intent packages)
 _source/                  # Skill definitions
 src/
   data/                   # Entities + interfaces + implementations

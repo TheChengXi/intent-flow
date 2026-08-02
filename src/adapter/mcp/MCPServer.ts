@@ -21,7 +21,7 @@ export class MCPServer {
 
     this.server = new Server(
       {
-        name: 'cdd-framework',
+        name: 'intent-flow',
         version: '2.0.0',
       },
       {
@@ -92,7 +92,7 @@ export class MCPServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
 
-    console.error('CDD Framework MCP Server started');
+    console.error('IntentFlow MCP Server started');
   }
 }
 

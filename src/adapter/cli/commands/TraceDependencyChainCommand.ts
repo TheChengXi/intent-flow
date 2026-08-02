@@ -6,7 +6,7 @@ import { parseArgs, hasFlag } from './utils';
 
 export const command = 'trace-dependency-chain';
 export const description = '沿入口文件的依赖链追踪，分析直接依赖关系及 @intent 语义';
-export const usage = `cdd trace-dependency-chain <entryFile> [--mode simple|normal|complex] [--json]`;
+export const usage = `iflow trace-dependency-chain <entryFile> [--mode simple|normal|complex] [--json]`;
 
 /**
  * @contract

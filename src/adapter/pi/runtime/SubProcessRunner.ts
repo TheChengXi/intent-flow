@@ -100,7 +100,7 @@ export class SubProcessRunner implements ISubProcessRunner {
       promptParts.push(`\n\n## 上下文\n${params.context}`);
     }
 
-    const tmpDir = await mkdtemp(join(tmpdir(), 'cdd-agent-'));
+    const tmpDir = await mkdtemp(join(tmpdir(), 'iflow-agent-'));
     const systemFile = join(tmpDir, 'system.md');
     const taskFile = join(tmpDir, 'task.md');
 

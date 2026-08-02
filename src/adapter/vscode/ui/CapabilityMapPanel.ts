@@ -10,7 +10,7 @@ import * as fs from 'fs';
 import { VSCodeDIContainer } from '../VSCodeDIContainer';
 
 export class CapabilityMapPanel {
-  public static readonly viewType = 'cdd.capabilityMap';
+  public static readonly viewType = 'iflow.capabilityMap';
 
   private panel: vscode.WebviewPanel | undefined;
   private context: vscode.ExtensionContext;
@@ -57,12 +57,12 @@ export class CapabilityMapPanel {
     if (!CapabilityMapPanel._commandsRegistered) {
       CapabilityMapPanel._commandsRegistered = true;
       this.context.subscriptions.push(
-        vscode.commands.registerCommand('cdd.toggleSelectionMode', () => {
+        vscode.commands.registerCommand('iflow.toggleSelectionMode', () => {
           CapabilityMapPanel.activePanel?.postMessage({ type: 'toggleSelectionMode' });
         })
       );
       this.context.subscriptions.push(
-        vscode.commands.registerCommand('cdd.clearSelection', () => {
+        vscode.commands.registerCommand('iflow.clearSelection', () => {
           CapabilityMapPanel.activePanel?.postMessage({ type: 'clearSelection' });
         })
       );

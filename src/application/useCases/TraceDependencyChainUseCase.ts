@@ -38,7 +38,7 @@ export interface LayerConfig {
 export interface TraceDependencyChainInput {
   /** 入口文件路径（绝对路径） */
   entryFile: string;
-  /** 架构层级检测配置（默认 CDD 三层：data/application/adapter） */
+  /** 架构层级检测配置（默认 IntentFlow 三层：data/application/adapter） */
   layerConfig?: LayerConfig;
 }
 
@@ -74,7 +74,7 @@ export interface ITraceDependencyChainUseCase
 
 // ==================== 层级检测（可配置） ====================
 
-/** CDD 框架默认三层架构规则 */
+/** IntentFlow 框架默认三层架构规则 */
 const DEFAULT_LAYER_RULES: LayerMatchRule[] = [
   { name: 'adapter', pattern: '/(adapter)(/|$)', subModule: true },
   { name: 'application', pattern: '/(application)(/|$)' },

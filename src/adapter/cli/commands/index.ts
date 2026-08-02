@@ -24,22 +24,22 @@ export interface CommandEntry {
 export const commandMap: Record<string, CommandEntry> = {
   'check-file-size': {
     description: '检查文件及其依赖树的大小，识别需要重构的文件',
-    usage: 'cdd check-file-size <filePath> [--workspace-root <path>] [--threshold <number>] [--json]',
+    usage: 'iflow check-file-size <filePath> [--workspace-root <path>] [--threshold <number>] [--json]',
     handler: checkFileSizeHandler,
   },
   'trace-dependency-chain': {
     description: '沿入口文件的依赖链追踪，分析直接依赖关系及 @intent 语义',
-    usage: 'cdd trace-dependency-chain <entryFile> [--project-root <path>] [--mode simple|normal|complex] [--json]',
+    usage: 'iflow trace-dependency-chain <entryFile> [--project-root <path>] [--mode simple|normal|complex] [--json]',
     handler: traceDependencyChainHandler,
   },
   'project-intent': {
     description: '创建文件并写入 @intent 注释，自动创建父目录',
-    usage: 'cdd project-intent <path> --intent <desc> [--force] [--json]',
+    usage: 'iflow project-intent <path> --intent <desc> [--force] [--json]',
     handler: projectIntentHandler,
   },
   'list-folder-intents': {
     description: '列出文件夹内所有文件的 @intent 意图清单',
-    usage: 'cdd list-folder-intents <folder> [--json]',
+    usage: 'iflow list-folder-intents <folder> [--json]',
     handler: listFolderIntentsHandler,
   },
 };

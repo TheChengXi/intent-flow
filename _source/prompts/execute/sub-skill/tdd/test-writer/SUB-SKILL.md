@@ -30,7 +30,7 @@ task 中指定了 feature 目录，读取该目录下的：
 
 ### 3. 写工作报告
 
-写入 `.cdd/<feature-name>/logs/test-report.md`：
+写入 `.intentflow/<feature-name>/logs/test-report.md`：
 
 - 文件路径
 - 测试文件路径
@@ -40,7 +40,7 @@ task 中指定了 feature 目录，读取该目录下的：
 ### 4. 输出完成
 
 ```
-work done → .cdd/<feature-name>/logs/test-report.md
+work done → .intentflow/<feature-name>/logs/test-report.md
 ```
 
 ---

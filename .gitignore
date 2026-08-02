@@ -13,7 +13,7 @@ dist/
 
 # 依赖
 node_modules/
-.cdd/
+.intentflow/
 
 # MCP构建
 .mcp.json

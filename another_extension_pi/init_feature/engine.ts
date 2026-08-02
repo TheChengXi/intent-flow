@@ -6,7 +6,7 @@
  * @intent 提供 feature 扫描/阶段判定的纯函数，供 register.ts 使用。
  * 四态判定：无 requirement.md → requirement；有 req 无 design → design；
  * 有 req + design 无 package.yml → execute；有 req + design + package.yml → complete。
- * complete 标志为 .cdd/packages/<name>.yml（report 关账产出）。
+ * complete 标志为 .intentflow/packages/<name>.yml（report 关账产出）。
  */
 
 import { readdirSync, existsSync } from "node:fs";
@@ -47,20 +47,20 @@ const PHASE_ORDER: Record<FeatureInfo["phase"], number> = {
 // ── 扫描与判定 ──
 
 /**
- * 扫描 .cdd 目录下所有 feature 目录，按阶段优先级排序返回。
- * @param cddDir .cdd 目录绝对路径
+ * 扫描 .intentflow 目录下所有 feature 目录，按阶段优先级排序返回。
+ * @param iflowDir .intentflow 目录绝对路径
  */
-export function scanAll(cddDir: string): FeatureInfo[] {
-	if (!existsSync(cddDir)) return [];
+export function scanAll(iflowDir: string): FeatureInfo[] {
+	if (!existsSync(iflowDir)) return [];
 
-	const entries = readdirSync(cddDir, { withFileTypes: true });
+	const entries = readdirSync(iflowDir, { withFileTypes: true });
 	const dirs = entries.filter(
 		(e) => e.isDirectory() && !SYSTEM_DIRS.has(e.name)
 	);
-	const packagesDir = join(cddDir, "packages");
+	const packagesDir = join(iflowDir, "packages");
 
 	const features: FeatureInfo[] = dirs.map((d) => {
-		const dir = join(cddDir, d.name);
+		const dir = join(iflowDir, d.name);
 		const state = readFileState(dir, packagesDir);
 
 		let phase: FeatureInfo["phase"];
@@ -80,7 +80,7 @@ export function scanAll(cddDir: string): FeatureInfo[] {
 /**
  * 读取单个 feature 目录的文件状态快照。
  * @param featureDir feature 目录绝对路径
- * @param packagesDir 可选，.cdd/packages 目录绝对路径；提供时检测 <feature-name>.yml 作为完成标志
+ * @param packagesDir 可选，.intentflow/packages 目录绝对路径；提供时检测 <feature-name>.yml 作为完成标志
  */
 export function readFileState(featureDir: string, packagesDir?: string): FileState {
 	return {

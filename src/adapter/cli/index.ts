@@ -66,9 +66,9 @@ async function main(): Promise<void> {
  * 副作用：无
  */
 function showHelp(): void {
-  console.log('CDD Framework — CLI 工具');
+  console.log('IntentFlow — CLI 工具');
   console.log('');
-  console.log('用法: cdd <command> [args...] [options...]');
+  console.log('用法: iflow <command> [args...] [options...]');
   console.log('');
   console.log('命令:');
 
@@ -84,7 +84,7 @@ function showHelp(): void {
   console.log('  --help, -h             显示帮助信息');
   console.log('  --json                 以 JSON 格式输出（每个命令支持）');
   console.log('');
-  console.log('对单个命令查看详细用法: cdd <command> --help');
+  console.log('对单个命令查看详细用法: iflow <command> --help');
 }
 
 // @step: 执行入口

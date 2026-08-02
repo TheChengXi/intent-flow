@@ -236,7 +236,7 @@ export class RpcProcessPool {
     }
 
     // 写 system prompt 到临时文件
-    const tmpDir = await mkdtemp(join(tmpdir(), 'cdd-rpc-'));
+    const tmpDir = await mkdtemp(join(tmpdir(), 'iflow-rpc-'));
     const sysPromptFile = join(tmpDir, 'system.md');
     await writeFile(sysPromptFile, agentDef.systemPrompt, 'utf-8');
 

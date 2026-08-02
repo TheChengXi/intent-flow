@@ -1,13 +1,13 @@
 /**
  * @intent
  * VSCode 命令：打开能力地图面板。
- * 注册为 cdd.openCapabilityMap，创建 Webview 面板展示当前项目的能力地图。
+ * 注册为 iflow.openCapabilityMap，创建 Webview 面板展示当前项目的能力地图。
  */
 
 import * as vscode from 'vscode';
 import { CapabilityMapPanel } from '../ui/CapabilityMapPanel';
 
-export const command = 'cdd.openCapabilityMap';
+export const command = 'iflow.openCapabilityMap';
 export const description = '打开能力地图面板';
 
 /**

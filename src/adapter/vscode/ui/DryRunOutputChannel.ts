@@ -11,7 +11,7 @@ export class DryRunOutputChannel {
 
   constructor(dryRunManager: DryRunManager) {
     this.dryRunManager = dryRunManager;
-    this.outputChannel = vscode.window.createOutputChannel('CDD Dry Run');
+    this.outputChannel = vscode.window.createOutputChannel('IntentFlow Dry Run');
   }
 
   // @contract: initialize() => void

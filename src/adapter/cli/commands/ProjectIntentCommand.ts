@@ -6,7 +6,7 @@ import { parseArgs, hasFlag } from './utils';
 
 export const command = 'project-intent';
 export const description = '创建/更新 @intent 注释，文件已存在时替换/插入 @intent，保留其他内容';
-export const usage = `cdd project-intent <path> --intent <desc> [--force] [--json]`;
+export const usage = `iflow project-intent <path> --intent <desc> [--force] [--json]`;
 
 /**
  * @contract

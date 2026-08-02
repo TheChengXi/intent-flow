@@ -1,6 +1,6 @@
 # Pi 适配层
 
-将 CDD 框架的 agent 发现与子进程调度能力暴露为 pi 扩展工具。
+将 IntentFlow 框架的 agent 发现与子进程调度能力暴露为 pi 扩展工具。
 支持 `spawn_agent` 工具（调用子 agent）、`list_agents` 工具（查询可用子 agent）和 `/sub-agent` 命令（查看实时状态）。
 
 ## 架构
@@ -65,14 +65,14 @@ npm run compile:pi && npm run deploy:pi
 ### 分开执行
 
 ```bash
-npm run compile:pi    # ≡ set CDD_BUILD=pi/extension && vite build → dist/pi/extension.js
-npm run deploy:pi     # ≡ node scripts/deploy-pi.js → 复制到 ~/.pi/agent/extensions/cdd-framework/
+npm run compile:pi    # ≡ set IFLOW_BUILD=pi/extension && vite build → dist/pi/extension.js
+npm run deploy:pi     # ≡ node scripts/deploy-pi.js → 复制到 ~/.pi/agent/extensions/intent-flow/
 ```
 
 部署后的目录结构：
 
 ```
-~/.pi/agent/extensions/cdd-framework/
+~/.pi/agent/extensions/intent-flow/
 ├── index.ts        ← pi 加载的入口（export { default } from "./extension.js"）
 └── extension.js    ← Vite 编译产物（~19KB）
 ```
@@ -81,10 +81,10 @@ npm run deploy:pi     # ≡ node scripts/deploy-pi.js → 复制到 ~/.pi/agent/
 
 ### 构建输出
 
-| CDD_BUILD | 输出文件 | 用途 |
+| IFLOW_BUILD | 输出文件 | 用途 |
 |---|---|---|
 | `extension` | `dist/extension.js` | VSCode 扩展 |
-| `cli/cdd` | `dist/cli/cdd.js` | CLI 工具 |
+| `cli/iflow` | `dist/cli/iflow.js` | CLI 工具 |
 | `mcp-server` | `dist/mcp-server.js` | MCP 服务器 |
 | `pi/extension` | `dist/pi/extension.js` | **Pi 扩展（this）** |
 
@@ -180,7 +180,7 @@ session_start  ──→ 不启动任何进程
 ### 临时目录清理
 
 每次 `spawn_agent` 调用会在系统临时目录（`os.tmpdir()`）下创建
-`cdd-agent-XXXXX/` 或 `cdd-rpc-XXXXX/` 文件夹，内含 `system.md` 文件。
+`iflow-agent-XXXXX/` 或 `iflow-rpc-XXXXX/` 文件夹，内含 `system.md` 文件。
 
 清理策略：
 
@@ -192,7 +192,7 @@ session_start  ──→ 不启动任何进程
 | `/new` / `/resume` / `/reload` | 同上，走 `session_shutdown` |
 | 断电 / `taskkill /F` | ❌ 不触发任何 handler，会残留
 
-残留目录以 `cdd-agent-` 或 `cdd-rpc-` 开头，位于系统临时目录下，
+残留目录以 `iflow-agent-` 或 `iflow-rpc-` 开头，位于系统临时目录下，
 可手动删除，下次重启系统也会自动清空。
 
 ## 实时监控
@@ -209,7 +209,7 @@ session_start  ──→ 不启动任何进程
 | `spawn_agent` | `spawn_agent` | 隔离子进程运行 agent，返回结构化结果，含实时可视化 |
 | `list_agents` | `list_agents` | 查询可用 sub-agent 列表，LLM 主动调用 |
 | `/sub-agent` | `sub-agent` | 打开子 agent 监控视图（自动弹出 / /sub-agent命令） |
-| `/clear-subagent-cache` | `clear-subagent-cache` | 清理子 agent 残留的临时目录（cdd-agent-* / cdd-rpc-*） |
+| `/clear-subagent-cache` | `clear-subagent-cache` | 清理子 agent 残留的临时目录（iflow-agent-* / iflow-rpc-*） |
 
 ## 工具访问守卫
 

@@ -26,7 +26,7 @@ import { VSCodeDIContainer } from './VSCodeDIContainer';
 // @boundary: 当订阅列表已满时，应检查内存泄漏风险
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('CDD Validator 已激活');
+  console.log('IntentFlow Validator 已激活');
 
   // @warn: Dry Run 功能（apiService/APIInterceptor）已废弃，待后续清理
   // 保留 DryRunManager/ToggleDryRunCommand 的注册以防破坏性变更
@@ -36,11 +36,11 @@ export function activate(context: vscode.ExtensionContext) {
   dryRunStatusBar.initialize();
   dryRunOutputChannel.initialize();
   const toggleDryRunCommand = new ToggleDryRunCommand(dryRunManager);
-  const toggleDryRunDisposable = vscode.commands.registerCommand('cdd.toggleDryRun', () => toggleDryRunCommand.execute());
+  const toggleDryRunDisposable = vscode.commands.registerCommand('iflow.toggleDryRun', () => toggleDryRunCommand.execute());
 
   // @warn: compile/review/translate/requirementTranslator 命令已废弃
-  const checkFileSizeCommand = vscode.commands.registerCommand('cdd.checkFileSize', CheckFileSizeCommand.execute);
-  const checkCurrentFileCommand = vscode.commands.registerCommand('cdd.checkCurrentFileWithDeps', CheckFileSizeCommand.checkCurrentFileWithDependencies);
+  const checkFileSizeCommand = vscode.commands.registerCommand('iflow.checkFileSize', CheckFileSizeCommand.execute);
+  const checkCurrentFileCommand = vscode.commands.registerCommand('iflow.checkCurrentFileWithDeps', CheckFileSizeCommand.checkCurrentFileWithDependencies);
 
   // 注册能力地图命令
   const capabilityMapCommand = vscode.commands.registerCommand(
@@ -56,7 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(checkCurrentFileCommand);
   context.subscriptions.push(capabilityMapCommand);
 
-  // ==================== 意图投射（.cdd/intents/） ====================
+  // ==================== 意图投射（.intentflow/intents/） ====================
 
   // 注册手动重建命令
   const projectIntentsCommand = vscode.commands.registerCommand(
@@ -88,7 +88,7 @@ export function activate(context: vscode.ExtensionContext) {
       root
     );
     fileWatcher.start(context).catch(err => {
-      console.error('[CDD] IntentFileWatcher 启动失败:', err);
+      console.error('[IntentFlow] IntentFileWatcher 启动失败:', err);
     });
   }
 }
@@ -98,8 +98,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 // @contract: deactivate() => void
 // @step: [通知] 输出停用日志到控制台
-// @boundary: 当函数执行时，应输出 'CDD Validator 已停用' 消息
+// @boundary: 当函数执行时，应输出 'IntentFlow Validator 已停用' 消息
 export function deactivate() {
-  console.log('CDD Validator 已停用');
+  console.log('IntentFlow Validator 已停用');
 }
 // @end

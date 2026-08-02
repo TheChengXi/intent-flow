@@ -23,7 +23,7 @@ export class DryRunStatusBarItem {
   // @step: [初始化显示] 根据当前状态更新显示
   initialize(): void {
     // 设置点击命令
-    this.statusBarItem.command = 'cdd.toggleDryRun';
+    this.statusBarItem.command = 'iflow.toggleDryRun';
 
     // 监听状态变化
     this.dryRunManager.onStateChange((enabled) => {

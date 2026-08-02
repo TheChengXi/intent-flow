@@ -29,7 +29,7 @@ out/**
 .archive/**
 
 # 备忘录/意图投射（仅开发用）
-.cdd/**
+.intentflow/**
 
 # 另一个扩展（无关）
 another_extension_pi/**
