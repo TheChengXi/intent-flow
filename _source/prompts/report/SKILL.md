@@ -15,11 +15,9 @@ description: 执行完成后关账。聚合需求、设计与执行产出（隔�
 
 仅当 `.cdd/<feature-name>/logs/` 存在时读取（隔离 TDD 模式执行产生；直接模式执行不产生）：
 
-| 文件 | 内容 |
-|------|------|
-| `test-report.md` | 测试覆盖、接口签名 |
-| `code-report.md` | 实现决策、疑虑、卡点 |
-| `review-report.md` | 审查结论、findings |
+- `test-report.md`：测试覆盖、接口签名
+- `code-report.md`：实现决策、疑虑、卡点
+- `review-report.md`：审查结论、findings
 
 读取后将各报告的内容映射到生成步骤的对应节。
 
