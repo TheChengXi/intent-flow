@@ -9,6 +9,14 @@ description: 在 pencil 画布内画 UI 草稿：询问设计偏好，按方向�
 
 画 UI 草稿。只产出设计稿
 
+## pencil 约束
+
+- 文本节点一律显式 lineHeight（字号 ≥34 → 1.15，≥17 → 1.3，≥14 → 1.35，其余 → 1.4，多行段落 → 1.6-1.8）
+- 跨 execute 引用一律用节点 ID
+- stroke 只接受纯色值；按边描边拆独立 hairline frame（height:1 + fill）
+- fit_content 父容器内子项禁用 fill_container（塌缩为 0）
+- 根层定位用 FindEmptySpace：direction "right"，padding ≥ 80，nodeId 链式锚定
+
 ## 询问
 
 缺口大 → 多维并行问；接近清晰 → 收尾。
@@ -28,21 +36,22 @@ description: 在 pencil 画布内画 UI 草稿：询问设计偏好，按方向�
 按方向从内置清单选源 → 调用官方搜索端点（?q= 参数或 MCP search，禁止全量拉取本地过滤）→ 多套配色输出到画布（色块 + 色值标注）→ 选定后记录为 token。
 
 内置清单：
-- 科技 / 现代：Colormind（GAN，可锁定主色）、Coolors
-- 文化 / 传统：中国色 zhongguose.com（MCP search_colors）
-- 色系 / 极简：WPer（?type=light/dark/red）
-- 通用：The Color API（/scheme）、Color Palette Generator
+- Colormind（POST http://colormind.io/api/，input 数组锁定主色、"N" 为不锁定）
+- espectro.dev（GET https://espectro.dev/api/colors?search=关键词，159 色和纸色 + 348 组合）
 
 ## 生成草稿
 
 1. 确认目标 .pen 为编辑器活跃文件，操作前 Get 了解现状
 2. 选定色板 → SetVariables 设 token（语义命名）
-3. 组件平铺排列：每个组件独立画出、排开（地图一块 / 背景一块 / 导航栏一块…），不组合成整页；Insert reusable 组件 → ref 复用（单一职责、组合优于配置）；组件根写 metadata（type: page / component / role / state）
-4. 搭组件内部结构（frame：layout / gap / padding / fill_container / clip）
+3. 平铺布局：产出物全部平铺于 document 根层——每个区块一个独立顶层 frame，FindEmptySpace 逐个排开（direction: right，padding ≥ 80），区块间互不嵌套、互不重叠
+   粒度：一个区块 = 可复用组件（按钮/卡片/标签…）、页面区段（导航栏 / Hero / 数据条 / 功能区 / 页脚…）、状态变体（每种状态单独一块）
+   禁止 page 级父 frame 包裹多个区块；区块归属页面与角色写 metadata（type: component / section / state，role，page）
+   Insert reusable 组件 → ref 复用（单一职责、组合优于配置）
+4. 搭组件内部结构（frame：layout / gap / padding / fill_container / clip）——区块内部可嵌套，区块之间不嵌套
 5. 放置内容：文本设 fill；图标用 icon 类型；图片 Generate 填充容器；形状用 SVG path；数据区写 metadata（type: data-slot / kind）；状态变体节点写 metadata（state: loading / empty / error / 过渡序列各状态），过渡序列每个状态单独平铺画出
-6. Get 检查布局（clipped / 对齐 / 文本溢出）
+6. Get 检查布局（clipped / 对齐 / 文本溢出 / 区块重叠）
 
-完成标志：无布局问题，草稿可交修改。
+完成标志：所有区块独立平铺、互不重叠、无整页组合容器，无布局问题，草稿可交修改。
 
 ## 修改
 
