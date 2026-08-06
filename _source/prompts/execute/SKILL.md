@@ -67,6 +67,8 @@ test-writer（写测试，看不到实现）
 
 每轮针对一个文件。主会话审查不通过时，循环 code-writer 最多 3 次（轮次由主会话自己维护，不跨 agent 传递）。
 
+**子 agent 交付物验证**：test-writer / code-writer 的交付物是 `logs/` 下的报告文件（test-report.md / code-report.md）。主会话**以文件为准**验证完成——文件存在且内容完整即视为已交付，工具返回文本丢失/缺失不视为未完成。
+
 **完成标志**：每个文件的实现满足其 @intent 规格，结果可验证。
 
 ---
