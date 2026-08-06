@@ -1,0 +1,82 @@
+packageName: pi-adapter-layer-reorg
+summary: |
+  pi 适配层分层规整：消除 src/adapter/pi 全部跨层依赖（含 type-only），
+  恢复 adapter → application → data 依赖方向。核心手法按实现类性质分流——
+  纯数据实现下沉（AgentRepositoryImpl → data/services/agent/）、纯委托实现下沉
+  （ScopePolicy → application/services/）、平台实现对应的接口上移
+  （ISubProcessRunner → application/services/），并建立 application 层类型透出
+  三通道（agentRepository / ISubProcessRunner / IAccessPolicyService）。
+  当前状态：验证全绿（grep 清零 + tsc + 74 测试 + 构建 + 冒烟），可发布。
+
+files:
+  - path: src/data/services/agent/AgentRepositoryImpl.ts
+    change: 从 adapter/pi/repositories/ 下沉至 data 层（git mv），import 路径改 data 内相对引用；后更名为 AgentRepositoryImpl（对齐 data/services 下“接口名+Impl”惯例），@intent 更新归属说明
+  - path: src/application/services/ScopePolicy.ts
+    change: 从 adapter/pi/services/ 下沉至 application 层（git mv），import 改同层/data 路径，@intent 更新归属说明
+  - path: src/application/services/ISubProcessRunner.ts
+    change: 从 data/repositories/ 上移至 application/services/（git mv），追加 AgentRunResult/AgentUsage 类型 re-export（adapter 透出通道）
+  - path: src/application/services/agentRepository.ts
+    change: 新增。agent 发现域端口（IAgentRepository）与实体类型（AgentDefinition 等）的 application 统一透出口，纯 type-only re-export
+  - path: src/application/services/IAccessPolicyService.ts
+    change: 追加 SCOPE_SKIP_ENV 常量 re-export（访问策略域出口），@intent 同步更新
+  - path: src/application/CoreDIContainer.ts
+    change: 新增 agentRepo 字段并组装 AgentRepositoryImpl（data 实现统一在 application 组装），@intent 更新
+  - path: src/application/useCases/SpawnAgentUseCase.ts
+    change: ISubProcessRunner import 从 data/repositories 改 application/services
+  - path: src/data/repositories/index.ts
+    change: 移除 ISubProcessRunner 导出（接口已上移），@intent 记录上移原因
+  - path: src/data/services/scope/IAccessPolicy.ts
+    change: @intent 中"接口在 data、实现在 adapter"旧模式说明更新为已推翻+疑似闲置待清理
+  - path: src/adapter/pi/DIContainer.ts
+    change: agentRepo 组装改经 CoreDIContainer 实例（不再 new data 实现），ScopePolicy/IAgentRepository import 改 application，@intent 更新
+  - path: src/adapter/pi/index.ts
+    change: 移除 SubSkillRepository 导出（实现下沉后不再经 adapter 导出），@intent 更新
+  - path: src/adapter/pi/runtime/RpcProcessPool.ts
+    change: 4 处跨层 import（IAgentRepository/AgentRunResult/AgentUsage/SCOPE_SKIP_ENV）改 application 透出
+  - path: src/adapter/pi/runtime/SubProcessRunner.ts
+    change: 4 处跨层 import（ISubProcessRunner/AgentRunResult/AgentUsage/SCOPE_SKIP_ENV）改 application 透出
+  - path: src/adapter/pi/tools/ListAgentsTool.ts
+    change: AgentDefinition import 从 data/entities 改 application/services/agentRepository 透出
+  - path: src/adapter/pi/tools/SpawnAgentTool.ts
+    change: AgentRunResult import 从 data/entities 改 application/services/ISubProcessRunner 透出
+  - path: src/adapter/pi/tools/ToolAccessGuard.ts
+    change: @intent 过时表述修正（IAccessPolicy → IAccessPolicyService）
+  - path: src/adapter/pi/tools/ToolAccessGuard.integration.test.ts
+    change: ScopePolicy import 从 adapter/pi/services 改 application/services
+  - path: src/adapter/pi/dicontainer.smoke.test.ts
+    change: 新增冒烟测试：锁定组装来源（agentRepo/accessPolicy）、agent 发现可运行、SCOPE_SKIP_ENV 透出、PI_EXT_SKIP 策略生效
+  - path: src/adapter/pi/README.md
+    change: 目录树移除 services/repositories，依赖图重绘为设计后分层，路径注意事项改为透出通道说明
+
+groups:
+  - name: Agent 发现能力归位
+    summary: agent 发现从"接口在 data、实现在 adapter"的跨层模式，归位为"接口与实现都在 data"（AgentRepositoryImpl 下沉 + CoreDIContainer 组装 + application 透出口），DIContainer 只经 application 获取。维护者通过此组理解 agent 发现的完整归属链。
+    files:
+      - src/data/services/agent/AgentRepositoryImpl.ts
+      - src/application/services/agentRepository.ts
+      - src/application/CoreDIContainer.ts
+      - src/adapter/pi/DIContainer.ts
+      - src/adapter/pi/index.ts
+  - name: 子进程运行接口上移
+    summary: ISubProcessRunner 因实现（SubProcessRunner/RpcProcessPool）是 pi 平台代码而接口上移 application，runtime 组件与 SpawnAgentUseCase 均只依赖 application 接口与透出类型。此组是"平台实现 → 接口上移"分支的完整示例。
+    files:
+      - src/application/services/ISubProcessRunner.ts
+      - src/application/useCases/SpawnAgentUseCase.ts
+      - src/data/repositories/index.ts
+      - src/adapter/pi/runtime/RpcProcessPool.ts
+      - src/adapter/pi/runtime/SubProcessRunner.ts
+  - name: 访问策略归位与常量透出
+    summary: 访问策略从 adapter 桥接下沉为 application 实现（ScopePolicy 纯委托 data 纯函数），SCOPE_SKIP_ENV 常量经 IAccessPolicyService 透出，ToolAccessGuard 依赖链全为 application。此组展示"纯委托实现下沉 + 同域 re-export"分支。
+    files:
+      - src/application/services/ScopePolicy.ts
+      - src/application/services/IAccessPolicyService.ts
+      - src/data/services/scope/IAccessPolicy.ts
+      - src/adapter/pi/tools/ToolAccessGuard.ts
+      - src/adapter/pi/tools/ToolAccessGuard.integration.test.ts
+  - name: 工具类型来源与回归锁定
+    summary: pi 工具层（ListAgentsTool/SpawnAgentTool）的实体类型引用全部改经 application 透出，配合冒烟测试锁定重构后的组装行为。此组是"adapter 类型引用合规"与回归保障的样板。
+    files:
+      - src/adapter/pi/tools/ListAgentsTool.ts
+      - src/adapter/pi/tools/SpawnAgentTool.ts
+      - src/adapter/pi/dicontainer.smoke.test.ts
+      - src/adapter/pi/README.md

@@ -1,0 +1,91 @@
+packageName: agent-communication
+summary: |
+  spawn_agent 单向任务派发 → 上下文间双向通信抽象，终态为单工具 agent_chat：
+  发消息并等待下一轮回应，自动分派通道（awaitingReply → response，否则 prompt FIFO 串行）。
+  子进程侧 ask_parent 提问通道 + 运行期会话延续。演进：5 工具 → 4 → 单工具
+  （send 冗余、await 是状态非工具、request/reply 同构、close 无必要）。
+  核心：MessageRouter 调度状态机（串行队列化修复并发丢消息 bug + awaitingReply 通道分派）。
+  入口：adapter/pi/extension.ts 注册 AgentCommTools；子进程经 --extension + IFLOW_CHILD=1
+  分支只注册 ask_parent。当前状态：类型/单测全绿（131 条），真实环境 smoke 待验证。
+
+files:
+  - path: src/application/services/IAgentMessagingService.ts
+    change: 新增。通信接口收敛为 send/await 两个动作（等待是动作的阻塞语义，非独立工具）；send 自动分派通道（等待回复时走 response，否则 prompt）；AgentAwaitResult 四类消息类型（question/result/timeout/error）；AgentRunResult/AgentUsage 实体透出（承接 ISubProcessRunner）。
+  - path: src/application/useCases/AgentRequestUseCase.ts
+    change: 新增。send+await 合成用例（agent_chat 的后端）：agent 校验（sub_skill scope）+ task/context 组装 + model/skipExts/onEvent 透传 + 默认超时 600000，结果原样透传。
+  - path: src/application/useCases/AgentRequestUseCase.test.ts
+    change: 新增。13 条用例锁定校验/组装/透传行为（test-writer 产出 + onEvent 补充）。
+  - path: src/adapter/pi/runtime/MessageRouter.ts
+    change: 新增。会话调度状态机（纯逻辑）：per-agent FIFO 任务队列 + 等待者配对 + 提问队列 + awaitingReply 状态（通道分派依据，提问投递置位/回复/agent_end 清除）+ agent_end 解析；修复并发派发同一 agent 的消息丢失。
+  - path: src/adapter/pi/runtime/MessageRouter.test.ts
+    change: 新增。29 条用例：事件解析、提问队列消费、串行队列化、并发配对、提问续接、awaitingReply 生命周期、resetChannel 隔离。
+  - path: src/adapter/pi/runtime/RpcProcessPool.ts
+    change: 重写。runTask/runChain/replyMessage/resetSession 移除 → sendMessage（自动分派 awaitingReply → response / prompt 入队串行）+ awaitMessage（等待者注册，排队提问优先）；集成 MessageRouter 调度；spawn 注入 --extension + IFLOW_CHILD；进程级 model/skipExts 变化重启；exit 时等待者 resolve error + resetChannel。
+  - path: src/adapter/pi/runtime/AgentMessagingService.ts
+    change: 新增。IAgentMessagingService 薄实现（send/await），委托 RpcProcessPool（含 onEvent 透传）。
+  - path: src/adapter/pi/child/ChildExtension.ts
+    change: 新增。子进程轻量工具注册：ask_parent（ctx.ui.input → extension_ui_request 阻塞等待，提问文本放 title），每任务计数上限 3，message_start 重置。
+  - path: src/adapter/pi/tools/AgentCommTools.ts
+    change: 新增。单工具 agent_chat 注册（发消息+等待，参数 agent/message/context/model/timeoutMs/skipExts）+ TUI 渲染（渲染辅助自 SpawnAgentTool 迁移）+ tracker 推送（会话轨迹复用 + onEvent 防刷实时日志）。
+  - path: src/adapter/pi/tui/AgentRunTracker.ts
+    change: LogLevel 扩展 question/reply 级别（提问/回答在轨迹可见）。
+  - path: src/adapter/pi/tui/tui-utils.ts
+    change: logIcon 增加 question（❓）/ reply（↩）图标。
+  - path: src/adapter/pi/DIContainer.ts
+    change: 组装变更：移除 spawnAgentUseCase/spawnAgentTool/subProcessRunner，新增 agentMessagingService/agentRequestUseCase/agentCommTools。
+  - path: src/adapter/pi/extension.ts
+    change: 新增 IFLOW_CHILD 子进程分支（只注册 ask_parent）；主注册换 AgentCommTools（单工具）。
+  - path: src/adapter/pi/index.ts
+    change: 导出变更：移除 SpawnAgentTool/SubProcessRunner，新增 AgentCommTools/AgentMessagingService/MessageRouterImpl/registerChildTools。
+  - path: src/adapter/pi/tools/index.ts
+    change: 导出变更：移除 SpawnAgentTool，新增 AgentCommTools。
+  - path: src/application/useCases/index.ts
+    change: 导出变更：SpawnAgentUseCase → AgentRequestUseCase。
+  - path: src/adapter/pi/tools/SpawnAgentTool.ts
+    change: 删除。被 AgentCommTools（单工具 agent_chat）取代。
+  - path: src/adapter/pi/runtime/SubProcessRunner.ts
+    change: 删除。spawn 一次性模式无法承载双向通道，被 AgentMessagingService 取代。
+  - path: src/application/useCases/SpawnAgentUseCase.ts
+    change: 删除。被 AgentRequestUseCase 取代。
+  - path: src/application/services/ISubProcessRunner.ts
+    change: 删除。被 IAgentMessagingService 取代。
+
+groups:
+  - name: 通信契约
+    summary: application 端口的通信抽象——send/await 两个动作接口与合成用例，工具层与运行时都只依赖此契约，可 mock 可替换。
+    files:
+      - IAgentMessagingService.ts
+      - AgentRequestUseCase.ts
+      - AgentRequestUseCase.test.ts
+      - ISubProcessRunner.ts
+
+  - name: 进程通道运行时
+    summary: pi 子进程的生命周期与消息调度——RpcProcessPool 管进程 I/O 与通道分派（awaitingReply → response / prompt），MessageRouter 管调度状态机（串行队列化/等待者配对/提问队列/等待回复标记），AgentMessagingService 是契约到运行时的桥。此组共同构成"与另一个上下文通信"的底层通道。
+    files:
+      - RpcProcessPool.ts
+      - MessageRouter.ts
+      - MessageRouter.test.ts
+      - AgentMessagingService.ts
+      - SubProcessRunner.ts
+
+  - name: 子进程侧通道
+    summary: 子 agent 反向提问能力——ask_parent 工具经官方 extension_ui_request 协议阻塞等待主 agent 回答（回答由 agent_chat 自动路由为 extension_ui_response），计数上限防死循环。
+    files:
+      - ChildExtension.ts
+
+  - name: 工具与可视化
+    summary: 主 agent 侧的工具入口与轨迹呈现——单工具 agent_chat（发消息+等待，自动分派通道）、TUI 渲染卡片、tracker 会话轨迹（question/reply 日志与图标）。工具层组合通信契约 + 可视化。
+    files:
+      - AgentCommTools.ts
+      - AgentRunTracker.ts
+      - tui-utils.ts
+      - SpawnAgentTool.ts
+
+  - name: 组装与入口
+    summary: DI 组装与注册编排——容器提供通信组件实例，extension.ts 决定主/子进程分支并注册工具，导出面随组件更替。
+    files:
+      - DIContainer.ts
+      - extension.ts
+      - index.ts
+      - tools/index.ts
+      - useCases/index.ts

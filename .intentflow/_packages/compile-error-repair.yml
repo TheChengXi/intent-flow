@@ -1,0 +1,46 @@
+packageName: compile-error-repair
+summary: |
+  编译错误修复：清除 src 全量 tsc --noEmit 的 112 个基线错误（webview 编译域隔离、
+  pi-tui 依赖声明、test mock 类型升级、意图包残留清理、死导出清理），恢复
+  "tsc 零错误"编译标准。
+  对外依赖：@earendil-works/pi-tui@^0.82.1（devDep）、@types/node@^22（升级自 ^18）。
+  入口建议：无新入口；验证入口为 `npx tsc --noEmit`（零错误）与 `npm test`。
+  当前状态：已完成并验证（tsc 0 错误、vitest 29/29、webview vite build 成功、CLI/pi-tui 冒烟通过）。
+
+files:
+  - path: tsconfig.json
+    change: exclude 追加 src/adapter/vscode/ui/webview/src——将 webview 前端源码（DOM lib + @core/@resource 别名域）从根 tsc 编译范围隔离，清除 29 个错误
+
+  - path: package.json
+    change: devDependencies 新增 @earendil-works/pi-tui@^0.82.1（与 pi-coding-agent 声明对齐）；@types/node ^18.x 升级为 ^22.20.1（满足 vitest@4.1.9 的 peer 要求，解除存量依赖树冲突）
+
+  - path: package-lock.json
+    change: 随依赖变更同步（pi-tui + get-east-asian-width + marked 新增，@types/node 版本更新）
+
+  - path: src/application/index.ts
+    change: 删除 2 行死导出（export * from './hooks'、'./config'——模块不存在且全项目无人 import 本文件）
+
+  - path: src/adapter/vscode/ui/CapabilityMapPanel.ts
+    change: 删除意图包废弃残留 4 处——case 'saveGroups' 整个分支（intentHashService + intentPackageRepo.save）、2 处 intentPackageRepo.load（folderData/selectFolder 消息中）、1 处残留 shorthand（groups, → groups: []）；@intent 更新注明意图包交互已移除
+
+  - path: src/application/useCases/ProjectIntentUseCase.test.ts
+    change: mock 类型写法升级（语义零变化）——createMockFileRepo 返回类型 IFileRepository → Mocked<IFileRepository>（import type { Mocked }）、12 处 vi.fn 双泛型 <[T], R> 改单函数签名泛型、1 处 lambda 参数补显式类型标注；清除 70 个类型错误
+
+groups:
+  - name: 编译构建域配置
+    summary: 让根 tsc 只编译它该编译的范围、依赖声明完整可解析——webview 前端隔离出根编译域（独立 vite 构建），pi-tui 依赖补齐（TUI 组件获得正确模块解析），@types/node 升级解除 vitest peer 冲突。维护者通过本组理解"编译配置健康"的完整面貌。
+    files:
+      - tsconfig.json
+      - package.json
+      - package-lock.json
+
+  - name: 废弃残留清理
+    summary: 与 interface-layer-reorg 一脉相承的废弃代码清理：application 入口的死导出（指向不存在模块）与 vscode 面板的意图包残留交互（saveGroups/loadGroups）。维护者通过本组理解"意图包废弃在 UI/入口侧的收尾"。
+    files:
+      - src/application/index.ts
+      - src/adapter/vscode/ui/CapabilityMapPanel.ts
+
+  - name: 测试类型基线
+    summary: 全项目唯一测试文件的 mock 类型升级——vi.fn 从旧版双泛型写法升级为 vitest 4.x 单函数签名泛型 + Mocked<T> 返回类型，测试语义零变化（29/29 保持）。维护者通过本组获得测试 mock 写法的当前标准。
+    files:
+      - src/application/useCases/ProjectIntentUseCase.test.ts

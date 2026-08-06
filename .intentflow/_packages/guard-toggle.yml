@@ -1,0 +1,50 @@
+packageName: guard-toggle
+summary: |
+  守卫开关（ToolAccessGuard 的 auto 模式）。用户通过 /guard-auto 命令运行时翻转守卫开关，
+  关闭后 edit/write/bash 不再弹确认框直接放行，状态持久化到项目根 .intentflow/guard-state.json，重启保持。
+  依赖 pi 扩展 API（registerCommand / tool_call 事件）；入口为 extension.ts 注册的 GuardToggleCommand
+  与 DIContainer 注入的 ToolAccessGuard 放行条件。
+  当前状态：已发布（tsc 0 错误，89 测试全绿）。
+
+files:
+  - path: src/data/services/guard/GuardToggleStore.ts
+    change: 新增。守卫开关状态持久化存储：同步 read()（无文件/损坏/非法字段回退安全态 true）+ 异步 write()（失败抛错），路径固定 <cwd>/.intentflow/guard-state.json
+  - path: src/application/services/IGuardToggleService.ts
+    change: 新增。开关服务接口：isEnabled() 同步查询（true=拦截 false=放行）、toggle() 翻转并持久化返回新状态
+  - path: src/application/services/GuardToggleService.ts
+    change: 新增。接口实现：构造时经 store.read() 同步加载，toggle() 先翻内存再写盘，写失败抛错但本次会话生效
+  - path: src/adapter/pi/commands/GuardToggleCommand.ts
+    change: 新增。/guard-auto 命令：翻转开关并 notify 当前模式（关闭 warning / 开启 info / 写失败 error）
+  - path: src/application/CoreDIContainer.ts
+    change: 修改。新增 guardToggleStore + guardToggleService 字段与初始化（data 实现统一在 application 组装）
+  - path: src/adapter/pi/DIContainer.ts
+    change: 修改。经 core 获取 guardToggleService，注入 ToolAccessGuard 构造，暴露给命令层
+  - path: src/adapter/pi/tools/ToolAccessGuard.ts
+    change: 修改。放行条件 OR 扩展：shouldSkip('confirm-edit') || !guardToggle.isEnabled() → 直接放行；构造签名新增 IGuardToggleService
+  - path: src/adapter/pi/extension.ts
+    change: 修改。注册 GuardToggleCommand（/guard-auto）
+  - path: src/data/services/guard/GuardToggleStore.test.ts
+    change: 新增。13 用例：安全态回退（无文件/损坏 JSON/非法字段）、write→read 回环、落盘位置
+  - path: src/application/services/GuardToggleService.test.ts
+    change: 新增。9 用例：构造加载、toggle 翻转与写回、写失败内存已翻转、不做二次兜底
+  - path: src/adapter/pi/tools/ToolAccessGuard.integration.test.ts
+    change: 修改。适配新构造签名；新增开关开启/关闭时 edit 与危险 bash 的放行/拦截集成用例
+
+groups:
+  - name: 开关状态核心（持久化 + 业务语义）
+    summary: 开关状态从文件到内存的完整链路——store 负责落盘与安全态兜底，service 负责翻转语义与"写失败本次会话生效"契约。维护开关行为时改这两个文件 + 各自测试。
+    files:
+      - GuardToggleStore.ts
+      - GuardToggleService.ts
+      - IGuardToggleService.ts
+      - GuardToggleStore.test.ts
+      - GuardToggleService.test.ts
+  - name: pi 适配接入（命令 + 守卫 + 装配）
+    summary: 开关能力对 pi 平台的暴露：/guard-auto 命令是用户入口，ToolAccessGuard 的 OR 放行是执行点，两个容器完成注入编排。新增/调整交互方式（如 TUI 组件）时改这组文件。
+    files:
+      - GuardToggleCommand.ts
+      - ToolAccessGuard.ts
+      - CoreDIContainer.ts
+      - DIContainer.ts
+      - extension.ts
+      - ToolAccessGuard.integration.test.ts

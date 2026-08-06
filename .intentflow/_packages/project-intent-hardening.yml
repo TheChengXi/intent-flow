@@ -1,0 +1,40 @@
+packageName: project-intent-hardening
+summary: |
+  @intent 注释投射/提取的安全闭环：投射侧自动转义注释特殊序列（块注释终止序列、行首 @），
+  提取侧对称还原，杜绝生成语法错误代码（TS1127/TS1109）与意图文本静默截断。
+  对外依赖：LanguageConfig（注释风格判定）、TreeSitterManager（AST 替换）、IFileRepository。
+  入口建议：intent-flow_project_intent（MCP 工具）→ ProjectIntentUseCase。
+  当前状态：源码层 69/69 全绿 + tsc 零错误；dist 产物待重新构建后生效。
+
+files:
+  - path: src/data/services/codeContext/intentTextEscaping.ts
+    change: 新增。转义/还原规则唯一实现：escapeBlockCommentText（终止序列+行首 @）、escapeLineCommentText（仅行首 @）、unescapeIntentText（对称还原）
+  - path: src/data/services/codeContext/intentTextEscaping.test.ts
+    change: 新增。17 例规则单测：全量转义、无二次转义、还原闭环、行/块范围差异、已知行为锁定
+  - path: src/data/services/codeContext/extractors/IntentExtractor.ts
+    change: 修改。提取返回前对拼接文本调用 unescapeIntentText（净增 2 行）；边界逻辑零改动
+  - path: src/data/services/codeContext/extractors/IntentExtractor.test.ts
+    change: 新增。18 例：三种注释格式提取、停止条件、转义还原闭环、行首 @ 不截断
+  - path: src/application/useCases/ProjectIntentUseCase.ts
+    change: 修改。generateIntentBlock 块注释分支接 escapeBlockCommentText、行注释分支接 escapeLineCommentText；裸文本分支不转义
+  - path: src/application/useCases/ProjectIntentUseCase.test.ts
+    change: 修改。追加 5 例转义断言：词法安全、行首 @、.py 范围差异、.md 不转义、真实提取器还原闭环
+
+groups:
+  - name: 转义规则核心
+    summary: 投射与提取两侧共用的对称转义规则，单一实现防规则漂移——本 feature 的能力源头
+    files:
+      - intentTextEscaping.ts
+      - intentTextEscaping.test.ts
+
+  - name: 投射侧接入
+    summary: application 层生成注释块时的转义挂接，按注释风格（块/行/裸文本）差异化应用规则
+    files:
+      - ProjectIntentUseCase.ts
+      - ProjectIntentUseCase.test.ts
+
+  - name: 提取侧接入
+    summary: data 层提取 @intent 时的对称还原挂接，与投射侧构成闭环，保证意图文本与原文一致
+    files:
+      - IntentExtractor.ts
+      - IntentExtractor.test.ts

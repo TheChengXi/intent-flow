@@ -1,0 +1,109 @@
+packageName: unused-code-cleanup
+summary: |
+  未使用代码清理：开启 noUnusedLocals + noUnusedParameters 编译选项，清除 29 处存量
+  未使用代码（19 个文件），使"未使用声明"进入编译期强制拦截。
+  对外依赖：无新增（沿用 compile-error-repair 建立的编译基线）。
+  入口建议：验证入口为 `npx tsc --noEmit`（零错误，含未使用检查）。
+  当前状态：已完成并验证（tsc 0 错误、vitest 29/29、CLI/pi 冒烟通过、接口签名零改动）。
+
+files:
+  - path: tsconfig.json
+    change: 开启 noUnusedLocals + noUnusedParameters（strict 之后）——本 feature 的能力开关，暴露 29 处存量并拦截未来新增
+
+  - path: src/data/repositories/ICodeParserRepository.ts
+    change: 删除未使用的 TypeDefinition 类型 import
+
+  - path: src/data/services/cache/CacheRepositoryImpl.ts
+    change: set 方法参数 ttl → _ttl（ICacheRepository 接口签名保留，实现未用）
+
+  - path: src/data/services/codeContext/extractors/import/resolvers/TypeScriptResolver.ts
+    change: 删除 extractRegex 方法内未使用的遮蔽声明 `const path = require('path')`（顶部 import * as path 仍服务其他方法）
+
+  - path: src/data/services/codeParser/CodeParserRepositoryImpl.ts
+    change: 删除未使用的 ContractSearcher import；searchContract 参数 → _functionName/_workspaceRoot（接口实现，方法体为 throw 占位）
+
+  - path: src/data/services/tree-sitter/LanguageConfig.ts
+    change: getBuiltinTypes 参数 language → _language（公共静态 API，调用方 TypeReferenceExtractor 传参保留）
+
+  - path: src/adapter/vscode/application/dryrun/DryRunManager.ts
+    change: import 只保留 createDryRunRecord（DryRunRecord 类型未直接引用）
+
+  - path: src/adapter/vscode/commands/CheckFileSizeCommand.ts
+    change: 删除 execute() 内未使用的 container 声明（TODO 占位 handler）；withProgress 回调参数 progress ×2 → _progress
+
+  - path: src/adapter/vscode/commands/RemoveFromIntentsCommand.ts
+    change: 删除未使用的 VSCodeDIContainer import
+
+  - path: src/adapter/vscode/services/VSCodeContractSearcher.ts
+    change: searchInWorkspace 参数 workspaceRoot → _workspaceRoot（公共静态方法，无调用方，签名保守保留）
+
+  - path: src/adapter/pi/repositories/SubSkillRepository.ts
+    change: 删除未使用的 basename import（node:path）
+
+  - path: src/adapter/pi/runtime/RpcProcessPool.ts
+    change: 删除未使用的 `const started = Date.now()`；shutdown 解构 `[agent, pending]` → `[, pending]`
+
+  - path: src/adapter/pi/runtime/SubProcessRunner.ts
+    change: 删除未使用的 readFile import；删除未使用的 `let stdout = ''`（连写入都不存在）
+
+  - path: src/adapter/pi/tools/SpawnAgentTool.ts
+    change: formatUsage 删除未使用的 theme 参数 + 连带修改 2 处调用（调用处 theme 变量仍被使用，无连锁污染）
+
+  - path: src/adapter/pi/tools/ToolAccessGuard.integration.test.ts
+    change: 删除未使用的 ToolCallEventResult/beforeEach import；删除未使用的 mockCtx 声明（纯对象字面量）与 guard 声明（构造函数无副作用）
+
+  - path: src/adapter/pi/tui/AgentListPanel.ts
+    change: 删除未使用的 visibleWidth import；ensureVisible 删除未使用的 total 参数 + 连带修改 3 处调用
+
+  - path: src/adapter/pi/tui/LogPanel.ts
+    change: 删除未使用的 truncateToWidth import；render 参数 isFocused → _isFocused（公共渲染 API）
+
+  - path: src/adapter/pi/tui/SubAgentView.ts
+    change: wrapLine 参数 themeFg → _themeFg（私有方法，调用处多，下划线最小 diff）
+
+  - path: src/application/useCases/ProjectIntentUseCase.test.ts
+    change: 类型 import 只保留 ProjectIntentResult（删除未使用的 ProjectIntentInput）
+
+groups:
+  - name: 编译选项能力开关
+    summary: noUnusedLocals + noUnusedParameters 是本 feature 的核心机制——所有清理动作都是它的暴露项。维护者通过本组理解"未使用代码拦截"的配置入口。
+    files:
+      - tsconfig.json
+
+  - name: data 层解析链清理
+    summary: 代码解析/缓存/语言配置能力中的未使用声明：类型 import、遮蔽声明、接口实现的预留参数（_ttl/_functionName/_workspaceRoot/_language）。维护者通过本组理解 data 层"类型签名保留、实现侧收敛"的现状。
+    files:
+      - src/data/repositories/ICodeParserRepository.ts
+      - src/data/services/cache/CacheRepositoryImpl.ts
+      - src/data/services/codeContext/extractors/import/resolvers/TypeScriptResolver.ts
+      - src/data/services/codeParser/CodeParserRepositoryImpl.ts
+      - src/data/services/tree-sitter/LanguageConfig.ts
+
+  - name: vscode 命令与服务清理
+    summary: vscode 适配层的命令（文件大小检查/意图排除）与 dryrun/契约搜索服务中的未使用声明，含 TODO 占位 handler 的残留 container。维护者通过本组理解 vscode 侧命令实现的当前形态。
+    files:
+      - src/adapter/vscode/application/dryrun/DryRunManager.ts
+      - src/adapter/vscode/commands/CheckFileSizeCommand.ts
+      - src/adapter/vscode/commands/RemoveFromIntentsCommand.ts
+      - src/adapter/vscode/services/VSCodeContractSearcher.ts
+
+  - name: pi 运行时链路清理
+    summary: pi adapter 的 agent 发现/进程池/子进程运行/工具注册链路中的未使用声明（含集成测试）。本 feature 改动最集中的区域，冒烟验证重点。
+    files:
+      - src/adapter/pi/repositories/SubSkillRepository.ts
+      - src/adapter/pi/runtime/RpcProcessPool.ts
+      - src/adapter/pi/runtime/SubProcessRunner.ts
+      - src/adapter/pi/tools/SpawnAgentTool.ts
+      - src/adapter/pi/tools/ToolAccessGuard.integration.test.ts
+
+  - name: pi TUI 组件清理
+    summary: pi-tui 依赖的三个渲染组件（AgentListPanel/LogPanel/SubAgentView）的未使用 import 与渲染签名参数（_isFocused/_themeFg），私有方法删参数连带改调用。维护者通过本组理解 TUI 渲染层签名保留策略。
+    files:
+      - src/adapter/pi/tui/AgentListPanel.ts
+      - src/adapter/pi/tui/LogPanel.ts
+      - src/adapter/pi/tui/SubAgentView.ts
+
+  - name: 测试类型基线
+    summary: 全项目测试文件的类型 import 收敛（compile-error-repair 测试组的延续），维护者通过本组理解测试文件只引入实际使用 API 的标准。
+    files:
+      - src/application/useCases/ProjectIntentUseCase.test.ts

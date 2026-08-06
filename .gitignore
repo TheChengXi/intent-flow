@@ -13,8 +13,16 @@ dist/
 
 # 依赖
 node_modules/
-.intentflow/
 
+# IntentFlow 运行时产物与文档资产分离：
+# 忽略除能力打包与 feature 文档之外的全部内容（logs/intents/state/个人文件保持忽略）
+.intentflow/*
+!.intentflow/_packages/
+!.intentflow/_packages/**
+!.intentflow/*/requirement.md
+!.intentflow/*/design.md
+!.intentflow/*/report.md
+!.intentflow/*/later-on.md
 # MCP构建
 .mcp.json
 

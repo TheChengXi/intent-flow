@@ -1,0 +1,94 @@
+packageName: interface-layer-reorg
+summary: |
+  接口层重整：删除 src/data 层已废弃/死链的接口定义（意图包、调用图分析、文件工具、
+  旧版上下文提取管线），收敛大版本更新遗留的重复定义，使 entities/repositories 的
+  index 导出与实际引用对齐。活跃代码零行为改动，纯删除型重构。
+  入口建议：无新入口；维护者可通过 src/data/entities/index.ts 与
+  src/data/repositories/index.ts 了解接口层当前全部存活定义。
+  当前状态：已完成并验证（tsc 错误 -1、vitest 29/29、CLI 冒烟通过）。
+
+files:
+  - path: src/data/entities/IntentPackage.ts
+    change: 删除。意图包实体（完全废弃，全项目零引用，多处 @warn 标注）
+
+  - path: src/adapter/cli/commands/index.ts
+    change: 移除废弃的 intent-package 命令条目（handler 从未定义，基线 bug 导致 CLI 启动即崩）
+
+  - path: src/data/repositories/ICallGraphAnalyzer.ts
+    change: 删除。调用图分析接口（零实现/零使用）
+
+  - path: src/data/entities/CallDependency.ts
+    change: 删除。仅被 ICallGraphAnalyzer 引用，随死链一并删除
+
+  - path: src/data/repositories/FileRepository.ts
+    change: 删除。文件读写纯函数模块（全项目零引用）
+
+  - path: src/data/entities/Errors.ts
+    change: 删除。错误类型（FileNotFoundError/PermissionError 仅被 FileRepository 引用；ValidationError/ConfigurationError 本就无人用）
+
+  - path: src/data/services/codeContext/PartialContextExtractor.ts
+    change: 删除。整文件零引用（内含 CodeSnippet/DependencyInfo/TypeDefinition/PartialContextResult 四个内嵌重复定义）
+
+  - path: src/data/services/codeContext/FullContextExtractor.ts
+    change: 删除。整文件零引用（内含 DependencyBranch 内嵌重复定义）
+
+  - path: src/data/entities/CodeSnippet.ts
+    change: 删除。entities 版死实体（零引用，重复定义随载体死文件删除）
+
+  - path: src/data/entities/DependencyInfo.ts
+    change: 删除。entities 版死实体（零引用）
+
+  - path: src/data/entities/DependencyBranch.ts
+    change: 删除。entities 版死实体（零引用）
+
+  - path: src/data/entities/IntentResult.ts
+    change: 删除。entities 版死实体（零引用）
+
+  - path: src/data/entities/PartialContextResult.ts
+    change: 删除。entities 版死实体（零引用）
+
+  - path: src/data/services/codeContext/extractors/IntentExtractor.ts
+    change: 瘦身 266→43 行。删除 IntentResult 定义、extractIntentFromFile/extractIntentWithTreeSitter/findIntentInComments/extractIntentFromCommentBlock/extractIntentWithRegex 及 4 个 import；保留活的 extractIntentFromLines（被 ProjectIntentsToFilesUseCase 使用，代码逐字不变）；@intent 更新为单函数职责
+
+  - path: src/data/entities/index.ts
+    change: 导出对齐 13→9 个：移除 6 个死导出（CallDependency/CodeSnippet/DependencyInfo/DependencyBranch/IntentResult/PartialContextResult），补全 DryRunConfig/DryRunRecord；@intent 更新为统一出口规格
+
+  - path: src/data/repositories/index.ts
+    change: 移除 ICallGraphAnalyzer 导出（6→5 个接口）；@intent 更新为统一出口规格
+
+groups:
+  - name: 意图包能力废弃清理
+    summary: 意图包（IntentPackage）能力废弃后的残留清理：实体定义删除 + CLI 命令表死引用修复。维护者通过本组理解"意图包已整体废弃，入口已移除"。
+    files:
+      - src/data/entities/IntentPackage.ts
+      - src/adapter/cli/commands/index.ts
+
+  - name: 调用图分析能力死链清理
+    summary: 调用图分析（ICallGraphAnalyzer + CallDependency）整条链无实现无使用，接口与其实体一并删除。
+    files:
+      - src/data/repositories/ICallGraphAnalyzer.ts
+      - src/data/entities/CallDependency.ts
+
+  - name: 文件工具死链清理
+    summary: 文件读写工具模块（FileRepository）及其错误类型（Errors）全链零引用，为 FileSystemRepository 实现 IFileRepository 之前的旧版遗留。
+    files:
+      - src/data/repositories/FileRepository.ts
+      - src/data/entities/Errors.ts
+
+  - name: 旧版上下文提取管线清理与收敛
+    summary: 大版本更新遗留的旧提取管线（PartialContextExtractor/FullContextExtractor）整文件死代码，其内嵌类型定义与 entities 版构成 5 对重复定义——全部删除；唯一存活函数 extractIntentFromLines 保留于 IntentExtractor（供 ProjectIntentsToFilesUseCase 复用）。维护者通过本组理解"上下文提取能力当前只剩意图文本提取单函数"。
+    files:
+      - src/data/services/codeContext/PartialContextExtractor.ts
+      - src/data/services/codeContext/FullContextExtractor.ts
+      - src/data/entities/CodeSnippet.ts
+      - src/data/entities/DependencyInfo.ts
+      - src/data/entities/DependencyBranch.ts
+      - src/data/entities/IntentResult.ts
+      - src/data/entities/PartialContextResult.ts
+      - src/data/services/codeContext/extractors/IntentExtractor.ts
+
+  - name: 接口层统一出口
+    summary: entities 与 repositories 的 index 导出与实际引用对齐（9 个实体 / 5 个接口），作为数据层类型统一出口，承载"导出均有活跃引用"的验收规格。
+    files:
+      - src/data/entities/index.ts
+      - src/data/repositories/index.ts
