@@ -26,9 +26,39 @@ task 中指定了 feature 目录，读取该目录下的：
 - 只测公开接口，覆盖 @intent 描述的行为
 - 一个测试一个关注点
 - 测行为，不测实现细节
-- 只在系统边界 mock
+- 只在系统边界 mock；绝不 mock 自己的类、内部协作者
 
-### 3. 写工作报告
+### 3. 接口设计（可测试性）
+
+输出接口签名即 code-writer 的实现契约。
+
+1. **接受依赖，不在内部创建**
+
+```typescript
+// 可测
+function processOrder(order, paymentGateway) {}
+
+// 难测
+function processOrder(order) {
+  const gateway = new StripeGateway();
+}
+```
+
+2. **返回结果，不产生副作用**
+
+```typescript
+// 可测
+function calculateDiscount(cart): Discount {}
+
+// 难测
+function applyDiscount(cart): void {}
+```
+
+3. **小表面积**：方法少、参数少。接口签名出现可疑参数时，自查：
+   - 这个参数真的需要调用方传吗？能否从其他参数推导？
+   - 这个参数是不是实现细节泄漏？
+
+### 4. 写工作报告
 
 写入 `.intentflow/<feature-name>/logs/test-report.md`：
 
@@ -37,7 +67,7 @@ task 中指定了 feature 目录，读取该目录下的：
 - 接口签名列表
 - 覆盖的测试场景
 
-### 4. 输出完成
+### 5. 输出完成
 
 ```
 work done → .intentflow/<feature-name>/logs/test-report.md

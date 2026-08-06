@@ -7,7 +7,7 @@ description: 在 pencil 画布内画 UI 草稿：询问设计偏好，按方向�
 
 以下规则具有最高优先级。
 
-画 UI 草稿。只产出设计稿
+画 UI 草稿。只产出设计稿。
 
 ## pencil 约束
 
@@ -21,7 +21,7 @@ description: 在 pencil 画布内画 UI 草稿：询问设计偏好，按方向�
 
 缺口大 → 多维并行问；接近清晰 → 收尾。
 
-1. 产品类型 / 目标界面 / 组件数量（多少个组件、是否含页面跳转）
+1. 产品类型 / 目标界面 / 组件数量（多少个组件、是否含页面跳转，是否含特殊动效，关键帧需要画几个）
 2. 颜色方向（科技 / 文化 / 清新 / 酷 / 复古…）
 3. 字体层级 / 整体间距 / 阴影系统
 4. 三参数旋钮 1-10：设计方差 / 动效 / 密度
@@ -37,7 +37,7 @@ description: 在 pencil 画布内画 UI 草稿：询问设计偏好，按方向�
 
 内置清单：
 - Colormind（POST http://colormind.io/api/，input 数组锁定主色、"N" 为不锁定）
-- espectro.dev（GET https://espectro.dev/api/colors?search=关键词，159 色和纸色 + 348 组合）
+- espectro.dev（GET https://espectro.dev/api/colors?search=关键词）
 
 ## 生成草稿
 
@@ -55,4 +55,4 @@ description: 在 pencil 画布内画 UI 草稿：询问设计偏好，按方向�
 
 ## 修改
 
-草稿完成 → 交修改（画布手改或文字反馈）→ 每次只动一个维度 → 确认后输出最终设计稿，交 design-to-protocol。
+草稿完成 → 交修改（画布手改或文字反馈）→ 每次只动一个维度 → 确认后输出最终设计稿。

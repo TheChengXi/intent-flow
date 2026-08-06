@@ -17,7 +17,6 @@ description: 执行完成后关账。聚合需求、设计与执行产出（隔�
 
 - `test-report.md`：测试覆盖、接口签名
 - `code-report.md`：实现决策、疑虑、卡点
-- `review-report.md`：审查结论、findings
 
 读取后将各报告的内容映射到生成步骤的对应节。
 
@@ -76,7 +75,7 @@ logs/ 不存在（直接模式执行）时跳过本节，第 2~7 节基于 git d
 - 收集本次 feature 涉及的全部文件
 - 每个文件记录**在这 feature 中的具体改动**（而非 @intent 原文——@intent 可通过 `rg @intent <path>` 原地读取）
 - 按**功能内聚**分组（跨层关联），而非按目录层级分组（按层分组是目录结构的投影，零信息增量）
-- 写入 `.intentflow/packages/<feature-name>.yml`
+- 写入 `.intentflow/_packages/<feature-name>.yml`
 
 ### 包格式
 
@@ -96,13 +95,10 @@ groups:
       - <文件名>
 ```
 
-**完成标志**：`.intentflow/packages/<feature-name>.yml` 存在且可读。
-
 ### 分组原则
 
 - ✅ 按功能内聚分组：跨层聚合功能强相关的文件，让维护者理解「这些文件共同构成了什么能力」
-- ✅ 分组是对能力关联的语义注释，不是目录结构的重复
-- 一个组内的文件可能分布在 data、application、adapter 不同层——这正是分组的信息增量
+- ✅ 分组是对能力关联的语义注释
 
 ## 6. 提交 Git
 
