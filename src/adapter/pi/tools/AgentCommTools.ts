@@ -1,15 +1,18 @@
 /**
  * @intent
- * agent 通信工具集注册（5 工具：agent_send / agent_await / agent_reply / agent_close /
- * agent_request）+ TUI 渲染 + tracker 推送。渲染辅助函数自 SpawnAgentTool 迁移。
- * 会话管理：Map<agent, toolCallId> 维持"一行一 agent"的多轮轨迹——续会话复用条目追加日志，
+ * agent 通信工具集注册（4 工具：agent_request / agent_await / agent_reply / agent_close）
+ * + TUI 渲染 + tracker 推送。渲染辅助函数自 SpawnAgentTool 迁移。
+ * 工具收敛说明：agent_send 已移除——串行模型下其语义被 agent_request（send+await）完全覆盖，
+ * 减少工具数降低模型误选率（业界“fewer tools outperform more tools”）；send 仍作为内部通道存在
+ * （IAgentMessagingService.send，仅供 AgentRequestUseCase 使用，不注册为工具）。
+ * 会话管理：Map<agent, toolCallId> 维持“一行一 agent”的多轮轨迹——续会话复用条目追加日志，
  * close 后新会话开新条目。
  *
  * 边界：await/request 返回 question 时渲染提问卡片并提示用 agent_reply 回答后继续 await；
  * timeout/error 有明确呈现；tracker 推送失败不阻塞主流程；无 tracker 时静默降级。
  *
  * 验收条件：
- * - 5 工具注册名与参数 schema 与设计文档一致
+ * - 4 工具注册名与参数 schema 与设计文档一致（无 agent_send）
  * - question → reply → await 循环中 tracker 日志按序追加（question/reply 级别）
  * - agent_request 行为与旧 spawn_agent 等价（派发任务拿结果）
  */
@@ -114,11 +117,10 @@ export class AgentCommTools {
   ) {}
 
   register(pi: ExtensionAPI): void {
-    this.registerSend(pi);
+    this.registerRequest(pi);
     this.registerAwait(pi);
     this.registerReply(pi);
     this.registerClose(pi);
-    this.registerRequest(pi);
   }
 
   // ==================== 会话管理 ====================
@@ -266,59 +268,6 @@ export class AgentCommTools {
       content: [{ type: 'text' as const, text: `⚠️ ${agent} 通道错误: ${r.message}` }],
       details: {},
     };
-  }
-
-  // ==================== agent_send ====================
-
-  private registerSend(pi: ExtensionAPI): void {
-    pi.registerTool({
-      name: 'agent_send',
-      label: 'Agent Send',
-      description: '向指定 agent 的会话发送一条消息（非阻塞，立即返回）。进程不存在时自动创建。',
-      promptSnippet: 'Send a message to an agent session',
-      promptGuidelines: [
-        'Use agent_send to deliver a message to another agent context, then agent_await to wait for its next message.',
-        'Messages accumulate in the same session: the agent remembers previous exchanges.',
-      ],
-      parameters: Type.Object({
-        agent: Type.String({ description: 'Agent 名称，对应 skills/<skill>/sub-skill/<agent>/SUB-SKILL.md' }),
-        message: Type.String({ description: '要发送的消息内容' }),
-      }),
-      renderCall(args, theme) {
-        const preview = args.message.length > 60 ? args.message.slice(0, 60) + '...' : args.message;
-        return new Text(
-          theme.fg('toolTitle', theme.bold('agent_send ')) +
-          theme.fg('accent', args.agent) +
-          '\n  ' + theme.fg('dim', preview),
-          0, 0,
-        );
-      },
-      renderResult(result, _opts, theme) {
-        const text = result.content[0];
-        return new Text(
-          theme.fg('success', '✓ ') + theme.fg('dim', text?.type === 'text' ? text.text : ''),
-          0, 0,
-        );
-      },
-      execute: async (toolCallId, params, _signal, _onUpdate) => {
-        const sid = this.ensureSession(params.agent, toolCallId, params.message);
-        try {
-          await this.messaging.send(params.agent, params.message, {
-            onEvent: this.makeEventForwarder(sid),
-          });
-          this.tracker?.addLog(sid, { level: 'info', text: `→ ${params.message.slice(0, 120)}` });
-          return {
-            content: [{ type: 'text' as const, text: `消息已发送给 ${params.agent}` }],
-            details: {},
-          };
-        } catch (err: any) {
-          return {
-            content: [{ type: 'text' as const, text: `agent_send 异常: ${err.message || err}` }],
-            details: {},
-          };
-        }
-      },
-    });
   }
 
   // ==================== agent_await ====================

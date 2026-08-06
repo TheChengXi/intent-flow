@@ -1,9 +1,9 @@
 /**
  * @intent
- * pi 扩展入口。仅做注册编排，不包含实现逻辑。注册：AgentCommTools（agent_send/agent_await/agent_reply/agent_close/agent_request 五工具）、ListAgentsTool、ToolAccessGuard、ClearSubagentCacheCommand、GuardToggleCommand、/sub-agent 命令；session_start 订阅 tracker 自动弹出 SubAgentView；session_shutdown 清理进程池。spawn_agent 工具注册已移除。
- * 边界：不直接实例化业务组件（经 DIContainer）；进程池按需初始化。
+ * pi 扩展入口。仅做注册编排，不包含实现逻辑。注册：AgentCommTools（agent_request/agent_await/agent_reply/agent_close 四工具——agent_send 已收敛移除）、ListAgentsTool、ToolAccessGuard、ClearSubagentCacheCommand、GuardToggleCommand、/sub-agent 命令；session_start 订阅 tracker 自动弹出 SubAgentView；session_shutdown 清理进程池。spawn_agent 工具注册已移除。
+ * 边界：不直接实例化业务组件（经 DIContainer）；进程池按需初始化；IFLOW_CHILD=1 时只注册 ask_parent 后立即返回（子进程模式）。
  * 验收条件：
- * - 扩展加载后 5 个通信工具可被主 agent 调用
+ * - 扩展加载后 4 个通信工具可被主 agent 调用（无 agent_send）
  * - 无 spawnAgentTool 注册残留
  */
 

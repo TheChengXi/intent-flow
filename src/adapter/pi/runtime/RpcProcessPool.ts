@@ -131,7 +131,7 @@ export class RpcProcessPool {
 
     const bound = this.router.bindWaiter(agent);
     if (!bound) {
-      throw new Error(`没有进行中的任务可等待: ${agent}（请先 agent_send / agent_request）`);
+      throw new Error(`没有进行中的任务可等待: ${agent}（请先 agent_request）`);
     }
 
     return new Promise<AgentAwaitResult>((resolve) => {
@@ -156,7 +156,7 @@ export class RpcProcessPool {
   async replyMessage(agent: string, answer: string): Promise<void> {
     const managed = this.processes.get(agent);
     if (!managed || managed.process.killed || managed.process.exitCode !== null) {
-      throw new Error(`agent 进程不存在: ${agent}（请先 agent_send / agent_request）`);
+      throw new Error(`agent 进程不存在: ${agent}（请先 agent_request）`);
     }
     const requestId = this.router.getPendingRequestId(agent);
     if (!requestId) {

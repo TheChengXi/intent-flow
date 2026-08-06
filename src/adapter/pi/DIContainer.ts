@@ -1,6 +1,6 @@
 /**
  * @intent
- * pi 适配器依赖注入容器。管理：agentRepo（经 CoreDIContainer 获取，adapter 不直接 new data 实现）、rpcPool（进程池）、agentMessagingService（通信服务）、agentRequestUseCase（request 合成用例）、agentCommTools（5 个通信工具）、listAgentsTool、toolAccessGuard、guardToggleService、agentTracker。spawn_agent 组件（SpawnAgentUseCase/SpawnAgentTool/SubProcessRunner）已移除，由通信组件取代。
+ * pi 适配器依赖注入容器。管理：agentRepo（经 CoreDIContainer 获取，adapter 不直接 new data 实现）、rpcPool（进程池）、agentMessagingService（通信服务）、agentRequestUseCase（request 合成用例）、agentCommTools（4 个通信工具）、listAgentsTool、toolAccessGuard、guardToggleService、agentTracker。spawn_agent 组件（SpawnAgentUseCase/SpawnAgentTool/SubProcessRunner）已移除，由通信组件取代。
  * 边界：本容器不 import data 层任何模块；data 实现统一经 CoreDIContainer（application）获取。
  * 验收条件：
  * - 容器组装后 agentCommTools/agentMessagingService/agentRequestUseCase 均可实例化
