@@ -1,14 +1,15 @@
 /**
  * @intent
- * agent 消息交换原语接口（application 端口）。定义与另一个 agent 上下文（pi RPC 子进程）
- * 双向通信的四个原语：send（非阻塞发送）/ await（阻塞等待下一条消息）/ reply（回答提问）/
- * close（重置会话）。AgentRunResult/AgentUsage 实体类型经此透出（承接 ISubProcessRunner 职责）。
+ * agent 消息交换接口（application 端口）。定义与另一个 agent 上下文（pi RPC 子进程）
+ * 通信的两个动作：send（发消息，自动分派通道——等待回复时走 response 通道，否则新消息
+ * prompt 通道，非阻塞）+ await（阻塞等待下一条消息）。等待是动作的阻塞语义，不是独立工具。
+ * AgentRunResult/AgentUsage 实体类型经此透出（承接 ISubProcessRunner 职责）。
  *
  * 边界：接口不含 agent 查找与进程管理；await 返回值区分 question/result/timeout/error 四类；
- * close 语义为"会话重置、进程保留"（下次通信开新会话）；reply 依赖 await 返回的 requestId。
+ * 不提供 close——不发消息即会话挂起为静态文本，进程生命周期由进程池管理。
  *
  * 验收条件：
- * - 四原语签名与设计文档一致（send/await/reply/close）
+ * - send/await 签名与设计文档一致（send 自动分派 response/prompt 通道）
  * - 实体类型 re-export 可被 adapter 直接引用且不出现 data/ 路径
  */
 
@@ -60,9 +61,9 @@ export type AgentAwaitResult =
 
 export interface IAgentMessagingService {
   /**
-   * 非阻塞发送消息到指定 agent 会话。
-   * 进程不存在时按 agent 定义创建（含 --extension 子进程通道）；
-   * 进程忙碌时消息入队（FIFO 串行，不丢失）。
+   * 发送消息到指定 agent 会话（非阻塞），自动分派通道：
+   * - 该 agent 正在等待回复 → 消息作为回答走 extension_ui_response 通道（解除 ask_parent 阻塞）
+   * - 否则 → 新消息走 prompt 通道（进程不存在时按 agent 定义创建；忙碌时 FIFO 入队不丢失）
    * @param options.skipExts 进程级白名单，仅首次 spawn 生效
    * @param options.model 模型覆盖，仅首次 spawn 生效
    * @param options.onEvent 子进程中间事件回调（可视化）
@@ -78,15 +79,4 @@ export interface IAgentMessagingService {
    * @param timeoutMs 默认 600000（10 分钟）
    */
   await(agent: string, timeoutMs?: number): Promise<AgentAwaitResult>;
-
-  /**
-   * 回答子 agent 的提问（按 requestId 写回 extension_ui_response）。
-   */
-  reply(agent: string, answer: string): Promise<void>;
-
-  /**
-   * 关闭会话：向子进程发 new_session，进程保留常驻，
-   * 下次通信为全新会话。
-   */
-  close(agent: string): Promise<void>;
 }

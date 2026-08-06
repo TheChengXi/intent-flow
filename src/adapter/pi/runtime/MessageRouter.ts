@@ -43,6 +43,8 @@ interface Channel {
   queue: RouterTask[];
   /** 提问队列（无人 await 时暂存；agent_end 清空） */
   pendingQuestions: Array<{ question: string; requestId: string }>;
+  /** 已投递、等待主 agent 回复的提问 requestId（通道分派依据：回复走 response 而非 prompt） */
+  awaitingReply: string | null;
 }
 
 // ==================== 路由实现 ====================
@@ -53,7 +55,7 @@ export class MessageRouterImpl {
   private ensure(agent: string): Channel {
     let ch = this.channels.get(agent);
     if (!ch) {
-      ch = { current: null, queue: [], pendingQuestions: [] };
+      ch = { current: null, queue: [], pendingQuestions: [], awaitingReply: null };
       this.channels.set(agent, ch);
     }
     return ch;
@@ -126,6 +128,29 @@ export class MessageRouterImpl {
   }
 
   /**
+   * 记录已投递、等待回复的提问（通道分派依据）。
+   */
+  setAwaitingReply(agent: string, requestId: string): void {
+    this.ensure(agent).awaitingReply = requestId;
+  }
+
+  /**
+   * 取当前等待回复的提问 requestId（无则 null）。
+   */
+  getAwaitingReply(agent: string): string | null {
+    const ch = this.channels.get(agent);
+    return ch?.awaitingReply ?? null;
+  }
+
+  /**
+   * 清除等待回复标记（回复已写回时调用）。
+   */
+  clearAwaitingReply(agent: string): void {
+    const ch = this.channels.get(agent);
+    if (ch) ch.awaitingReply = null;
+  }
+
+  /**
    * 移除已投递/已回复的提问（防重复消费）。
    */
   removeQuestion(agent: string, requestId: string): void {
@@ -184,10 +209,13 @@ export class MessageRouterImpl {
       };
     }
 
-    // ── agent_end：任务完成，解析结果并清空提问队列 ──
+    // ── agent_end：任务完成，解析结果并清空提问队列与等待回复标记 ──
     if (event.type === 'agent_end') {
       const ch = this.channels.get(agent);
-      if (ch) ch.pendingQuestions = [];
+      if (ch) {
+        ch.pendingQuestions = [];
+        ch.awaitingReply = null;
+      }
       return { kind: 'result', result: this.parseAgentEnd(event, agent) };
     }
 

@@ -98,14 +98,29 @@ export class RpcProcessPool {
   }
 
   /**
-   * 发送消息到指定 agent 会话（非阻塞）。
-   * 进程不存在时按 agent 定义创建；进程忙碌时消息入队（FIFO 串行，不丢失）。
+   * 发送消息到指定 agent 会话（非阻塞），自动分派通道：
+   * - 该 agent 正在等待回复（awaitingReply）→ 消息作为回答走 extension_ui_response 通道
+   * - 否则 → 新消息走 prompt 通道（进程忙碌时入队，FIFO 串行，不丢失）
    */
   async sendMessage(
     agent: string,
     message: string,
     options?: { skipExts?: string[]; model?: string; onEvent?: (event: Record<string, unknown>) => void },
   ): Promise<void> {
+    // ── 通道分派：等待回复中 → response 通道 ──
+    const awaitingRequestId = this.router.getAwaitingReply(agent);
+    if (awaitingRequestId) {
+      const managed = this.processes.get(agent);
+      if (!managed || managed.process.killed || managed.process.exitCode !== null) {
+        throw new Error(`agent 进程不存在: ${agent}`);
+      }
+      const cmd = JSON.stringify({ type: 'extension_ui_response', id: awaitingRequestId, value: message }) + '\n';
+      managed.process.stdin!.write(cmd);
+      this.router.clearAwaitingReply(agent);
+      return;
+    }
+
+    // ── 新消息 → prompt 通道（入队串行） ──
     const managed = await this.ensureProcess(agent, options?.skipExts, options?.model);
     const taskId = `${agent}-${Date.now()}-${this.taskCounter++}`;
     if (options?.onEvent) this.taskEvents.set(taskId, options.onEvent);
@@ -127,7 +142,10 @@ export class RpcProcessPool {
   async awaitMessage(agent: string, timeoutMs: number = 10 * 60 * 1000): Promise<AgentAwaitResult> {
     // 排队中的提问优先（无人 await 期间到达的提问）
     const queued = this.router.dequeuePending(agent);
-    if (queued) return queued;
+    if (queued) {
+      this.router.setAwaitingReply(agent, queued.requestId);
+      return queued;
+    }
 
     const bound = this.router.bindWaiter(agent);
     if (!bound) {
@@ -165,23 +183,6 @@ export class RpcProcessPool {
     const cmd = JSON.stringify({ type: 'extension_ui_response', id: requestId, value: answer }) + '\n';
     managed.process.stdin!.write(cmd);
     this.router.removeQuestion(agent, requestId);
-  }
-
-  /**
-   * 关闭会话：向子进程发 new_session 命令（对话历史重置），进程保留常驻。
-   * 执行中拒绝关闭（避免中断进行中的任务）。幂等：进程不存在时静默返回。
-   */
-  async resetSession(agent: string): Promise<void> {
-    const managed = this.processes.get(agent);
-    if (!managed || managed.process.killed || managed.process.exitCode !== null) return;
-
-    if (this.currentTaskIds.has(agent)) {
-      throw new Error(`agent 正在执行中，无法关闭会话: ${agent}（请先等待任务完成）`);
-    }
-
-    this.router.resetChannel(agent);
-    const cmd = JSON.stringify({ type: 'new_session' }) + '\n';
-    managed.process.stdin!.write(cmd);
   }
 
   /**
@@ -412,10 +413,11 @@ export class RpcProcessPool {
         clearTimeout(w.timer);
         this.waiters.delete(taskId);
         w.resolve(msg);
-        // 提问投递后释放槽位（主 agent reply 后可续接 await 重新绑定）
+        // 提问投递后：记录等待回复标记（通道分派依据）并释放槽位（可续接 await 重新绑定）
         if (msg.kind === 'question') {
+          this.router.setAwaitingReply(agentName, msg.requestId);
           this.router.releaseWaiter(agentName, taskId);
-          this.router.removeQuestion(agentName, (msg as any).requestId);
+          this.router.removeQuestion(agentName, msg.requestId);
         }
       }
       // 无等待者：提问留在 pendingQuestions 待 dequeuePending 消费；结果丢弃（会话历史保留）

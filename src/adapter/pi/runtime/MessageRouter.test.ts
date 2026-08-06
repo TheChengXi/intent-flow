@@ -216,6 +216,37 @@ describe('MessageRouterImpl', () => {
       expect(router.dequeuePending('a')).toBeNull();
     });
 
+    it('awaitingReply：set 后可读取（通道分派依据），clear 后返回 null', () => {
+      expect(router.getAwaitingReply('a')).toBeNull();
+
+      router.setAwaitingReply('a', 'req-1');
+      expect(router.getAwaitingReply('a')).toBe('req-1');
+
+      router.clearAwaitingReply('a');
+      expect(router.getAwaitingReply('a')).toBeNull();
+    });
+
+    it('awaitingReply：agent_end 时清除（任务结束，不再等待回复）', () => {
+      router.setAwaitingReply('a', 'req-1');
+      router.handleLine('a', endEvent([]));
+
+      expect(router.getAwaitingReply('a')).toBeNull();
+    });
+
+    it('awaitingReply：不同 agent 隔离', () => {
+      router.setAwaitingReply('a', 'req-a');
+
+      expect(router.getAwaitingReply('a')).toBe('req-a');
+      expect(router.getAwaitingReply('b')).toBeNull();
+    });
+
+    it('awaitingReply：resetChannel 后清除', () => {
+      router.setAwaitingReply('a', 'req-a');
+      router.resetChannel('a');
+
+      expect(router.getAwaitingReply('a')).toBeNull();
+    });
+
     it('getPendingRequestId 返回最早未回复提问的 id，无提问返回 null', () => {
       expect(router.getPendingRequestId('a')).toBeNull();
 

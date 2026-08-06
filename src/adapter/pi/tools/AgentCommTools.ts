@@ -1,20 +1,20 @@
 /**
  * @intent
- * agent 通信工具集注册（4 工具：agent_request / agent_await / agent_reply / agent_close）
- * + TUI 渲染 + tracker 推送。渲染辅助函数自 SpawnAgentTool 迁移。
- * 工具收敛说明：agent_send 已移除——串行模型下其语义被 agent_request（send+await）完全覆盖，
- * 减少工具数降低模型误选率（业界“fewer tools outperform more tools”）；send 仍作为内部通道存在
- * （IAgentMessagingService.send，仅供 AgentRequestUseCase 使用，不注册为工具）。
- * 会话管理：Map<agent, toolCallId> 维持“一行一 agent”的多轮轨迹——续会话复用条目追加日志，
- * close 后新会话开新条目。
+ * agent 通信工具注册（单工具：agent_chat）+ TUI 渲染 + tracker 推送。
+ * 工具收敛说明：agent_chat = 发消息 + 等待下一轮（send+await 合成），自动分派通道——
+ * 该 agent 正在等待回复（awaitingReply）时消息作为回答走 response 通道，否则作为新消息
+ * 派发走 prompt 通道。request/await/reply/close 均已移除：等待是动作的阻塞语义而非独立工具；
+ * 不发消息即会话挂起为静态文本，无需显式关闭（进程生命周期由进程池管理）。
+ * 渲染辅助函数自 SpawnAgentTool 迁移。
+ * 会话管理：Map<agent, toolCallId> 维持"一行一 agent"的多轮轨迹——续会话复用条目追加日志。
  *
- * 边界：await/request 返回 question 时渲染提问卡片并提示用 agent_reply 回答后继续 await；
+ * 边界：返回 question 时渲染提问卡片并提示继续用 agent_chat 发送回答；
  * timeout/error 有明确呈现；tracker 推送失败不阻塞主流程；无 tracker 时静默降级。
  *
  * 验收条件：
- * - 4 工具注册名与参数 schema 与设计文档一致（无 agent_send）
- * - question → reply → await 循环中 tracker 日志按序追加（question/reply 级别）
- * - agent_request 行为与旧 spawn_agent 等价（派发任务拿结果）
+ * - 仅注册 agent_chat 一个工具（无 request/await/reply/close/send 残留）
+ * - 提问循环中 tracker 日志按序追加（question/reply 级别）
+ * - agent_chat 行为与旧 spawn_agent 等价（派发任务拿结果）
  */
 
 import type { ExtensionAPI, AgentToolResult, Theme } from '@earendil-works/pi-coding-agent';
@@ -24,7 +24,6 @@ import { getMarkdownTheme } from '@earendil-works/pi-coding-agent';
 import type {
   AgentAwaitResult,
   AgentRunResult,
-  IAgentMessagingService,
 } from '../../../application/services/IAgentMessagingService';
 import type { AgentRequestUseCase } from '../../../application/useCases/AgentRequestUseCase';
 import type { AgentRunTracker } from '../tui/AgentRunTracker';
@@ -111,16 +110,12 @@ export class AgentCommTools {
   private sessionIds = new Map<string, string>();
 
   constructor(
-    private messaging: IAgentMessagingService,
     private requestUseCase: AgentRequestUseCase,
     private tracker?: AgentRunTracker,
   ) {}
 
   register(pi: ExtensionAPI): void {
-    this.registerRequest(pi);
-    this.registerAwait(pi);
-    this.registerReply(pi);
-    this.registerClose(pi);
+    this.registerChat(pi);
   }
 
   // ==================== 会话管理 ====================
@@ -211,7 +206,7 @@ export class AgentCommTools {
             text: [
               `❓ ${agent} 提问 (${r.askCount}/3): ${r.question}`,
               '',
-              '请用 agent_reply 回答，然后继续 agent_await 等待最终结果。',
+              '请用 agent_chat 发送你的回答继续对话（工具会自动路由为回复）。',
             ].join('\n'),
           },
         ],
@@ -270,171 +265,26 @@ export class AgentCommTools {
     };
   }
 
-  // ==================== agent_await ====================
+  // ==================== agent_chat ====================
 
-  private registerAwait(pi: ExtensionAPI): void {
+  private registerChat(pi: ExtensionAPI): void {
     pi.registerTool({
-      name: 'agent_await',
-      label: 'Agent Await',
+      name: 'agent_chat',
+      label: 'Agent Chat',
       description: [
-        '阻塞等待指定 agent 会话的下一条消息。',
-        '返回提问（子 agent 需要回答，用 agent_reply 回复后继续 agent_await）或最终结果。',
+        '向指定 agent 发送一条消息并等待其下一轮回应（send + await 合成）。',
+        '自动分派通道：该 agent 正在等待回复时，消息作为回答送达；否则作为新消息派发。',
+        '返回提问（子 agent 需要澄清，继续用 agent_chat 发送你的回答）或最终结果。',
       ].join(' '),
-      promptSnippet: 'Wait for the next message from an agent session',
+      promptSnippet: 'Send a message to an agent and wait for its reply',
       promptGuidelines: [
-        'agent_await returns either a question (kind=question, answer with agent_reply then await again) or the final result.',
-        'Never answer a question inside the same tool call; always use agent_reply in a separate step.',
-      ],
-      parameters: Type.Object({
-        agent: Type.String({ description: 'Agent 名称' }),
-        timeoutMs: Type.Optional(
-          Type.Number({ description: '超时毫秒数。默认 600000（10 分钟）' }),
-        ),
-      }),
-      renderCall(args, theme) {
-        return new Text(
-          theme.fg('toolTitle', theme.bold('agent_await ')) +
-          theme.fg('accent', args.agent),
-          0, 0,
-        );
-      },
-      renderResult(result, { expanded }, theme) {
-        return renderCommResult(result, expanded, theme);
-      },
-      execute: async (toolCallId, params, _signal, _onUpdate) => {
-        const sid = this.ensureSession(params.agent, toolCallId, '(等待回复)');
-        try {
-          const result = await this.messaging.await(params.agent, params.timeoutMs);
-          return this.handleAwaitResult(sid, params.agent, result);
-        } catch (err: any) {
-          this.tracker?.completeRun(sid, { status: 'failed', error: err.message || String(err), turns: 0, cost: 0 });
-          return {
-            content: [{ type: 'text' as const, text: `agent_await 异常: ${err.message || err}` }],
-            details: {},
-          };
-        }
-      },
-    });
-  }
-
-  // ==================== agent_reply ====================
-
-  private registerReply(pi: ExtensionAPI): void {
-    pi.registerTool({
-      name: 'agent_reply',
-      label: 'Agent Reply',
-      description: '回答子 agent 的提问。回答后子 agent 恢复执行，用 agent_await 继续等待。',
-      promptSnippet: 'Reply to an agent question',
-      parameters: Type.Object({
-        agent: Type.String({ description: 'Agent 名称' }),
-        answer: Type.String({ description: '回答内容（尽量具体、可执行）' }),
-      }),
-      renderCall(args, theme) {
-        const preview = args.answer.length > 60 ? args.answer.slice(0, 60) + '...' : args.answer;
-        return new Text(
-          theme.fg('toolTitle', theme.bold('agent_reply ')) +
-          theme.fg('accent', args.agent) +
-          '\n  ' + theme.fg('dim', preview),
-          0, 0,
-        );
-      },
-      renderResult(result, _opts, theme) {
-        const text = result.content[0];
-        return new Text(
-          theme.fg('success', '✓ ') + theme.fg('dim', text?.type === 'text' ? text.text : ''),
-          0, 0,
-        );
-      },
-      execute: async (toolCallId, params, _signal, _onUpdate) => {
-        const sid = this.ensureSession(params.agent, toolCallId, '(回复提问)');
-        try {
-          await this.messaging.reply(params.agent, params.answer);
-          this.tracker?.addLog(sid, { level: 'reply', text: params.answer.slice(0, 200) });
-          return {
-            content: [{ type: 'text' as const, text: `已回复 ${params.agent}，子 agent 将继续执行` }],
-            details: {},
-          };
-        } catch (err: any) {
-          return {
-            content: [{ type: 'text' as const, text: `agent_reply 异常: ${err.message || err}` }],
-            details: {},
-          };
-        }
-      },
-    });
-  }
-
-  // ==================== agent_close ====================
-
-  private registerClose(pi: ExtensionAPI): void {
-    pi.registerTool({
-      name: 'agent_close',
-      label: 'Agent Close',
-      description: '关闭与指定 agent 的会话（重置其对话历史）。进程保留常驻，下次通信开新会话。',
-      promptSnippet: 'Close an agent session',
-      parameters: Type.Object({
-        agent: Type.String({ description: 'Agent 名称' }),
-      }),
-      renderCall(args, theme) {
-        return new Text(
-          theme.fg('toolTitle', theme.bold('agent_close ')) +
-          theme.fg('accent', args.agent),
-          0, 0,
-        );
-      },
-      renderResult(result, _opts, theme) {
-        const text = result.content[0];
-        return new Text(
-          theme.fg('dim', '✕ ') + theme.fg('dim', text?.type === 'text' ? text.text : ''),
-          0, 0,
-        );
-      },
-      execute: async (_toolCallId, params, _signal, _onUpdate) => {
-        try {
-          await this.messaging.close(params.agent);
-          const sid = this.sessionIds.get(params.agent);
-          if (sid && this.tracker?.getRun(sid)) {
-            const run = this.tracker.getRun(sid);
-            this.tracker.completeRun(sid, {
-              status: 'completed',
-              output: '(会话已关闭)',
-              turns: run?.turns ?? 0,
-              cost: run?.cost ?? 0,
-            });
-          }
-          this.sessionIds.delete(params.agent);
-          return {
-            content: [{ type: 'text' as const, text: `会话已关闭: ${params.agent}（进程保留，下次通信开新会话）` }],
-            details: {},
-          };
-        } catch (err: any) {
-          return {
-            content: [{ type: 'text' as const, text: `agent_close 异常: ${err.message || err}` }],
-            details: {},
-          };
-        }
-      },
-    });
-  }
-
-  // ==================== agent_request ====================
-
-  private registerRequest(pi: ExtensionAPI): void {
-    pi.registerTool({
-      name: 'agent_request',
-      label: 'Agent Request',
-      description: [
-        '向指定 agent 发送任务并等待首次回复（send + await 合成）。',
-        '返回提问（子 agent 需要澄清，用 agent_reply 回答后 agent_await 继续）或最终结果。',
-      ].join(' '),
-      promptSnippet: 'Request a task from an agent and wait for its reply',
-      promptGuidelines: [
-        'Use agent_request to delegate work and get the result in one step (replaces the old spawn_agent).',
-        'If it returns a question, reply with agent_reply, then continue with agent_await until you get the final result.',
+        'Use agent_chat to talk to another agent context: it sends your message and waits for the next reply in one step (replaces spawn_agent).',
+        'If it returns a question (kind=question), answer it by calling agent_chat again with your answer — the tool automatically routes it as a reply.',
+        'Keep conversing with agent_chat until you get the final result. Messages accumulate in the same session.',
       ],
       parameters: Type.Object({
         agent: Type.String({ description: 'Agent 名称，对应 skills/<skill>/sub-skill/<agent>/SUB-SKILL.md' }),
-        task: Type.String({ description: '分配给该 agent 的任务描述' }),
+        message: Type.String({ description: '要发送的消息（新任务、追问或对提问的回答）' }),
         context: Type.Optional(
           Type.String({ description: '可选上下文（追加到消息末尾），如之前 agent 的输出' }),
         ),
@@ -452,11 +302,11 @@ export class AgentCommTools {
       }),
       renderCall(args, theme) {
         const name = args.agent || '...';
-        const preview = args.task
-          ? (args.task.length > 60 ? args.task.slice(0, 60) + '...' : args.task)
+        const preview = args.message
+          ? (args.message.length > 60 ? args.message.slice(0, 60) + '...' : args.message)
           : '...';
         const text =
-          theme.fg('toolTitle', theme.bold('agent_request ')) +
+          theme.fg('toolTitle', theme.bold('agent_chat ')) +
           theme.fg('accent', name) +
           '\n  ' + theme.fg('dim', preview);
         return new Text(text, 0, 0);
@@ -465,11 +315,11 @@ export class AgentCommTools {
         return renderCommResult(result, expanded, theme);
       },
       execute: async (toolCallId, params, _signal, _onUpdate) => {
-        const sid = this.ensureSession(params.agent, toolCallId, params.task);
+        const sid = this.ensureSession(params.agent, toolCallId, params.message);
         try {
           const out = await this.requestUseCase.execute({
             agent: params.agent,
-            task: params.task,
+            task: params.message,
             context: params.context,
             model: params.model,
             timeoutMs: params.timeoutMs,
@@ -481,7 +331,7 @@ export class AgentCommTools {
           this.tracker?.completeRun(sid, { status: 'failed', error: err.message || String(err), turns: 0, cost: 0 });
           this.tracker?.addLog(sid, { level: 'error', text: `异常: ${err.message || err}` });
           return {
-            content: [{ type: 'text' as const, text: `agent_request 异常: ${err.message || err}` }],
+            content: [{ type: 'text' as const, text: `agent_chat 异常: ${err.message || err}` }],
             details: {},
           };
         }

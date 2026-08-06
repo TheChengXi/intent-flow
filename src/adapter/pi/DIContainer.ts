@@ -1,6 +1,6 @@
 /**
  * @intent
- * pi 适配器依赖注入容器。管理：agentRepo（经 CoreDIContainer 获取，adapter 不直接 new data 实现）、rpcPool（进程池）、agentMessagingService（通信服务）、agentRequestUseCase（request 合成用例）、agentCommTools（4 个通信工具）、listAgentsTool、toolAccessGuard、guardToggleService、agentTracker。spawn_agent 组件（SpawnAgentUseCase/SpawnAgentTool/SubProcessRunner）已移除，由通信组件取代。
+ * pi 适配器依赖注入容器。管理：agentRepo（经 CoreDIContainer 获取，adapter 不直接 new data 实现）、rpcPool（进程池）、agentMessagingService（通信服务）、agentRequestUseCase（send+await 合成用例，agent_chat 工具的后端）、agentCommTools（单工具 agent_chat）、listAgentsTool、toolAccessGuard、guardToggleService、agentTracker。spawn_agent 组件（SpawnAgentUseCase/SpawnAgentTool/SubProcessRunner）已移除，由通信组件取代。
  * 边界：本容器不 import data 层任何模块；data 实现统一经 CoreDIContainer（application）获取。
  * 验收条件：
  * - 容器组装后 agentCommTools/agentMessagingService/agentRequestUseCase 均可实例化
@@ -79,7 +79,7 @@ export class DIContainer {
     this.agentRequestUseCase = new AgentRequestUseCase(this.agentRepo, this.agentMessagingService);
 
     // 初始化工具
-    this.agentCommTools = new AgentCommTools(this.agentMessagingService, this.agentRequestUseCase, this.agentTracker);
+    this.agentCommTools = new AgentCommTools(this.agentRequestUseCase, this.agentTracker);
     this.listAgentsTool = new ListAgentsTool(this.discoverAgentsUseCase);
 
     // 初始化访问策略

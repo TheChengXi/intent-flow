@@ -68,10 +68,8 @@ function createMockAgentRepo(): Mocked<IAgentRepository> {
 
 function createMockMessaging(): Mocked<IAgentMessagingService> {
   return {
-    send: vi.fn<(agent: string, message: string, options?: { skipExts?: string[]; model?: string }) => Promise<void>>(),
+    send: vi.fn<(agent: string, message: string, options?: { skipExts?: string[]; model?: string; onEvent?: (event: Record<string, unknown>) => void }) => Promise<void>>(),
     await: vi.fn<(agent: string, timeoutMs?: number) => Promise<AgentAwaitResult>>(),
-    reply: vi.fn<(agent: string, answer: string) => Promise<void>>(),
-    close: vi.fn<(agent: string) => Promise<void>>(),
   };
 }
 
