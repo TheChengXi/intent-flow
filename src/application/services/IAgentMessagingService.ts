@@ -1,0 +1,92 @@
+/**
+ * @intent
+ * agent 消息交换原语接口（application 端口）。定义与另一个 agent 上下文（pi RPC 子进程）
+ * 双向通信的四个原语：send（非阻塞发送）/ await（阻塞等待下一条消息）/ reply（回答提问）/
+ * close（重置会话）。AgentRunResult/AgentUsage 实体类型经此透出（承接 ISubProcessRunner 职责）。
+ *
+ * 边界：接口不含 agent 查找与进程管理；await 返回值区分 question/result/timeout/error 四类；
+ * close 语义为"会话重置、进程保留"（下次通信开新会话）；reply 依赖 await 返回的 requestId。
+ *
+ * 验收条件：
+ * - 四原语签名与设计文档一致（send/await/reply/close）
+ * - 实体类型 re-export 可被 adapter 直接引用且不出现 data/ 路径
+ */
+
+import type { AgentRunResult } from '../../data/entities/AgentRunResult';
+
+// ==================== 实体类型透出 ====================
+// adapter 层 runtime 组件经此引用实体类型，避免直接跨层 import data。
+
+export type { AgentRunResult } from '../../data/entities/AgentRunResult';
+export type { AgentUsage } from '../../data/entities/AgentUsage';
+
+// ==================== 消息类型 ====================
+
+/** 子 agent 提问（等待主 agent 回答） */
+export interface AgentQuestion {
+  kind: 'question';
+  /** 提问文本 */
+  question: string;
+  /** extension_ui_request 的 id，reply 时回填 */
+  requestId: string;
+  /** 本任务内累计提问次数（供主 agent 参考） */
+  askCount: number;
+}
+
+/** 子 agent 本轮完成 */
+export interface AgentResultMessage {
+  kind: 'result';
+  result: AgentRunResult;
+}
+
+/** 等待超时 */
+export interface AgentTimeoutMessage {
+  kind: 'timeout';
+}
+
+/** 通道错误（进程崩溃等） */
+export interface AgentErrorMessage {
+  kind: 'error';
+  message: string;
+}
+
+export type AgentAwaitResult =
+  | AgentQuestion
+  | AgentResultMessage
+  | AgentTimeoutMessage
+  | AgentErrorMessage;
+
+// ==================== 服务接口 ====================
+
+export interface IAgentMessagingService {
+  /**
+   * 非阻塞发送消息到指定 agent 会话。
+   * 进程不存在时按 agent 定义创建（含 --extension 子进程通道）；
+   * 进程忙碌时消息入队（FIFO 串行，不丢失）。
+   * @param options.skipExts 进程级白名单，仅首次 spawn 生效
+   * @param options.model 模型覆盖，仅首次 spawn 生效
+   * @param options.onEvent 子进程中间事件回调（可视化）
+   */
+  send(
+    agent: string,
+    message: string,
+    options?: { skipExts?: string[]; model?: string; onEvent?: (event: Record<string, unknown>) => void },
+  ): Promise<void>;
+
+  /**
+   * 阻塞等待下一条消息（question/result/timeout/error）。
+   * @param timeoutMs 默认 600000（10 分钟）
+   */
+  await(agent: string, timeoutMs?: number): Promise<AgentAwaitResult>;
+
+  /**
+   * 回答子 agent 的提问（按 requestId 写回 extension_ui_response）。
+   */
+  reply(agent: string, answer: string): Promise<void>;
+
+  /**
+   * 关闭会话：向子进程发 new_session，进程保留常驻，
+   * 下次通信为全新会话。
+   */
+  close(agent: string): Promise<void>;
+}

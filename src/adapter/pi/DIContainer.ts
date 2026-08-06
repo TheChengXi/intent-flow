@@ -1,19 +1,20 @@
 /**
  * @intent
- * pi 适配器依赖注入容器。管理 pi 特定依赖的实例化：
- * AgentRepositoryImpl（发现，自 pi-adapter-layer-reorg 起经 CoreDIContainer 获取，adapter 不直接 new data 实现）、RpcProcessPool（进程池）、SubProcessRunner（运行器）、DiscoverAgentsUseCase、SpawnAgentUseCase。
- * Phase 1 仅有 SubProcessRunner(spawn 一次性)，Phase 1.5 注入 RpcProcessPool。
- * guard-toggle 起：guardToggleService（经 core 获取）注入 ToolAccessGuard，并暴露给 GuardToggleCommand。
+ * pi 适配器依赖注入容器。管理：agentRepo（经 CoreDIContainer 获取，adapter 不直接 new data 实现）、rpcPool（进程池）、agentMessagingService（通信服务）、agentRequestUseCase（request 合成用例）、agentCommTools（5 个通信工具）、listAgentsTool、toolAccessGuard、guardToggleService、agentTracker。spawn_agent 组件（SpawnAgentUseCase/SpawnAgentTool/SubProcessRunner）已移除，由通信组件取代。
  * 边界：本容器不 import data 层任何模块；data 实现统一经 CoreDIContainer（application）获取。
+ * 验收条件：
+ * - 容器组装后 agentCommTools/agentMessagingService/agentRequestUseCase 均可实例化
+ * - 不出现 spawnAgentUseCase/spawnAgentTool/subProcessRunner 残留引用
  */
 
 
 
+
 import { RpcProcessPool } from './runtime/RpcProcessPool';
-import { SubProcessRunner } from './runtime/SubProcessRunner';
+import { AgentMessagingService } from './runtime/AgentMessagingService';
 import { DiscoverAgentsUseCase } from '../../application/useCases/DiscoverAgentsUseCase';
-import { SpawnAgentUseCase } from '../../application/useCases/SpawnAgentUseCase';
-import { SpawnAgentTool } from './tools/SpawnAgentTool';
+import { AgentRequestUseCase } from '../../application/useCases/AgentRequestUseCase';
+import { AgentCommTools } from './tools/AgentCommTools';
 import { ToolAccessGuard } from './tools/ToolAccessGuard';
 import { ListAgentsTool } from './tools/ListAgentsTool';
 import { AgentRunTracker } from './tui/AgentRunTracker';
@@ -22,6 +23,7 @@ import { CoreDIContainer } from '../../application/CoreDIContainer';
 import type { IAccessPolicyService } from '../../application/services/IAccessPolicyService';
 import type { IGuardToggleService } from '../../application/services/IGuardToggleService';
 import type { IAgentRepository } from '../../application/services/agentRepository';
+import type { IAgentMessagingService } from '../../application/services/IAgentMessagingService';
 
 export class DIContainer {
   private static instance: DIContainer;
@@ -38,15 +40,15 @@ export class DIContainer {
   // ==================== 进程池 (Phase 1.5+) ====================
   public rpcPool: RpcProcessPool;
 
-  // ==================== 运行器 ====================
-  public subProcessRunner: SubProcessRunner;
+  // ==================== 通信服务 ====================
+  public agentMessagingService: IAgentMessagingService;
 
   // ==================== 用例 ====================
   public discoverAgentsUseCase: DiscoverAgentsUseCase;
-  public spawnAgentUseCase: SpawnAgentUseCase;
+  public agentRequestUseCase: AgentRequestUseCase;
 
   // ==================== 工具 ====================
-  public spawnAgentTool: SpawnAgentTool;
+  public agentCommTools: AgentCommTools;
   public listAgentsTool: ListAgentsTool;
 
   // ==================== 访问策略 ====================
@@ -69,15 +71,15 @@ export class DIContainer {
     // 初始化进程池（需要 warmUp 才会启动子进程）
     this.rpcPool = new RpcProcessPool(this.agentRepo);
 
-    // 初始化运行器（委托 RpcProcessPool）
-    this.subProcessRunner = new SubProcessRunner(this.rpcPool);
+    // 初始化通信服务（消息级通道，委托 RpcProcessPool）
+    this.agentMessagingService = new AgentMessagingService(this.rpcPool);
 
     // 初始化用例
     this.discoverAgentsUseCase = new DiscoverAgentsUseCase(this.agentRepo);
-    this.spawnAgentUseCase = new SpawnAgentUseCase(this.agentRepo, this.subProcessRunner);
+    this.agentRequestUseCase = new AgentRequestUseCase(this.agentRepo, this.agentMessagingService);
 
     // 初始化工具
-    this.spawnAgentTool = new SpawnAgentTool(this.spawnAgentUseCase, this.agentTracker);
+    this.agentCommTools = new AgentCommTools(this.agentMessagingService, this.agentRequestUseCase, this.agentTracker);
     this.listAgentsTool = new ListAgentsTool(this.discoverAgentsUseCase);
 
     // 初始化访问策略

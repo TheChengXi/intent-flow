@@ -7,5 +7,5 @@ export * from './ProjectIntentUseCase';
 // @warn: GenerateIntentPackageUseCase/MaintainIntentPackagesUseCase 已废弃
 export * from './ListFolderIntentsUseCase';
 export * from './DiscoverAgentsUseCase';
-export * from './SpawnAgentUseCase';
+export * from './AgentRequestUseCase';
 export * from './ProjectIntentsToFilesUseCase';

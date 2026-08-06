@@ -1,12 +1,15 @@
 /**
- * @intent 子 agent 运行状态管理中心。所有工具(spawn_agent/subagent)
- * 在执行过程中向此 tracker 推送事件，AgentDashboard 从中读取并渲染。
- * 支持监听者模式——状态变更时通知 dashboard 重新渲染。
+ * @intent
+ * 子 agent 运行状态管理中心（agent-communication 起演化为通信轨迹）。所有通信工具（agent_send/agent_await/agent_reply/agent_request）执行中向此 tracker 推送事件，SubAgentView 读取并渲染。支持监听者模式（50ms 防抖通知）。LogLevel 新增 question/reply 级别（提问/回答在轨迹中可见）。
+ * 边界：单 agent 同名条目复用（仪表盘一行一 agent）；日志超 500 条截断。
+ * 验收条件：
+ * - LogLevel 含 question/reply，渲染方（SubAgentView）可正常处理
+ * - 原有 startRun/addLog/updateRun/completeRun 行为不变
  */
 
 // ==================== 日志条目类型 ====================
 
-export type LogLevel = 'info' | 'thinking' | 'tool_call' | 'tool_result' | 'output' | 'error' | 'done';
+export type LogLevel = 'info' | 'thinking' | 'tool_call' | 'tool_result' | 'output' | 'question' | 'reply' | 'error' | 'done';
 
 export interface LogEntry {
   /** 时间戳 */

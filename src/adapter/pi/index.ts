@@ -1,11 +1,17 @@
 /**
  * @intent
- * pi 适配器统一导出出口。导出 DIContainer、extension 入口函数、SubProcessRunner（运行时）与 tools 目录下的工具模块。
- * AgentRepositoryImpl 自 pi-adapter-layer-reorg 起下沉 data 层，不再经 adapter 导出（外部消费者应从 data 层引用）。
+ * pi 适配器统一导出出口。导出 DIContainer、extension 入口函数、AgentCommTools（通信工具）、
+ * AgentMessagingService / MessageRouter（通信运行时）与 registerChildTools（子进程轻量通道）。
+ * SpawnAgentTool/SubProcessRunner 导出已移除。
+ * 验收条件：
+ * - 导出清单与设计文档一致，无已删模块残留导出
  */
 
 
 export { DIContainer } from './DIContainer';
-export { SubProcessRunner } from './runtime/SubProcessRunner';
-export { SpawnAgentTool } from './tools/SpawnAgentTool';
+export { AgentCommTools } from './tools/AgentCommTools';
+export { AgentMessagingService } from './runtime/AgentMessagingService';
+export { MessageRouterImpl } from './runtime/MessageRouter';
+export { RpcProcessPool } from './runtime/RpcProcessPool';
+export { registerChildTools } from './child/ChildExtension';
 export { default as extension } from './extension';

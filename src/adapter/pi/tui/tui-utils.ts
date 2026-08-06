@@ -56,6 +56,8 @@ export function logIcon(level: string, themeFg: ThemeFg): string {
     case 'output': return themeFg('toolOutput', '💬');
     case 'error': return themeFg('error', '❌');
     case 'done': return themeFg('success', '✅');
+    case 'question': return themeFg('error', '❓');
+    case 'reply': return themeFg('success', '↩');
     case 'info': return themeFg('dim', 'ℹ');
     default: return ' ';
   }
