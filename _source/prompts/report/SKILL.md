@@ -84,15 +84,15 @@ packageName: <feature-name>
 summary: |
   包职责、对外依赖、入口建议、当前状态。
 
-files:
-  - path: <相对项目根目录的路径>
-    change: <这个文件在这个 feature 中的具体改动>
-
 groups:
   - name: 分组名
     summary: 功能内聚描述——为什么这些文件在一个组，维护者通过这个分组能理解什么能力关联
     files:
       - <文件名>
+
+files:
+  - path: <相对项目根目录的路径>
+    change: <这个文件在这个 feature 中的具体改动>
 ```
 
 ### 分组原则
