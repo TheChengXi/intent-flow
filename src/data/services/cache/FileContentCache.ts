@@ -1,9 +1,12 @@
 import * as fs from 'fs';
 
-// @intent: 缓存文件内容，避免重复读取文件
+/**
+ * @intent
+ * 缓存文件内容，避免重复读取文件。调试日志经 console.error 输出到 stderr，不写 stdout（MCP stdio 协议要求）。
+ * 验收条件：
+ * - 日志全部走 stderr（console.error），stdout 零输出
+ */
 
-// @entity: CacheEntry
-// 缓存条目
 interface CacheEntry {
   content: string;
   timestamp: number;
@@ -44,11 +47,11 @@ export class FileContentCache {
 
         if (fileModifiedTime <= cached.timestamp) {
           // 缓存有效
-          console.log(`[FileContentCache] 缓存命中: ${filePath}`);
+          console.error(`[FileContentCache] 缓存命中: ${filePath}`);
           return cached.content;
         } else {
           // 文件已修改，删除旧缓存
-          console.log(`[FileContentCache] 文件已修改，更新缓存: ${filePath}`);
+          console.error(`[FileContentCache] 文件已修改，更新缓存: ${filePath}`);
           this.delete(filePath);
         }
       } catch (error) {
@@ -58,7 +61,7 @@ export class FileContentCache {
     }
 
     // 读取文件并缓存
-    console.log(`[FileContentCache] 缓存未命中，读取文件: ${filePath}`);
+    console.error(`[FileContentCache] 缓存未命中，读取文件: ${filePath}`);
     const content = await fs.promises.readFile(filePath, 'utf-8');
     const stats = await fs.promises.stat(filePath);
 
@@ -99,7 +102,7 @@ export class FileContentCache {
     if (cached) {
       this.cache.delete(filePath);
       this.currentSize -= cached.size;
-      console.log(`[FileContentCache] 删除缓存: ${filePath}`);
+      console.error(`[FileContentCache] 删除缓存: ${filePath}`);
     }
   }
   // @end
@@ -110,7 +113,7 @@ export class FileContentCache {
   clear(): void {
     this.cache.clear();
     this.currentSize = 0;
-    console.log(`[FileContentCache] 清空所有缓存`);
+    console.error(`[FileContentCache] 清空所有缓存`);
   }
   // @end
 
@@ -130,7 +133,7 @@ export class FileContentCache {
 
     if (oldestKey) {
       this.delete(oldestKey);
-      console.log(`[FileContentCache] LRU 淘汰: ${oldestKey}`);
+      console.error(`[FileContentCache] LRU 淘汰: ${oldestKey}`);
     }
   }
   // @end

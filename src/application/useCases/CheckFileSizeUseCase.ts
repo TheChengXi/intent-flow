@@ -3,10 +3,16 @@ import { FileSizeCheckResult, FileSizeCheckInput } from '../../data/entities/Fil
 import { IFileRepository } from '../../data/repositories/IFileRepository';
 import { ICodeParserRepository } from '../../data/repositories/ICodeParserRepository';
 
+// @note: 类型 re-export：adapter 层经此获取类型，不直接 import data/entities
+export type { FileSizeCheckResult, FileSizeCheckInput };
+
 /**
  * @intent
- * 编排 fileRepo 读取文件 + parserRepo 排除注释统计代码行数 → 判断是否超过阈值。输入只含 filePath（绝对路径）和可选 threshold（默认 400），已移除 workspaceRoot。needsRefactor 仅在超标时输出。
+ * 检查文件大小是否超过阈值的用例：扫描目录或单文件，返回超阈值文件清单（行数、字节数、建议）。
+ * 验收条件：
+ * - export type re-export FileSizeCheckResult / FileSizeCheckInput（adapter 层经此获取类型，不直接 import data/entities）
  */
+
 
 export class CheckFileSizeUseCase implements IUseCase<FileSizeCheckInput, FileSizeCheckResult[]> {
   constructor(

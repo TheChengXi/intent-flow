@@ -3,9 +3,9 @@
  * 在指定文件中定位类型定义文本的搜索器，供类型引用→定义的分析链路使用；命中结果写入缓存（按 类型名+文件路径 键），读取也优先走缓存。
  * 边界：文件不存在/类型未找到/解析失败一律返回 null，不抛错；tree-sitter 失败回退正则。
  * 验收条件：
- * - 目标类型存在于文件时返回完整定义文本
- * - 类型不存在或文件缺失时返回 null 而非异常
+ * - 调试日志经 console.error 输出到 stderr（不写 stdout）
  */
+
 
 import { TreeSitterManager } from '../../tree-sitter/TreeSitterManager';
 import { CacheRepositoryImpl } from '../../cache/CacheRepositoryImpl';
@@ -36,11 +36,11 @@ export class TypeDefinitionSearcher {
         return cached;
       }
 
-      console.log(`[TypeDefinitionSearcher] 搜索类型定义: ${typeName} 在文件: ${filePath}`);
+      console.error(`[TypeDefinitionSearcher] 搜索类型定义: ${typeName} 在文件: ${filePath}`);
 
       // 使用缓存读取文件
       const content = await cache.getFileContent(filePath);
-      console.log(`[TypeDefinitionSearcher] 文件内容长度: ${content.length}`);
+      console.error(`[TypeDefinitionSearcher] 文件内容长度: ${content.length}`);
 
       let result: string | null = null;
 
@@ -92,11 +92,11 @@ export class TypeDefinitionSearcher {
 
       const result = this.findTypeDefinitionNode(tree.rootNode, typeName, language);
       if (result) {
-        console.log(`[TypeDefinitionSearcher] 找到类型定义: ${typeName}`);
+        console.error(`[TypeDefinitionSearcher] 找到类型定义: ${typeName}`);
         return result.text;
       }
 
-      console.log(`[TypeDefinitionSearcher] 未找到类型定义: ${typeName}`);
+      console.error(`[TypeDefinitionSearcher] 未找到类型定义: ${typeName}`);
       return null;
 
     } catch (error) {
@@ -179,11 +179,11 @@ export class TypeDefinitionSearcher {
     const match = typeDefRegex.exec(content);
 
     if (!match) {
-      console.log(`[TypeDefinitionSearcher] 未找到类型定义: ${typeName}`);
+      console.error(`[TypeDefinitionSearcher] 未找到类型定义: ${typeName}`);
       return null;
     }
 
-    console.log(`[TypeDefinitionSearcher] 找到类型定义: ${typeName} at index ${match.index}`);
+    console.error(`[TypeDefinitionSearcher] 找到类型定义: ${typeName} at index ${match.index}`);
 
     // 找到定义的起始位置
     const startIndex = match.index;

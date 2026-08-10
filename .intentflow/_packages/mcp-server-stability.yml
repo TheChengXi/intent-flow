@@ -1,0 +1,70 @@
+packageName: mcp-server-stability
+summary: |
+  MCP 服务器连接稳定性修复：SDK v1→v2 迁移（@modelcontextprotocol/sdk → @modelcontextprotocol/server，
+  McpServer + serveStdio + registerTool），根治并行调用 Connection closed（data 层 29 处 console.log 降噪到 stderr），
+  统一 Tool 类型引用（zod v4 inputSchema + UseCase re-export）。
+  关键约束：vite 必须 external /^@modelcontextprotocol\//（否则 shims 被解析为 browser 版，StdioServerTransport 运行时即抛错）；
+  v2 stdio 帧格式为 JSON Lines（非 v1 Content-Length）。
+  入口：npm run compile:mcp && npm run mcp；验证：npm run verify:mcp（并发压测 + 帧纯净断言）。
+  当前状态：已发布（tsc 0 错误，138 测试 ×3 稳定，压测 17 断言全过，四构建链全通）。
+
+groups:
+  - name: SDK v2 服务器核心（入口 + 协议适配）
+    summary: MCP 服务器如何用 v2 SDK 提供服务——MCPServer 装配与工具注册是唯一接触 @modelcontextprotocol 的代码；MCPToolHandler 定义 Tool 结构契约。升级 SDK 或调整协议行为时改这组。
+    files:
+      - MCPServer.ts
+      - MCPToolHandler.ts
+  - name: 工具层（zod schema + 类型来源统一）
+    summary: 4 个 MCP 工具的输入契约——inputSchema 全部为 z.object() 形式（v2 主重载），类型统一经 UseCase 获取（CheckFileSizeTool 不再直连 data/entities）。新增工具时参照此模式。
+    files:
+      - ProjectIntentTool.ts
+      - TraceDependencyChainTool.ts
+      - CheckFileSizeTool.ts
+      - ListFolderIntentsTool.ts
+      - CheckFileSizeUseCase.ts
+  - name: 日志降噪（stdout 协议安全）
+    summary: data 层调试日志全部改走 stderr——MCP stdio 协议要求 stdout 仅承载 JSON-RPC；这些服务被 CLI/vscode 共用，日志降噪不影响业务输出。新增 data 层日志时遵循 console.warn/error。
+    files:
+      - ASTCache.ts
+      - DefinitionCache.ts
+      - FileContentCache.ts
+      - FunctionDefinitionSearcher.ts
+      - TypeDefinitionSearcher.ts
+  - name: 构建与验证（external 约束 + 压测）
+    summary: 构建链与验收工具——vite external 规则是 v2 打包的硬约束；压测脚本是协议格式哨兵与并发稳定性验证。改动构建配置或升级 SDK 时同时改这组。
+    files:
+      - vite.config.ts
+      - mcp-stress-test.mjs
+      - package.json
+
+files:
+  - path: src/adapter/mcp/MCPServer.ts
+    change: 重写。v1 Server/StdioServerTransport/setRequestHandler → v2 McpServer + registerTool + serveStdio 工厂；每连接一个 McpServer 实例（DIContainer 单例共享）；错误响应保持 isError 格式
+  - path: src/adapter/mcp/MCPToolHandler.ts
+    change: 修改。MCPToolDefinition.inputSchema 由手写 JSON Schema 结构改为 ZodObject<ZodRawShape>（zod v4）；删除 @modelcontextprotocol/sdk 依赖
+  - path: src/adapter/mcp/tools/ProjectIntentTool.ts
+    change: 修改。inputSchema 重写为 z.object({path, intent, force?})（required 语义由 optional 表达）
+  - path: src/adapter/mcp/tools/TraceDependencyChainTool.ts
+    change: 修改。inputSchema 重写为 z.object({entryFile, layerConfig?})，rules 嵌套数组用 z.array(z.object(...)) 表达
+  - path: src/adapter/mcp/tools/CheckFileSizeTool.ts
+    change: 修改。inputSchema 重写 zod；类型 import 源由 data/entities 改为 CheckFileSizeUseCase re-export
+  - path: src/adapter/mcp/tools/ListFolderIntentsTool.ts
+    change: 修改。inputSchema 重写为 z.object({folder})
+  - path: src/application/useCases/CheckFileSizeUseCase.ts
+    change: 修改。补 export type re-export FileSizeCheckResult/FileSizeCheckInput（adapter 经此取类型）
+  - path: src/data/services/cache/ASTCache.ts
+    change: 修改。5 处 console.log → console.error（stdout 协议安全）
+  - path: src/data/services/cache/DefinitionCache.ts
+    change: 修改。9 处 console.log → console.error
+  - path: src/data/services/cache/FileContentCache.ts
+    change: 修改。6 处 console.log → console.error
+  - path: src/data/services/codeContext/searchers/FunctionDefinitionSearcher.ts
+    change: 修改。3 处 console.log → console.error
+  - path: src/data/services/codeContext/searchers/TypeDefinitionSearcher.ts
+    change: 修改。6 处 console.log → console.error
+  - path: vite.config.ts
+    change: 修改。rollupOptions.external 新增 /^@modelcontextprotocol\//（正则含子路径）——防止 shims 被解析为 browser 版导致 StdioServerTransport 运行时抛错
+  - path: scripts/mcp-stress-test.mjs
+    change: 新增。双阶段压测：阶段 A 手动 JSON Lines 帧解析（initialize/tools/list/tools/call + stdout 零残留断言 + stderr 管道断言）；阶段 B 官方 client 6 并发 tools/call 断言全部成功无断开
+  - path: package.json
+    change: 修改。依赖 @modelcontextprotocol/sdk → @modelcontextprotocol/server（deps）+ @modelcontextprotocol/client（devDeps）；新增 verify:mcp 脚本（compile:mcp + 压测）

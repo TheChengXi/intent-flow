@@ -1,7 +1,10 @@
-// @intent: 缓存函数和类型定义，避免重复搜索
+/**
+ * @intent
+ * 缓存函数和类型定义，避免重复搜索。调试日志经 console.error 输出到 stderr，不写 stdout（MCP stdio 协议要求）。
+ * 验收条件：
+ * - 日志全部走 stderr（console.error），stdout 零输出
+ */
 
-// @entity: DefinitionCacheEntry
-// 定义缓存条目
 interface DefinitionCacheEntry {
   definition: any;
   timestamp: number;
@@ -32,7 +35,7 @@ export class DefinitionCache {
     const cached = this.functionCache.get(cacheKey);
 
     if (cached) {
-      console.log(`[DefinitionCache] 函数缓存命中: ${cacheKey}`);
+      console.error(`[DefinitionCache] 函数缓存命中: ${cacheKey}`);
       return cached.definition;
     }
 
@@ -56,7 +59,7 @@ export class DefinitionCache {
       filePath
     });
 
-    console.log(`[DefinitionCache] 缓存函数定义: ${cacheKey}`);
+    console.error(`[DefinitionCache] 缓存函数定义: ${cacheKey}`);
   }
   // @end
 
@@ -69,7 +72,7 @@ export class DefinitionCache {
     const cached = this.typeCache.get(cacheKey);
 
     if (cached) {
-      console.log(`[DefinitionCache] 类型缓存命中: ${cacheKey}`);
+      console.error(`[DefinitionCache] 类型缓存命中: ${cacheKey}`);
       return cached.definition;
     }
 
@@ -93,7 +96,7 @@ export class DefinitionCache {
       filePath
     });
 
-    console.log(`[DefinitionCache] 缓存类型定义: ${cacheKey}`);
+    console.error(`[DefinitionCache] 缓存类型定义: ${cacheKey}`);
   }
   // @end
 
@@ -122,12 +125,12 @@ export class DefinitionCache {
 
     for (const key of functionKeysToDelete) {
       this.functionCache.delete(key);
-      console.log(`[DefinitionCache] 删除函数缓存: ${key}`);
+      console.error(`[DefinitionCache] 删除函数缓存: ${key}`);
     }
 
     for (const key of typeKeysToDelete) {
       this.typeCache.delete(key);
-      console.log(`[DefinitionCache] 删除类型缓存: ${key}`);
+      console.error(`[DefinitionCache] 删除类型缓存: ${key}`);
     }
   }
   // @end
@@ -138,7 +141,7 @@ export class DefinitionCache {
   clear(): void {
     this.functionCache.clear();
     this.typeCache.clear();
-    console.log(`[DefinitionCache] 清空所有缓存`);
+    console.error(`[DefinitionCache] 清空所有缓存`);
   }
   // @end
 
@@ -165,7 +168,7 @@ export class DefinitionCache {
 
     if (oldestKey) {
       this.functionCache.delete(oldestKey);
-      console.log(`[DefinitionCache] LRU 淘汰函数: ${oldestKey}`);
+      console.error(`[DefinitionCache] LRU 淘汰函数: ${oldestKey}`);
     }
   }
   // @end
@@ -186,7 +189,7 @@ export class DefinitionCache {
 
     if (oldestKey) {
       this.typeCache.delete(oldestKey);
-      console.log(`[DefinitionCache] LRU 淘汰类型: ${oldestKey}`);
+      console.error(`[DefinitionCache] LRU 淘汰类型: ${oldestKey}`);
     }
   }
   // @end

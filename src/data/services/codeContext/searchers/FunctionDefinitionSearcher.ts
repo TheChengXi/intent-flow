@@ -1,10 +1,13 @@
 import { TreeSitterManager } from '../../tree-sitter/TreeSitterManager';
 import { CacheRepositoryImpl } from '../../cache/CacheRepositoryImpl';
 
-// @intent: 在文件中搜索函数定义，返回完整的函数代码（包含注释）
+/**
+ * @intent
+ * 在文件中搜索函数定义，返回完整的函数代码（包含注释）。调试日志经 console.error 输出到 stderr，不写 stdout（MCP stdio 协议要求）。
+ * 验收条件：
+ * - 日志全部走 stderr（console.error），stdout 零输出
+ */
 
-// @entity: FunctionDefinitionResult
-// 函数定义搜索结果
 export interface FunctionDefinitionResult {
   functionName: string;
   code: string;           // 完整的函数代码（包含注释）
@@ -42,7 +45,7 @@ export class FunctionDefinitionSearcher {
         return cached;
       }
 
-      console.log(`[FunctionDefinitionSearcher] 搜索函数定义: ${functionName} 在文件: ${filePath}`);
+      console.error(`[FunctionDefinitionSearcher] 搜索函数定义: ${functionName} 在文件: ${filePath}`);
 
       // 使用缓存读取文件
       const content = await cache.getFileContent(filePath);
@@ -102,11 +105,11 @@ export class FunctionDefinitionSearcher {
 
       const result = this.findFunctionNode(tree.rootNode, functionName, language, content);
       if (result) {
-        console.log(`[FunctionDefinitionSearcher] 找到函数定义: ${functionName}`);
+        console.error(`[FunctionDefinitionSearcher] 找到函数定义: ${functionName}`);
         return result;
       }
 
-      console.log(`[FunctionDefinitionSearcher] 未找到函数定义: ${functionName}`);
+      console.error(`[FunctionDefinitionSearcher] 未找到函数定义: ${functionName}`);
       return null;
 
     } catch (error) {

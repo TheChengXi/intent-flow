@@ -62,7 +62,10 @@ export default defineConfig({
     emptyOutDir: false,
     lib: { entry: entryPath, formats: ['cjs'], fileName: outFileName },
     rollupOptions: {
-      external: ['vscode', ...nodeBuiltins, ...piProvidedPackages],
+      // @note: @modelcontextprotocol/* 必须 external——vite 打包会将其 shims 子路径解析为 browser 版
+      // （StdioServerTransport 的 process.stdin 变为 notSupported stub，运行时即抛错）；external 后运行时
+      // 经 require 条件命中 Node 版 shims
+      external: ['vscode', /^@modelcontextprotocol\//, ...nodeBuiltins, ...piProvidedPackages],
       output: { format: 'cjs' },
     },
     sourcemap: true,

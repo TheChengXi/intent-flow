@@ -1,9 +1,12 @@
 import { TreeSitterManager } from '../tree-sitter/TreeSitterManager';
 
-// @intent: 缓存 Tree-sitter 解析的 AST，避免重复解析
+/**
+ * @intent
+ * 缓存 Tree-sitter 解析的 AST，避免重复解析。调试日志经 console.error 输出到 stderr，不写 stdout（MCP stdio 协议要求）。
+ * 验收条件：
+ * - 日志全部走 stderr（console.error），stdout 零输出
+ */
 
-// @entity: ASTCacheEntry
-// AST 缓存条目
 interface ASTCacheEntry {
   ast: any;
   timestamp: number;
@@ -36,12 +39,12 @@ export class ASTCache {
     const cached = this.cache.get(cacheKey);
 
     if (cached) {
-      console.log(`[ASTCache] 缓存命中: ${cacheKey}`);
+      console.error(`[ASTCache] 缓存命中: ${cacheKey}`);
       return cached.ast;
     }
 
     // 解析 AST
-    console.log(`[ASTCache] 缓存未命中，解析 AST: ${cacheKey}`);
+    console.error(`[ASTCache] 缓存未命中，解析 AST: ${cacheKey}`);
     const ast = await this.parseAST(content, language);
 
     if (ast) {
@@ -111,7 +114,7 @@ export class ASTCache {
 
     for (const key of keysToDelete) {
       this.cache.delete(key);
-      console.log(`[ASTCache] 删除缓存: ${key}`);
+      console.error(`[ASTCache] 删除缓存: ${key}`);
     }
   }
   // @end
@@ -120,7 +123,7 @@ export class ASTCache {
   // @step: [清空缓存] 清空所有缓存
   clear(): void {
     this.cache.clear();
-    console.log(`[ASTCache] 清空所有缓存`);
+    console.error(`[ASTCache] 清空所有缓存`);
   }
   // @end
 
@@ -147,7 +150,7 @@ export class ASTCache {
 
     if (oldestKey) {
       this.cache.delete(oldestKey);
-      console.log(`[ASTCache] LRU 淘汰: ${oldestKey}`);
+      console.error(`[ASTCache] LRU 淘汰: ${oldestKey}`);
     }
   }
   // @end
