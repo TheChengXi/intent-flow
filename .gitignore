@@ -17,6 +17,7 @@ node_modules/
 .mcp.json
 
 # 本地部署脚本（不入仓库）
-scripts/
+scripts/*
+!scripts/fetch-release.js
 # Release 打包临时目录
 release-build/

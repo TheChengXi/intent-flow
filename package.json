@@ -145,7 +145,8 @@
     "compile:mcp": "set IFLOW_BUILD=mcp-server && npx vite build",
     "compile:cli": "set IFLOW_BUILD=cli/iflow && npx vite build",
     "compile:pi": "set IFLOW_BUILD=pi/extension && npx vite build",
-    "deploy:pi": "node scripts/deploy-pi.js"
+    "deploy:pi": "node scripts/deploy-pi.js",
+    "fetch-release": "node scripts/fetch-release.js"
   },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "^0.84.1",
