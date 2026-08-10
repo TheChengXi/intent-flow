@@ -1,4 +1,11 @@
 /**
+ * @intent
+ * GuardToggleStore 单元测试：不 mock 被测类，用真实文件系统 + chdir 临时目录验证 .intentflow/guard-state.json 的读写行为。
+ * 验收条件：
+ * - 覆盖默认值、持久化、异常清理路径
+ */
+
+/**
  * GuardToggleStore 单元测试
  *
  * 不 mock 被测类，使用真实文件系统验证 .intentflow/guard-state.json 的读写行为。

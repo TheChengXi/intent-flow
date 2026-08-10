@@ -1,0 +1,63 @@
+packageName: codebase-health-check
+summary: |
+  src/ 全目录健康检查：补齐 13 个缺失 @intent 的文件（9 业务 + 4 测试），
+  全量文件大小扫描（174 文件 0 超限）、架构依赖检查（发现 2 项跨层问题仅报告）。
+  无新增代码、无依赖方向变化。报告见 .intentflow/codebase-health-check/report.md。
+
+groups:
+  - name: Dry Run 链路
+    summary: DryRun 模式的核心数据契约与持久化能力——配置默认值、拦截记录快照、统计指标计算、Markdown 落盘仓库，四文件共同构成拦截→统计→保存的完整链路
+    files:
+      - src/data/entities/DryRunConfig.ts
+      - src/data/entities/DryRunRecord.ts
+      - src/data/repositories/DryRunRepository.ts
+      - src/data/services/DryRunStatisticsService.ts
+
+  - name: 代码上下文分析
+    summary: 从代码文本提取函数调用/类型引用、定位类型定义的三个分析器，正则快速路径 + tree-sitter 精确路径 + 失败回退的统一模式
+    files:
+      - src/data/services/codeContext/extractors/FunctionCallExtractor.ts
+      - src/data/services/codeContext/extractors/TypeReferenceExtractor.ts
+      - src/data/services/codeContext/searchers/TypeDefinitionSearcher.ts
+
+  - name: 策略与渲染出口
+    summary: 两个纯转发桶文件——scope 策略对外出口与 webview 选区框渲染出口，收敛引用入口
+    files:
+      - src/data/services/scope/index.ts
+      - src/adapter/vscode/ui/webview/src/renderer/leafer/components/selection-box/index.ts
+
+  - name: 测试契约
+    summary: 四个测试文件覆盖 GuardToggle 服务/存储、DI 容器组装冒烟、工具访问守卫集成，本次统一补齐 @intent
+    files:
+      - src/application/services/GuardToggleService.test.ts
+      - src/data/services/guard/GuardToggleStore.test.ts
+      - src/adapter/pi/dicontainer.smoke.test.ts
+      - src/adapter/pi/tools/ToolAccessGuard.integration.test.ts
+
+files:
+  - path: src/data/entities/DryRunConfig.ts
+    change: 补齐 @intent（配置契约与默认值来源）
+  - path: src/data/entities/DryRunRecord.ts
+    change: 补齐 @intent（拦截记录快照数据源）
+  - path: src/data/repositories/DryRunRepository.ts
+    change: 补齐 @intent（Markdown 落盘持久化链路）
+  - path: src/data/services/DryRunStatisticsService.ts
+    change: 补齐 @intent（统计指标计算服务）
+  - path: src/data/services/codeContext/extractors/FunctionCallExtractor.ts
+    change: 补齐 @intent（函数调用提取器）
+  - path: src/data/services/codeContext/extractors/TypeReferenceExtractor.ts
+    change: 补齐 @intent（类型引用提取器）
+  - path: src/data/services/codeContext/searchers/TypeDefinitionSearcher.ts
+    change: 补齐 @intent（类型定义搜索器）
+  - path: src/data/services/scope/index.ts
+    change: 补齐 @intent（scope 策略转发出口）
+  - path: src/adapter/vscode/ui/webview/src/renderer/leafer/components/selection-box/index.ts
+    change: 补齐 @intent（选区框渲染转发出口）
+  - path: src/application/services/GuardToggleService.test.ts
+    change: 补齐 @intent（建议项）
+  - path: src/data/services/guard/GuardToggleStore.test.ts
+    change: 补齐 @intent（建议项）
+  - path: src/adapter/pi/dicontainer.smoke.test.ts
+    change: 补齐 @intent（建议项）
+  - path: src/adapter/pi/tools/ToolAccessGuard.integration.test.ts
+    change: 补齐 @intent（建议项）

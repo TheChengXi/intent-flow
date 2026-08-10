@@ -1,3 +1,12 @@
+/**
+ * @intent
+ * 拦截记录持久化仓库：将 DryRunRecord 序列化为 Markdown 落盘到工作区输出目录，覆盖目录创建、时间戳文件名生成、内容格式化的完整链路。
+ * 边界：无工作区根目录时抛错；目录/文件写入失败时抛错；文件名按时间戳唯一。
+ * 验收条件：
+ * - save() 返回落盘文件的完整绝对路径
+ * - 输出目录不存在时自动递归创建
+ */
+
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as vscode from 'vscode';

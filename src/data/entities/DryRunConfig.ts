@@ -1,3 +1,11 @@
+/**
+ * @intent
+ * Dry Run 模式的配置契约与默认值来源，定义"是否启用、输出目录、统计开关"三个配置项及默认工厂。
+ * 边界：默认输出目录固定为 .intentflow/test-output，createDefaultConfig 返回全新对象。
+ * 验收条件：
+ * - createDefaultConfig() 返回 enabled=false 的默认配置
+ */
+
 // @entity: DryRunConfig
 // Dry Run 模式配置
 export interface DryRunConfig {

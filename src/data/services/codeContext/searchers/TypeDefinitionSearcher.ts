@@ -1,3 +1,12 @@
+/**
+ * @intent
+ * 在指定文件中定位类型定义文本的搜索器，供类型引用→定义的分析链路使用；命中结果写入缓存（按 类型名+文件路径 键），读取也优先走缓存。
+ * 边界：文件不存在/类型未找到/解析失败一律返回 null，不抛错；tree-sitter 失败回退正则。
+ * 验收条件：
+ * - 目标类型存在于文件时返回完整定义文本
+ * - 类型不存在或文件缺失时返回 null 而非异常
+ */
+
 import { TreeSitterManager } from '../../tree-sitter/TreeSitterManager';
 import { CacheRepositoryImpl } from '../../cache/CacheRepositoryImpl';
 

@@ -1,3 +1,12 @@
+/**
+ * @intent
+ * 从代码文本提取函数调用名的工具，供调用关系分析使用；提供正则快速路径与 tree-sitter 精确路径，传入 language 时走 AST、否则走正则。
+ * 边界：tree-sitter 初始化失败/语言不支持/解析失败时静默回退正则，不抛错；结果去重。
+ * 验收条件：
+ * - 无 language 参数时返回正则提取的函数名数组
+ * - 语言不支持时回退正则且不抛异常
+ */
+
 import { TreeSitterManager } from '../../tree-sitter/TreeSitterManager';
 import { LanguageConfig } from '../../tree-sitter/LanguageConfig';
 

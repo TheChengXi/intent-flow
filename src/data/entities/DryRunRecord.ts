@@ -1,3 +1,11 @@
+/**
+ * @intent
+ * 一次请求拦截的完整快照（角色、系统提示词、用户消息、统计指标），是 Dry Run 落盘 Markdown 文件的数据源。
+ * 边界：统计信息由调用方计算后传入，本文件只负责承载与工厂构造；timestamp 取 new Date()。
+ * 验收条件：
+ * - createDryRunRecord 返回含当前时间戳的完整记录
+ */
+
 // @entity: DryRunRecord
 // 拦截记录的数据结构
 export interface DryRunRecord {

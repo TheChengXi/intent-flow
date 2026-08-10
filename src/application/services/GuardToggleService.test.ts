@@ -1,4 +1,11 @@
 /**
+ * @intent
+ * GuardToggleService 单元测试：大部分场景用真实 GuardToggleStore + process.chdir(mkdtemp) 隔离，写失败场景注入 write 抛错的 fake store，不 mock 被测类。
+ * 验收条件：
+ * - 覆盖切换、读取、写失败三条路径
+ */
+
+/**
  * GuardToggleService 单元测试
  *
  * 大部分场景使用真实 GuardToggleStore + process.chdir(mkdtemp) 隔离（同

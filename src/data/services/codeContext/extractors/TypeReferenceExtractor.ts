@@ -1,3 +1,12 @@
+/**
+ * @intent
+ * 从 @contract 契约行提取类型引用名的工具，供类型依赖分析使用；多语言 tree-sitter 路径解析失败时回退正则，过滤内置类型与基础类型。
+ * 边界：契约行格式不正确时返回空数组，不抛错；内置类型名单集中维护在 LanguageConfig。
+ * 验收条件：
+ * - 无 language 参数时返回正则提取的类型名数组
+ * - 内置类型（string/number 等）被过滤不出现在结果中
+ */
+
 import { TreeSitterManager } from '../../tree-sitter/TreeSitterManager';
 import { LanguageConfig } from '../../tree-sitter/LanguageConfig';
 

@@ -1,3 +1,11 @@
+/**
+ * @intent
+ * pi adapter DI 容器组装冒烟测试：验证 DIContainer 能实例化全部依赖、跨层注入正确（data 实现注入 application 用例），并跑通真实 agent 发现。
+ * 边界：依赖真实 ~/.pi/agent 目录；测试间用环境变量隔离。
+ * 验收条件：
+ * - 容器可单例获取且各依赖构造器名符合预期
+ */
+
 import { describe, it, expect, afterEach } from 'vitest';
 import { DIContainer } from './DIContainer';
 import { SCOPE_SKIP_ENV } from '../../application/services/IAccessPolicyService';

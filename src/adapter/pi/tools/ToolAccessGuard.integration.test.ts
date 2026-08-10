@@ -1,4 +1,11 @@
 /**
+ * @intent
+ * ToolAccessGuard + ScopePolicy + GuardToggleService 集成测试：不 mock 策略层与开关层，用真实实现串联验证守卫拦截、策略判定、开关切换链路，仅 mock 外部 ExtensionAPI。
+ * 验收条件：
+ * - 覆盖允许/拒绝/开关关闭三条主路径
+ */
+
+/**
  * ToolAccessGuard + ScopePolicy + GuardToggleService 集成测试
  *
  * 不 mock 策略层与开关层，用真实 ScopePolicy + 真实 process.env +

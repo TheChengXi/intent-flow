@@ -1,3 +1,11 @@
+/**
+ * @intent
+ * 拦截内容的统计指标计算服务：字符数、Token 估算（字符数/4 向上取整）、代码块数（``` 配对）、文件引用数（常见扩展名路径匹配后去重）。
+ * 边界：纯同步计算无 IO；文件引用匹配大小写不敏感并小写去重。
+ * 验收条件：
+ * - calculate() 同步返回四项统计指标
+ */
+
 // @service: DryRunStatisticsService
 // 计算拦截内容的统计信息
 export class DryRunStatisticsService {
