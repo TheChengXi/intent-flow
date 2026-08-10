@@ -139,7 +139,7 @@
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "mcp": "node dist/mcp-server.js",
-    "mcp:dev": "ts-node src/adapter/mcp/MCPServer.ts",
+    "mcp:dev": "ts-node --files src/adapter/mcp/MCPServer.ts",
     "verify:mcp": "npm run compile:mcp && node scripts/mcp-stress-test.mjs",
     "compile:vscode": "set IFLOW_BUILD=extension && npx vite build && cd src/adapter/vscode/ui/webview && npx vite build --config vite.config.mts",
     "compile:mcp": "set IFLOW_BUILD=mcp-server && npx vite build",

@@ -38,10 +38,9 @@
 
 ## 实现阶段补充（以下来自 execute 阶段发现，非 design 阶段）
 
-## 7. mcp:dev 的 ts-node 类型错误修复
-- **想法**：`npm run mcp:dev`（ts-node 直接跑 MCPServer.ts）报 `ProjectIntentsToFilesUseCase.ts(12,23): TS7016: Could not find a declaration file for module 'picomatch'`。文件为既有代码（非本 feature 引入），tsc/vite/vitest 均正常，仅 ts-node 全量类型检查受影响。修复二选一：补 `@types/picomatch`（或项目内 .d.ts 声明）或 mcp:dev 脚本加 `--transpile-only`
-- **触发条件**：需要 ts-node 开发调试 MCP 时（当前可用 `npm run mcp` 跑构建产物替代）
-- **现状**：不影响交付，构建产物路径完全可用
+## 7. ~~mcp:dev 的 ts-node 类型错误修复~~（已修复）
+- **修复内容**：`src/types/picomatch.d.ts` 补 `declare module 'picomatch'`（一行 ambient 声明）+ `mcp:dev` 脚本加 `--files`（ts-node 默认不加载 tsconfig include，ambient 声明文件需经 --files 纳入 program）。验证：mcp:dev 启动正常、tsc 0 错误
+- **遗留**：picomatch 类型为 any（未细化 API 类型）；若未来需要 picomatch 的精确类型，可升级 @types/picomatch 或细化声明
 
 ## 8. tree-sitter wasm 版本兼容问题
 - **想法**：并发调用时偶发 `Incompatible language version 0. Compatibility range 13 through 15`（tree-sitter wasm 语言版本不匹配），ImportExtractor 降级正则仍返回成功结果。可能是 @vscode/tree-sitter-wasm 与 tree-sitter 运行时版本不匹配（依赖 hoisting 变化触发）
