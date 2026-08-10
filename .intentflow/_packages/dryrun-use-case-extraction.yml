@@ -1,0 +1,42 @@
+packageName: dryrun-use-case-extraction
+summary: |
+  Dry Run 模式业务逻辑下沉：新增 DryRunUseCase（application 层）承接状态切换/拦截记录/监听器通知，
+  经 VSCodeDIContainer（vscode 专属单例容器）装配，DryRunManager 瘦身为薄委托保持 UI API 面不变。
+  关键约束：DryRunUseCase 模块零运行时 vscode 依赖（type-only import），vscode 链仅存在于 VSCodeDIContainer；
+  DryRunRepository 的 vscode 依赖保留在 data 层内部（workspaceRoot 抽离见 later-on.md）。
+  入口：VSCodeDIContainer.getInstance().dryRunUseCase；测试：createDryRunUseCase(repo, stats) 注入 Fake。
+  当前状态：已发布（tsc 0 错误，138 测试全绿循环 3 次稳定，MCP 构建产物 0 处 vscode 引用）。
+
+groups:
+  - name: 业务用例下沉（UseCase + 验证）
+    summary: Dry Run 模式业务逻辑的单一归属点与其行为锁定测试——维护状态切换语义、拦截记录链路（统计→建记录→保存→通知）、失败降级与监听器隔离时改这组文件。
+    files:
+      - DryRunUseCase.ts
+      - DryRunUseCase.test.ts
+      - index.ts
+  - name: 持久化抽象（接口 + 实现）
+    summary: 拦截记录落盘的抽象边界——IDryRunRepository 零依赖接口使 application 层可脱离 vscode 测试，DryRunRepository 为唯一 vscode 环境实现。新增存储实现（如 CLI 版）时实现此接口。
+    files:
+      - IDryRunRepository.ts
+      - DryRunRepository.ts
+  - name: vscode 装配与门面（容器 + 委托）
+    summary: vscode 侧接线——VSCodeDIContainer 装配 UseCase（显式注入 data 实现），DryRunManager 保持稳定 API 面供 UI 组件（OutputChannel/StatusBar/ToggleCommand）零改动消费。改动 vscode 侧依赖关系时改这组。
+    files:
+      - VSCodeDIContainer.ts
+      - DryRunManager.ts
+
+files:
+  - path: src/data/repositories/IDryRunRepository.ts
+    change: 新增。拦截记录持久化接口（type-only import，零运行时依赖）：save(record, outputDir) => Promise<string>；使 application 层可脱离 vscode 环境运行与测试
+  - path: src/data/repositories/DryRunRepository.ts
+    change: 修改。补 implements IDryRunRepository；实现逻辑（工作区根解析/目录递归创建/时间戳文件名/Markdown 格式化）不动
+  - path: src/application/useCases/DryRunUseCase.ts
+    change: 新增。业务逻辑下沉主体：toggle/isEnabled/intercept + 三类监听器（onStateChange/onIntercept/onError），构造器注入依赖，监听器抛错隔离，保存失败降级触发 onError 不向上抛错；export type re-export DryRunConfig/DryRunRecord
+  - path: src/application/useCases/DryRunUseCase.test.ts
+    change: 新增。7 用例：初始状态、toggle 翻转/通知/监听器抛错隔离/多监听器、intercept 完整链路（真实统计服务 + FakeRepository 捕获入参）、保存失败降级
+  - path: src/application/useCases/index.ts
+    change: 修改。聚合导出 DryRunUseCase，附 @warn 说明其 vscode 环境依赖（仅限 vscode 适配器使用）
+  - path: src/adapter/vscode/VSCodeDIContainer.ts
+    change: 修改。激活预留容器：新增 public dryRunUseCase，构造时显式注入 new DryRunRepository() + new DryRunStatisticsService() 经工厂装配
+  - path: src/adapter/vscode/application/dryrun/DryRunManager.ts
+    change: 修改。瘦身为薄委托：删除全部 data 层 import 与业务状态，构造时经 VSCodeDIContainer 获取 UseCase，公开 API（toggle/isEnabled/intercept/三个 on*）原样转发；UI 组件零改动

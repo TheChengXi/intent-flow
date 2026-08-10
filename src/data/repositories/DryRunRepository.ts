@@ -5,16 +5,18 @@
  * 验收条件：
  * - save() 返回落盘文件的完整绝对路径
  * - 输出目录不存在时自动递归创建
+ * - 实现 IDryRunRepository 接口（implements）
  */
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DryRunRecord } from '../entities/DryRunRecord';
+import type { IDryRunRepository } from './IDryRunRepository';
 
 // @repository: DryRunRepository
 // 负责将拦截记录保存到本地文件
-export class DryRunRepository {
+export class DryRunRepository implements IDryRunRepository {
   // @contract: save(record: DryRunRecord, outputDir: string) => Promise<string>
   // @step: [确保目录存在] 调用 ensureOutputDir 创建输出目录
   // @step: [生成文件名] 根据时间戳生成文件名
