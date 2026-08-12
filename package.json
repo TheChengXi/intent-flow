@@ -2,7 +2,7 @@
   "name": "intent-flow",
   "displayName": "IntentFlow",
   "description": "Comment-Driven Development Framework - 注释驱动开发框架",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "publisher": "TheChengXi",
   "license": "MIT",
   "repository": {
