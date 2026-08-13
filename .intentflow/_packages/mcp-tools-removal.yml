@@ -1,0 +1,34 @@
+packageName: mcp-tools-removal
+summary: |
+  MCP 工具面收敛：从 MCP 适配层移除 trace_dependency_chain 与 list_folder_intents 两个工具，
+  服务器保留 check_file_size / project_intent。对应 use case 仍由 CLI 适配器使用（不删）。
+  入口建议：MCP 服务器入口 src/adapter/mcp/MCPServer.ts（vite.config.ts mcp-server 目标）。
+  当前状态：已完成，verify:mcp 全绿、全量测试 139/139 × 3 次循环稳定。
+
+groups:
+  - name: MCP 工具面收敛
+    summary: 本次删除的两个 MCP 工具封装及其注册链——从工具类、统一导出、DI 容器到文档表，共同构成"该工具不再暴露"的完整语义；维护者通过该分组理解 trace_dependency_chain / list_folder_intents 为何从 MCP 工具面消失
+    files:
+      - src/adapter/mcp/tools/TraceDependencyChainTool.ts
+      - src/adapter/mcp/tools/ListFolderIntentsTool.ts
+      - src/adapter/mcp/tools/index.ts
+      - src/adapter/mcp/DIContainer.ts
+      - README.md
+  - name: 保留面一致性
+    summary: 删除后仍被 CLI 使用的 application 用例注释同步，确保规格描述与消费方一致；压测脚本虽被 gitignore 不纳入版本控制，但保证 verify:mcp 回归可用
+    files:
+      - src/application/useCases/TraceDependencyChainUseCase.ts
+
+files:
+  - path: src/adapter/mcp/tools/TraceDependencyChainTool.ts
+    change: 删除整个文件（mcp-tools-removal：MCP 工具 trace_dependency_chain 移除）
+  - path: src/adapter/mcp/tools/ListFolderIntentsTool.ts
+    change: 删除整个文件（mcp-tools-removal：MCP 工具 list_folder_intents 移除）
+  - path: src/adapter/mcp/tools/index.ts
+    change: 移除两个已删工具的 export；@intent 更新为"仅导出仍在服务的工具"，注明其余两个 MCP 工具已移除
+  - path: src/adapter/mcp/DIContainer.ts
+    change: 移除 traceDependencyChainTool / listFolderIntentsTool 两个字段、构造初始化及 getAllTools() 数组项（4 → 2）；@intent 更新为 2 个 Tool，注明已移除工具及 use case 保留原因
+  - path: README.md
+    change: MCP 工具表删除 trace_dependency_chain、list_folder_intents 两行
+  - path: src/application/useCases/TraceDependencyChainUseCase.ts
+    change: @intent 中消费方描述从 "TraceDependencyChainTool（Adapter/MCP）" 改为 "CLI 命令（Adapter/CLI）"（use case 本身未动）

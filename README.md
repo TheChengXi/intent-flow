@@ -152,9 +152,7 @@ report 本质上是 execute 阶段的**输出文档**——它本不是独立存
 | 工具 | 功能 |
 |------|------|
 | `check_file_size` | 检查文件大小，排除注释统计纯代码行数 |
-| `trace_dependency_chain` | 沿依赖链追踪，分析 @intent 语义 |
 | `project_intent` | 创建/更新 @intent 注释 |
-| `list_folder_intents` | 列出文件夹内 @intent 投影 |
 
 ### CLI 命令
 
