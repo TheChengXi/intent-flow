@@ -16,19 +16,14 @@
     "test:imports": "npx tsx test_multilang_imports.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "compile": "npm run compile:mcp && npm run compile:cli && npm run compile:pi",
+    "compile": "npm run compile:mcp && npm run compile:cli",
     "mcp": "node dist/mcp-server.js",
     "mcp:dev": "ts-node --files src/adapter/mcp/MCPServer.ts",
     "verify:mcp": "npm run compile:mcp && node scripts/mcp-stress-test.mjs",
     "compile:mcp": "set IFLOW_BUILD=mcp-server && npx vite build",
-    "compile:cli": "set IFLOW_BUILD=cli/iflow && npx vite build",
-    "compile:pi": "set IFLOW_BUILD=pi/extension && npx vite build",
-    "deploy:pi": "node scripts/deploy-pi.js",
-    "fetch-release": "node scripts/fetch-release.js"
+    "compile:cli": "set IFLOW_BUILD=cli/iflow && npx vite build"
   },
   "devDependencies": {
-    "@earendil-works/pi-coding-agent": "^0.84.1",
-    "@earendil-works/pi-tui": "^0.84.1",
     "@modelcontextprotocol/client": "^2.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.20.1",
@@ -46,7 +41,6 @@
     "minimatch": "^10.2.5",
     "openai": "^6.37.0",
     "resolve": "^1.22.12",
-    "typebox": "^1.3.6",
     "zod": "^4.4.3"
   }
 }

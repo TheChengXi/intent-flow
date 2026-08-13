@@ -1,10 +1,14 @@
 /**
  * @intent
- * 核心依赖注入容器，管理所有适配器共享的核心依赖：data 层实现（FileSystemRepository、CacheRepositoryImpl、CodeParserRepositoryImpl、AgentRepositoryImpl、GuardToggleStore）+ 基础用例 + GuardToggleService（guard-toggle 起）。
- * AgentRepositoryImpl（agent 发现）自 pi-adapter-layer-reorg 起在此组装：data 层实现统一在 application 组装，避免 adapter 层 DIContainer 跨层 import data。若 agent 发现被其他适配器使用则天然共享。
- * guard-toggle 起新增：GuardToggleStore + GuardToggleService 均在此组装（adapter 容器经 core 获取 service，不直接触碰 data 层 store）。
+ * 核心依赖注入容器，管理所有适配器共享的核心依赖：data 层实现（FileSystemRepository、CacheRepositoryImpl、CodeParserRepositoryImpl）+ 基础用例。
+ * agent 域（agent 发现、守卫开关）已随 pi 适配层入档（pi-removal），本容器不再组装。
  * 容器只包含纯粹的核心依赖，不包含任何适配器特定的依赖。
+ * 边界：不 import data 层实现以外的适配器特定模块；MCP/CLI 容器经此获取共享用例。
+ * 验收条件：
+ * - checkFileSizeUseCase / traceDependencyChainUseCase / projectIntentUseCase / listFolderIntentsUseCase 均可实例化
+ * - 无 agentRepo / guardToggleStore / guardToggleService 残留引用
  */
+
 
 
 
@@ -14,18 +18,13 @@ import { ICacheRepository } from '../data/repositories/ICacheRepository';
 import { FileSystemRepository } from '../data/services/fileSystem/FileSystemRepository';
 import { CacheRepositoryImpl } from '../data/services/cache/CacheRepositoryImpl';
 import { CodeParserRepositoryImpl } from '../data/services/codeParser/CodeParserRepositoryImpl';
-import { AgentRepositoryImpl } from '../data/services/agent/AgentRepositoryImpl';
-import { GuardToggleStore } from '../data/services/guard/GuardToggleStore';
-import { GuardToggleService } from './services/GuardToggleService';
-import type { IGuardToggleService } from './services/IGuardToggleService';
-import type { IAgentRepository } from '../data/repositories/IAgentRepository';
 
 // @warn: ConfigManager 已废弃
 import * as UseCases from './useCases';
 
 // @intent: 核心依赖注入容器，管理所有适配器共享的核心依赖
 // @note: 这个容器只包含纯粹的核心依赖，不包含任何适配器特定的依赖
-// @note: 所有适配器（MCP、VSCode、CLI）都应该使用这个容器来初始化核心依赖
+// @note: 所有适配器（MCP、CLI）都应该使用这个容器来初始化核心依赖
 
 export class CoreDIContainer {
   // ==================== 数据层依赖 ====================
@@ -34,11 +33,6 @@ export class CoreDIContainer {
   public fileRepo: IFileRepository;
   public cacheRepo: ICacheRepository;
   public parserRepo: ICodeParserRepository;
-  public agentRepo: IAgentRepository;
-
-  // ==================== 守卫开关 (guard-toggle) ====================
-  public guardToggleStore: GuardToggleStore;
-  public guardToggleService: IGuardToggleService;
 
   // @warn: ConfigManager 已废弃（核心应用层依赖）
 
@@ -69,12 +63,6 @@ export class CoreDIContainer {
     this.fileRepo = new FileSystemRepository();
     this.cacheRepo = CacheRepositoryImpl.getInstance();
     this.parserRepo = new CodeParserRepositoryImpl();
-    this.agentRepo = new AgentRepositoryImpl();
-
-    // ==================== 初始化守卫开关 (guard-toggle) ====================
-    // data 实现统一在 application 组装，adapter 容器经 core 获取 service
-    this.guardToggleStore = new GuardToggleStore();
-    this.guardToggleService = new GuardToggleService(this.guardToggleStore);
 
     // @warn: ConfigManager 初始化已废弃
 

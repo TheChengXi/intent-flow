@@ -1,0 +1,145 @@
+packageName: pi-removal
+summary: |
+  废弃 pi 适配层：src/adapter/pi 整目录与 deploy-pi.js/fetch-release.js 连同 pi 独占的
+  application/data 组件及测试整体移入 .archive/retired_pi.008/（保持 src/ 相对路径）。
+  同时清理构建入口（vite.config）、依赖（@earendil-works/pi-*、typebox）、各层索引出口、
+  CoreDIContainer 死接线与 README 引用，项目收敛为 CLI + MCP 两种适配形态。
+  对外依赖：仅剩 CLI/MCP 共享的 4 个用例（checkFileSize/traceDependencyChain/projectIntent/listFolderIntents）。
+  入口建议：src/adapter/mcp/MCPServer.ts（MCP）、src/adapter/cli/index.ts（CLI）。
+  当前状态：可发布，验证全绿。
+
+groups:
+  - name: pi 适配层归档
+    summary: pi 扩展形态的完整载体——入口/DI 容器/TUI 面板/工具/命令/通信运行时及子进程扩展，
+      整体入档 .archive/retired_pi.008/adapter/pi/，项目不再存在任何 pi 平台依赖。
+    files:
+      - src/adapter/pi/index.ts
+      - src/adapter/pi/extension.ts
+      - src/adapter/pi/DIContainer.ts
+      - src/adapter/pi/README.md
+      - src/adapter/pi/tui/
+      - src/adapter/pi/tools/
+      - src/adapter/pi/commands/
+      - src/adapter/pi/runtime/
+      - src/adapter/pi/child/ChildExtension.ts
+
+  - name: pi 独占 application 层归档
+    summary: 仅 pi 消费的用例与服务——子 agent 发现/通信用例、访问策略与守卫开关服务、
+      agent 消息服务接口、agent 仓库透出，入档后 application 层不再包含 agent 域。
+    files:
+      - src/application/useCases/DiscoverAgentsUseCase.ts
+      - src/application/useCases/AgentRequestUseCase.ts
+      - src/application/services/ScopePolicy.ts
+      - src/application/services/IAccessPolicyService.ts
+      - src/application/services/IGuardToggleService.ts
+      - src/application/services/GuardToggleService.ts
+      - src/application/services/IAgentMessagingService.ts
+      - src/application/services/agentRepository.ts
+
+  - name: pi 独占 data 层归档
+    summary: agent 域数据面——仓库接口/实体/实现与 scope 策略，全部随 pi 入档，
+      data 层仅保留 CLI/MCP 共享的 file/cache/parser 域。
+    files:
+      - src/data/repositories/IAgentRepository.ts
+      - src/data/entities/AgentDefinition.ts
+      - src/data/entities/AgentRunResult.ts
+      - src/data/entities/AgentUsage.ts
+      - src/data/services/agent/AgentRepositoryImpl.ts
+      - src/data/services/guard/GuardToggleStore.ts
+      - src/data/services/scope/
+
+  - name: 保留面接线清理
+    summary: 删除后仍需存活的文件——CoreDIContainer 剪掉 agent 域死接线，三个索引出口
+      移除 pi 项，构建配置与依赖清单收敛，README 与现状对齐。
+    files:
+      - src/application/CoreDIContainer.ts
+      - src/application/useCases/index.ts
+      - src/data/entities/index.ts
+      - src/data/repositories/index.ts
+      - vite.config.ts
+      - package.json
+      - package-lock.json
+      - .gitignore
+      - README.md
+
+  - name: 归档脚本
+    summary: 随 pi 退役的部署/发布脚本，入档 .archive/retired_pi.008/scripts/。
+    files:
+      - scripts/deploy-pi.js
+      - scripts/fetch-release.js
+
+files:
+  - path: src/adapter/pi/
+    change: 整目录（24 文件含 3 测试）git mv 至 .archive/retired_pi.008/adapter/pi/，内容未改
+  - path: src/application/useCases/DiscoverAgentsUseCase.ts
+    change: git mv 入档 .archive/retired_pi.008/application/useCases/
+  - path: src/application/useCases/AgentRequestUseCase.ts
+    change: git mv 入档 .archive/retired_pi.008/application/useCases/
+  - path: src/application/useCases/AgentRequestUseCase.test.ts
+    change: git mv 入档 .archive/retired_pi.008/application/useCases/
+  - path: src/application/services/ScopePolicy.ts
+    change: git mv 入档 .archive/retired_pi.008/application/services/
+  - path: src/application/services/IAccessPolicyService.ts
+    change: git mv 入档 .archive/retired_pi.008/application/services/
+  - path: src/application/services/IGuardToggleService.ts
+    change: git mv 入档 .archive/retired_pi.008/application/services/
+  - path: src/application/services/GuardToggleService.ts
+    change: git mv 入档 .archive/retired_pi.008/application/services/
+  - path: src/application/services/GuardToggleService.test.ts
+    change: git mv 入档 .archive/retired_pi.008/application/services/
+  - path: src/application/services/IAgentMessagingService.ts
+    change: git mv 入档 .archive/retired_pi.008/application/services/
+  - path: src/application/services/agentRepository.ts
+    change: git mv 入档 .archive/retired_pi.008/application/services/
+  - path: src/data/repositories/IAgentRepository.ts
+    change: git mv 入档 .archive/retired_pi.008/data/repositories/
+  - path: src/data/entities/AgentDefinition.ts
+    change: git mv 入档 .archive/retired_pi.008/data/entities/
+  - path: src/data/entities/AgentRunResult.ts
+    change: git mv 入档 .archive/retired_pi.008/data/entities/
+  - path: src/data/entities/AgentUsage.ts
+    change: git mv 入档 .archive/retired_pi.008/data/entities/
+  - path: src/data/services/agent/AgentRepositoryImpl.ts
+    change: git mv 入档 .archive/retired_pi.008/data/services/agent/
+  - path: src/data/services/agent/AgentRepositoryImpl.test.ts
+    change: git mv 入档 .archive/retired_pi.008/data/services/agent/
+  - path: src/data/services/guard/GuardToggleStore.ts
+    change: git mv 入档 .archive/retired_pi.008/data/services/guard/
+  - path: src/data/services/guard/GuardToggleStore.test.ts
+    change: git mv 入档 .archive/retired_pi.008/data/services/guard/
+  - path: src/data/services/scope/IAccessPolicy.ts
+    change: git mv 入档 .archive/retired_pi.008/data/services/scope/
+  - path: src/data/services/scope/policy.ts
+    change: git mv 入档 .archive/retired_pi.008/data/services/scope/
+  - path: src/data/services/scope/index.ts
+    change: git mv 入档 .archive/retired_pi.008/data/services/scope/
+  - path: scripts/deploy-pi.js
+    change: 普通 move 入档 .archive/retired_pi.008/scripts/（原未被 git 跟踪）
+  - path: scripts/fetch-release.js
+    change: git mv 入档 .archive/retired_pi.008/scripts/，保留历史
+  - path: src/application/CoreDIContainer.ts
+    change: 移除 agentRepo/guardToggleStore/guardToggleService 字段、import 与构造初始化；@intent 更新为不含 agent 域
+  - path: src/application/useCases/index.ts
+    change: 移除 DiscoverAgentsUseCase/AgentRequestUseCase 两行 export；@intent 更新
+  - path: src/data/entities/index.ts
+    change: 移除 AgentDefinition/AgentRunResult/AgentUsage 三行 export；@intent 更新
+  - path: src/data/repositories/index.ts
+    change: 移除 IAgentRepository export；@intent 更新
+  - path: vite.config.ts
+    change: 移除 pi/extension 入口、piProvidedPackages 数组、outFileName 的 pi 分支及头部注释
+  - path: package.json
+    change: compile 改 compile:mcp && compile:cli；删 compile:pi/deploy:pi/fetch-release；删 pi devDeps 与 typebox dep
+  - path: package-lock.json
+    change: npm uninstall 自动重算（-5363 行，移除 @earendil-works/pi-* 子树与 typebox 共 388 包）
+  - path: .gitignore
+    change: 删除 !scripts/fetch-release.js 白名单行（脚本已入档）
+  - path: README.md
+    change: .pi/ 引用改指 .dsh/skills/；删 Pi Agent 集成小节、Loop 插件实现段、项目结构 pi 行、skill-standards-ref 引用、过时 intent-package 命令
+  - path: .intentflow/pi-removal/requirement.md
+    change: 本次需求文档（新建）
+  - path: .intentflow/pi-removal/design.md
+    change: 本次设计文档（新建，含 6 处偏差、5 条决策、改动点清单）
+  - path: .intentflow/pi-removal/later-on.md
+    change: 后续想法备忘（L01-L04，新建）
+  - path: .intentflow/pi-removal/report.md
+    change: 本次关账报告（新建）
