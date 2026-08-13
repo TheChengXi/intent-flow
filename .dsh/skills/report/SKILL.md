@@ -1,13 +1,13 @@
 ---
 name: report
-description: 执行完成后关账。聚合需求、设计与执行产出，输出关账报告，记录偏差、经验与后续待办，生成能力打包并提交 Git。
+description: 执行完成后关账。聚合需求、设计与执行产出，输出关账报告，记录偏差、经验与后续待办，更新模块现状 yml 并提交 Git。
 ---
 
 # 关账报告
 
 以下规则具有最高优先级。
 
-五步执行：提取 → 生成 → 写入 → 打包 → 提交。
+五步执行：提取 → 生成 → 写入 → 更新现状 → 提交。
 
 ---
 
@@ -61,43 +61,40 @@ description: 执行完成后关账。聚合需求、设计与执行产出，输�
 
 写入 `.intentflow/<feature-name>/report.md`。
 
-## 5. 生成能力打包
+## 5. 更新模块现状
 
-代码执行后，所有变更文件均已带有 `@intent`。
+代码执行后，所有变更文件均已带有 `@intent`。把本次 feature 的净结果并入 `.intentflow/_packages/` 下的模块现状 yml。
 
-- 收集本次 feature 涉及的全部文件
-- 每个文件记录**在这 feature 中的具体改动**（而非 @intent 原文——@intent 可通过 `rg @intent <path>` 原地读取）
-- 按**功能内聚**分组（跨层关联），而非按目录层级分组（按层分组是目录结构的投影，零信息增量）
-- 写入 `.intentflow/_packages/<feature-name>.yml`
+- 读 `.intentflow/_packages/` 现有模块 yml 作为现状基线
+- 本次涉及的文件归入对应模块的 groups.files：新增文件加入，已删除文件移出
+- 涉及新模块（基线中无对应模块）→ 新建该模块 yml
+- 本次未涉及的模块 yml 不动
 
-### 包格式
+### 模块 yml 格式
 
 ```yaml
-packageName: <feature-name>
+packageName: <module>
 summary: |
-  包职责、对外依赖、入口建议、当前状态。
+  模块职责、入口文件、对外依赖。
 
 groups:
   - name: 分组名
     summary: 功能内聚描述——为什么这些文件在一个组，维护者通过这个分组能理解什么能力关联
     files:
-      - <文件名>
-
-files:
-  - path: <相对项目根目录的路径>
-    change: <这个文件在这个 feature 中的具体改动>
+      - <现存文件名>
 ```
 
 ### 分组原则
 
 - ✅ 按功能内聚分组：跨层聚合功能强相关的文件，让维护者理解「这些文件共同构成了什么能力」
 - ✅ 分组是对能力关联的语义注释
+- ✅ 只记录现存文件，已删除文件直接移出，不写改动事实
 
 ## 6. 提交 Git
 
 在写入完成后执行：
 
-1. `git add .` — 纳入全部变更（代码 + 报告 + 能力打包）
+1. `git add .` — 纳入全部变更（代码 + 报告 + 模块现状 yml）
 2. `git commit -m "<scope>: <feature-name> 关账"` — 提交信息格式：
    - 新 feature → `feat(<feature-name>): 关账`
    - 修复/修改 → `fix(<feature-name>): 关账`
