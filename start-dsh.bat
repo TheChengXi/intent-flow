@@ -10,7 +10,7 @@ if %errorlevel%==0 (
 )
 
 echo [dsh] Starting Web UI (workspace: D:\w_dev\intent-flow)...
-start "DeepSeek Harness" cmd /k "cd /d D:\w_dev\intent-flow && D:\w_dev\dsh-playground\node_modules\.bin\dsh web"
+start "DeepSeek Harness" cmd /k "cd /d D:\w_dev\intent-flow && D:\w_dev\dsh-playground\node_modules\.bin\dsh web --patch .dsh\dsh.mcp.patch.yml"
 timeout /t 8 /nobreak >nul
 echo [dsh] Started: http://127.0.0.1:3080
 start http://127.0.0.1:3080

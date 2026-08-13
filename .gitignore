@@ -15,6 +15,8 @@ dist/
 node_modules/
 # MCP构建
 .mcp.json
+# DSH 工作区局部 MCP 补丁（不入仓库）
+.dsh/dsh.mcp.patch.yml
 
 # 本地部署脚本（不入仓库）
 scripts/*
