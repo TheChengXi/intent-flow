@@ -2,9 +2,9 @@
 
 **Comment-Driven** — 注释驱动开发
 
-> 这只是一套本地的个人设计思路。读一读本 README 也好，参考别人的方案也好，实际本仓库的代码内容没有必要一定要读。内容只是讲解设计思路，不必照抄——毕竟并没有科学验证过这套思路是永久可行的，顺便说一下这个README也是ai写的，我自己也没怎么看，嗯，这句话也是，再顺便说一下其实我叫这个iflow框架的原因也是ai写的。本仓库的 VS Code 扩展和 CLI 基本没卵用，项目内容也管理得混乱。
+> 这只是一套本地的个人设计思路。读一读本 README 也好，参考别人的方案也好，实际本仓库的代码内容没有必要一定要读。内容只是讲解设计思路，不必照抄——毕竟并没有科学验证过这套思路是永久可行的，顺便说一下这个README也是ai写的，我自己也没怎么看，嗯，这句话也是，再顺便说一下其实我叫这个iflow框架的原因也是ai写的。本仓库的 CLI 基本没卵用，项目内容也管理得混乱。
 
-IntentFlow 是一套以 **@intent 注释**为核心契约的 AI 辅助开发工作流框架，提供 VS Code 扩展、CLI 和 MCP Server 三种适配形态。
+IntentFlow 是一套以 **@intent 注释**为核心契约的 AI 辅助开发工作流框架，提供 CLI 和 MCP Server 两种适配形态（VS Code 扩展形态已移除）。
 
 ---
 
@@ -66,7 +66,7 @@ Loop 的本质是：**你拥有无穷的 token 和一套本地的代码库，改
 
 对于普通开发者来说这个机制可能显得"过于贵重"，但它的核心含义是好的：**定时的、按阶段触发的状态机，驱动 skill 执行**。
 
-实现上体现在 `another_extension_pi/init_feature/` 插件中：
+实现上体现在 `.pi/extensions/init_feature/` 插件中：
 - `engine.ts` — 纯函数：扫描 feature 目录、读取文件状态、判定当前阶段
 - `register.ts` — pi 扩展注册：监听 `session_start` 初始化快照、`turn_end` 自动检测变化、`/init-feature` 命令手动触发
 - `index.ts` — 统一导出入口
@@ -160,10 +160,6 @@ report 本质上是 execute 阶段的**输出文档**——它本不是独立存
 
 `iflow check-file-size`、`iflow trace-dependency-chain`、`iflow project-intent`、`iflow list-folder-intents`、`iflow intent-package`
 
-### VS Code 命令
-
-大文件扫描、当前文件及依赖检查、能力地图可视化、框选交互、干运行模式等。
-
 ### Pi Agent 集成
 
 子进程 agent 调度（SpawnAgent/ListAgents）、访问策略控制、RPC 进程池、TUI 可视化面板。
@@ -178,10 +174,9 @@ report 本质上是 execute 阶段的**输出文档**——它本不是独立存
 src/
   data/                   # 实体 + 接口 + 实现
   application/            # 用例编排
-  adapter/                # CLI / MCP / VS Code / Pi
+  adapter/                # CLI / MCP / Pi
 dist/                     # 构建产出
-another_extension_pi/     # Pi 扩展插件
-  init_feature/           #   状态机：自动检测 feature 阶段流转
+.pi/extensions/init_feature/   # 状态机：自动检测 feature 阶段流转
 ```
 
 ---

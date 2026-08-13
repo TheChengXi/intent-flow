@@ -14,5 +14,3 @@ export * from './FileSizeCheckResult';
 export * from './AgentDefinition';
 export * from './AgentRunResult';
 export * from './AgentUsage';
-export * from './DryRunConfig';
-export * from './DryRunRecord';

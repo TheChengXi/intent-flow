@@ -62,9 +62,6 @@ export class CoreDIContainer {
   // 文件夹意图清单用例
   public listFolderIntentsUseCase: UseCases.ListFolderIntentsUseCase;
 
-  // 意图文件投射用例（将 @intent 实时映射到 .intentflow/intents/ 目录树）
-  public projectIntentsToFilesUseCase: UseCases.ProjectIntentsToFilesUseCase;
-
   // @warn: 意图包相关（GenerateIntentPackage/MaintainIntentPackages/IntentPackageQueryService）已废弃
 
   constructor() {
@@ -106,11 +103,6 @@ export class CoreDIContainer {
 
     // 文件夹意图清单用例
     this.listFolderIntentsUseCase = new UseCases.ListFolderIntentsUseCase(
-      this.fileRepo
-    );
-
-    // 意图文件投射用例
-    this.projectIntentsToFilesUseCase = new UseCases.ProjectIntentsToFilesUseCase(
       this.fileRepo
     );
 

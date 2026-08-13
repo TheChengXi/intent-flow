@@ -12,8 +12,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["vscode", "node"]
+    "types": ["node"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", ".vscode-test", "scripts", "src/adapter/vscode/ui/webview/vite.config.mts", "src/adapter/vscode/ui/webview/src"]
+  "exclude": ["node_modules", ".vscode-test", "scripts"]
 }
