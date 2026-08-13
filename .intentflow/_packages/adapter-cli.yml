@@ -1,0 +1,31 @@
+packageName: adapter-cli
+summary: |
+  CLI 适配层：把 4 个共享用例暴露为 `iflow` 命令行命令（check-file-size /
+  trace-dependency-chain / project-intent / list-folder-intents），
+  每条命令的流程为「解析参数 → 经 CliDIContainer 取用例 → 执行 → 格式化输出」。
+  入口：src/adapter/cli/index.ts（顶层命令分派）；src/adapter/cli/CliDIContainer.ts（DI 装配）。
+  对外依赖：application 层 4 个用例 + CoreDIContainer。
+groups:
+  - name: 入口与命令路由
+    summary: CLI 入口函数（命令分派/帮助/退出码）与命令注册表（kebab-case 命令名 → handler 映射），使入口无需感知具体命令模块路径
+    files:
+      - index.ts
+      - commands/index.ts
+  - name: 命令实现
+    summary: 4 条命令的参数翻译与执行，复用 utils 的 parseArgs/hasFlag 与 formatter 工厂；CLI 特有逻辑（mode 校验、--force 双写法、threshold 默认值）都在此层
+    files:
+      - commands/CheckFileSizeCommand.ts
+      - commands/TraceDependencyChainCommand.ts
+      - commands/ProjectIntentCommand.ts
+      - commands/ListFolderIntentsCommand.ts
+      - commands/utils.ts
+  - name: 输出格式化
+    summary: pretty（人类可读）与 json（机器可读）两种输出格式 + getFormatter 工厂，命令层经此统一输出
+    files:
+      - formatters/index.ts
+      - formatters/json.ts
+      - formatters/pretty.ts
+  - name: 依赖装配
+    summary: CLI 单例容器，在 CoreDIContainer 之上透出 4 个用例访问器，屏蔽核心容器实例化细节
+    files:
+      - CliDIContainer.ts

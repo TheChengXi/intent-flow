@@ -1,0 +1,24 @@
+packageName: adapter-mcp
+summary: |
+  MCP 协议适配层（SDK v2）：McpServer + serveStdio 提供服务，经 registerTool 注册容器全部工具。
+  仅保留 2 个工具（check_file_size / project_intent）；trace_dependency_chain 与
+  list_folder_intents 已移除（对应用例仍由 CLI 使用，保留在 CoreDIContainer）。
+  入口：src/adapter/mcp/MCPServer.ts；src/adapter/mcp/DIContainer.ts（DI 装配）。
+  对外依赖：application 层 CoreDIContainer + checkFileSize/projectIntent 两个用例。
+groups:
+  - name: 协议入口
+    summary: MCPServer 装配与工具注册（每连接一个实例、容器单例共享、错误响应 isError 不中断服务）；MCPToolHandler 定义工具结构契约（zod v4 inputSchema），是唯一接触 @modelcontextprotocol 的代码
+    files:
+      - MCPServer.ts
+      - MCPToolHandler.ts
+  - name: 工具面
+    summary: 2 个 MCP 工具的 inputSchema 与执行封装，类型经用例 re-export 获取，不直连 data/entities
+    files:
+      - tools/CheckFileSizeTool.ts
+      - tools/ProjectIntentTool.ts
+      - tools/index.ts
+  - name: 装配
+    summary: MCP DIContainer 在 CoreDIContainer 之上注入 2 个工具，getAllTools() 是工具注册的数据源
+    files:
+      - DIContainer.ts
+      - index.ts

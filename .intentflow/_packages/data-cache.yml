@@ -1,0 +1,18 @@
+packageName: data-cache
+summary: |
+  数据层缓存服务：文件内容 / AST / 定义三类缓存 + 统一门面 CacheRepositoryImpl。
+  门面实现 ICacheRepository 供用例经 DI 使用，同时提供静态 getInstance() 便捷方法供
+  searchers/extractors 访问；键路由格式 "type:identifier"。
+  入口：src/data/services/cache/CacheRepositoryImpl.ts。
+  对外依赖：data/entities（CacheStats）、data/services/tree-sitter（ASTCache 解析）。
+groups:
+  - name: 缓存门面
+    summary: 唯一缓存门面，实现 ICacheRepository 并路由分发到三类缓存，屏蔽键格式与各缓存 TTL/容量差异
+    files:
+      - CacheRepositoryImpl.ts
+  - name: 三类缓存实现
+    summary: 文件内容（mtime 时效校验 + 字节容量 LRU）、AST（条目数 LRU）、定义（函数/类型双 Map LRU）；调试日志均走 stderr（MCP stdout 协议安全）
+    files:
+      - FileContentCache.ts
+      - ASTCache.ts
+      - DefinitionCache.ts

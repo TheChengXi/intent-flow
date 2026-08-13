@@ -1,0 +1,42 @@
+packageName: data-code-context
+summary: |
+  数据层代码上下文分析能力：@intent 提取与转义、函数调用/类型引用提取、
+  函数/类型定义搜索、多语言 import 解析，是依赖链追踪与意图分析的数据源。
+  统一模式：tree-sitter 精确路径 + 正则快速路径 + 失败静默回退，结果经缓存命中。
+  入口：无单一入口，各 extractor/searcher 静态方法被 CodeParserRepositoryImpl 与用例调用。
+  对外依赖：data/services/tree-sitter（解析）、data/services/cache（命中缓存）。
+groups:
+  - name: 意图提取与转义
+    summary: @intent 注释的投射/提取转义规则（两侧对称防漂移）与提取唯一实现（三种注释格式、遇空行/下一 @tag 停止、转义对称还原）
+    files:
+      - intentTextEscaping.ts
+      - intentTextEscaping.test.ts
+      - extractors/IntentExtractor.ts
+      - extractors/IntentExtractor.test.ts
+  - name: 函数/类型分析
+    summary: 函数调用提取、类型引用提取、函数定义搜索、类型定义搜索——正则快速路径与 tree-sitter 精确路径的统一模式
+    files:
+      - extractors/FunctionCallExtractor.ts
+      - extractors/TypeReferenceExtractor.ts
+      - searchers/FunctionDefinitionSearcher.ts
+      - searchers/TypeDefinitionSearcher.ts
+  - name: 多语言 import 解析
+    summary: import 解析调度入口 + 策略接口 + 注册表 + 13 个语言 resolver（加语言 = 加 resolver + 注册一行），tree-sitter 失败按语言降级正则
+    files:
+      - extractors/import/ImportExtractor.ts
+      - extractors/import/ImportResolver.ts
+      - extractors/import/ResolverRegistry.ts
+      - extractors/import/resolver-utils.ts
+      - extractors/import/resolvers/TypeScriptResolver.ts
+      - extractors/import/resolvers/PythonResolver.ts
+      - extractors/import/resolvers/GoResolver.ts
+      - extractors/import/resolvers/CResolver.ts
+      - extractors/import/resolvers/CppResolver.ts
+      - extractors/import/resolvers/JavaResolver.ts
+      - extractors/import/resolvers/RustResolver.ts
+      - extractors/import/resolvers/RubyResolver.ts
+      - extractors/import/resolvers/KotlinResolver.ts
+      - extractors/import/resolvers/SwiftResolver.ts
+      - extractors/import/resolvers/CSharpResolver.ts
+      - extractors/import/resolvers/PhpResolver.ts
+      - extractors/import/resolvers/CssResolver.ts

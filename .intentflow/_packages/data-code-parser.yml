@@ -1,0 +1,13 @@
+packageName: data-code-parser
+summary: |
+  数据层代码解析实现：ICodeParserRepository 的编排实现，
+  统一封装 tree-sitter 能力对外提供解析/搜索/提取/import/行数统计接口。
+  countNonCommentLines 复用 LanguageConfig 扩展名映射 + AST 遍历识别 comment 节点，
+  无法识别语言或解析失败时回退总行数。
+  入口：src/data/services/codeParser/CodeParserRepositoryImpl.ts。
+  对外依赖：data/services/codeContext（各 extractor/searcher）、data/services/tree-sitter。
+groups:
+  - name: 解析实现
+    summary: 编排多个 tree-sitter 分析器实现 ICodeParserRepository 统一接口；searchContract 为 vscode 专属方法在 data 层抛错占位
+    files:
+      - CodeParserRepositoryImpl.ts

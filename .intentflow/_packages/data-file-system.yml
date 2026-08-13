@@ -1,0 +1,16 @@
+packageName: data-file-system
+summary: |
+  数据层文件系统能力：IFileRepository 的 Node.js fs 实现 + 文件监听器。
+  FileSystemRepository 屏蔽 scanDirectory 跳过 .git/node_modules、watchFile 防重复注册、
+  writeFile 自动建父目录；FileWatcher 在 fileRepo 之上聚合多回调并触发缓存失效。
+  入口：src/data/services/fileSystem/FileSystemRepository.ts。
+  对外依赖：data/repositories（IFileRepository 契约）。
+groups:
+  - name: 文件系统实现
+    summary: IFileRepository 的 fs 实现，读写/存在性/时间戳/监听/扫描/删除/移动/子目录列齐全，扫描自动过滤隐藏目录与 node_modules
+    files:
+      - FileSystemRepository.ts
+  - name: 文件监听
+    summary: 在 fileRepo.watchFile 之上做多回调聚合，无回调时自动停止监听，供缓存失效等场景使用
+    files:
+      - FileWatcher.ts

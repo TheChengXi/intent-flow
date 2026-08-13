@@ -1,0 +1,39 @@
+packageName: data-tree-sitter
+summary: |
+  数据层 tree-sitter 运行时：Parser 统一管理（初始化/语言加载/多语言缓存）+
+  语言配置（语言映射/扩展名/注释符号/内置函数与类型）+ 20 个 WASM 语法解析器。
+  基于 @vscode/tree-sitter-wasm，支持新版 WASM 格式（dylink）。
+  入口：src/data/services/tree-sitter/TreeSitterManager.ts；语言配置 LanguageConfig.ts。
+  对外依赖：无（底层能力，被 cache/codeContext/codeParser 消费）。
+groups:
+  - name: Parser 管理
+    summary: Tree-sitter Parser 初始化/单例/语言加载与缓存/清空，屏蔽 WASM 路径解析与 Language.load 异步细节
+    files:
+      - TreeSitterManager.ts
+  - name: 语言配置
+    summary: 语言名/扩展名/注释前缀/块注释分隔符/内置函数/内置类型的统一映射，未知语言走默认回退
+    files:
+      - LanguageConfig.ts
+  - name: 语法解析器
+    summary: 各语言 tree-sitter WASM 语法（typescript/tsx/javascript/python/c/cpp/java/go/rust/kotlin/swift/c-sharp/ruby/php/css/bash/ini/powershell/regex 等），构建时复制到输出目录 parsers/ 下
+    files:
+      - parsers/tree-sitter.wasm
+      - parsers/tree-sitter-typescript.wasm
+      - parsers/tree-sitter-tsx.wasm
+      - parsers/tree-sitter-javascript.wasm
+      - parsers/tree-sitter-python.wasm
+      - parsers/tree-sitter-c.wasm
+      - parsers/tree-sitter-cpp.wasm
+      - parsers/tree-sitter-java.wasm
+      - parsers/tree-sitter-go.wasm
+      - parsers/tree-sitter-rust.wasm
+      - parsers/tree-sitter-kotlin.wasm
+      - parsers/tree-sitter-swift.wasm
+      - parsers/tree-sitter-c-sharp.wasm
+      - parsers/tree-sitter-ruby.wasm
+      - parsers/tree-sitter-php.wasm
+      - parsers/tree-sitter-css.wasm
+      - parsers/tree-sitter-bash.wasm
+      - parsers/tree-sitter-ini.wasm
+      - parsers/tree-sitter-powershell.wasm
+      - parsers/tree-sitter-regex.wasm

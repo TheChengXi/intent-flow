@@ -1,0 +1,17 @@
+packageName: data-repositories
+summary: |
+  数据层仓储接口统一出口：3 个抽象边界（文件系统 / 代码解析 / 缓存），
+  供 application 层用例依赖注入，data 层实现类对齐。
+  入口：src/data/repositories/index.ts。
+  对外依赖：data/entities（类型）。
+groups:
+  - name: 仓储接口
+    summary: 文件系统操作、代码静态分析、缓存三条抽象边界，屏蔽 Node.js fs / tree-sitter / 缓存策略的实现细节，测试可 mock
+    files:
+      - IFileRepository.ts
+      - ICodeParserRepository.ts
+      - ICacheRepository.ts
+  - name: 统一出口
+    summary: 聚合 3 个仓储接口为单一 import 源，验收条件为每个接口在 src 内存在实现或使用方
+    files:
+      - index.ts

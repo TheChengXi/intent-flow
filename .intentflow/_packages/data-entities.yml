@@ -1,0 +1,17 @@
+packageName: data-entities
+summary: |
+  数据层实体类型定义与统一出口：4 个实体各自独立文件定义，index.ts 聚合为单一 import 源。
+  入口：src/data/entities/index.ts。
+  对外依赖：无（纯类型层，是 data/repositories 与 application 用例的类型来源）。
+groups:
+  - name: 实体定义
+    summary: 函数定义、类型定义、缓存统计、文件大小检查四类实体，承载跨层传递的数据契约
+    files:
+      - FunctionDefinition.ts
+      - TypeDefinition.ts
+      - CacheStats.ts
+      - FileSizeCheckResult.ts
+  - name: 统一出口
+    summary: 聚合 4 个实体为单一 import 源，验收条件为每个导出在 src 内存在活跃引用
+    files:
+      - index.ts
