@@ -19,27 +19,27 @@ Prompt 和 Skill 的核心价值不是什么精巧的措辞技巧，它的本质
 所以这套 skill 的核心目的不是"教模型做事"，每一份 skill 都是可以被替代的，它们只是在开发流程的关键节点上建立模型与人的对齐锚点。
 
 相关文件：
-- `_source/APPEND_SYSTEM.md` — 系统提示词（全局指令与工作流规范）
-- `_source/skill-standards-ref.md` — Skill 书写质量标准
+- `.pi/APPEND_SYSTEM.md` — 系统提示词（全局指令与工作流规范）
+- `.pi/skill-standards-ref.md` — Skill 书写质量标准
 
 ### 四个阶段
 
-**Requirement（需求）** — `_source/prompts/requirement/SKILL.md`
+**Requirement（需求）** — `.pi/skills/requirement/SKILL.md`
 要把模糊想法结构化，最重点的事情是反复跟用户对话确定需求细节。侧面辅助手段是联网搜索——从问题角度看看别人怎么解决的，从功能角度看看同类功能解决了什么问题，或者直接随便乱搜找灵感。还有一个关键思路是测试前置：在需求阶段先模拟出一套验证流程，后续代码怎么写都得跟这套测试方法对齐，哪怕用户不会写代码，也能通过测试步骤体会到功能是否达标。
 
-**Design（设计）** — `_source/prompts/design/SKILL.md`
+**Design（设计）** — `.pi/skills/design/SKILL.md`
 结构设计和需求分析本质上属于同一个阶段，但刻意拆成两个。原因是"结构设计"这件事在前后端、小脚本里有太多不同的做法，需要一个固定的框架来兜住。参考了 DDD 的分层概念，简化成三层：数据结构/接口/仓库放一层，应用逻辑/编排放一层，面向用户或外部接口的放一层叫适配。这套逻辑不分技术栈，前端后端小脚本大致都能套，因为它没讲什么高深的理论，只是一种代码的结构划分。划分的根本原因是——LLM 经常把代码全写在一个文件夹里，文件夹一长写着写着就跑偏了，所以要划分上下文、降低理解难度，人对代码的理解也是一样的道理。
 
 需求+设计两个阶段会生成一份 feature 产出，包含两个文档：需求文档和设计文档，作为本次开发的对齐基准。
 
 这里面附带了一个小机制叫 **later-on 备忘录**——需求或设计阶段冒出了什么奇妙想法，但跟本次沾边不大或者太复杂，直接记进去，防止过度设计。
 
-**Execute（执行）** — `_source/prompts/execute/SKILL.md`
+**Execute（执行）** — `.pi/skills/execute/SKILL.md`
 这是一个多 skill 编排的阶段，核心思路是隔离上下文——测试、写代码、审查三段彼此隔离。
 
 多 agent 的上下文是统一的：写在文件里的 @intent 本身就是子 agent 需要读取和执行的内容。测试 agent 读 requirement 和 design 文档，同时主 agent 把每个文件的 @intent 作为该文件的规格派发给子 agent。子 agent 不需要再考虑"要设计哪些内容"——这些在主线程的上下文里已经满足。同理，写代码的 agent 和审查 agent 也是这样，各司其职，通过统一的 @intent 契约对齐。
 
-**Report（报告）** — `_source/prompts/report/SKILL.md`
+**Report（报告）** — `.pi/skills/report/SKILL.md`
 接管 Git 对文件改动的关注，对需求理解做打包。通过 feature 这一全局工作流阶段，把每次变更的意图沉淀为意图包（intent package）。后续更新改动时，优先查阅 report 发布的 intent package，方便模型搜索代码内容。
 
 为什么这么设计？目前的 RAG 工具在实际反馈中，很多时候大语言模型宁愿用自己原生的那套 grep 也不愿意用 RAG 自带的代码分析工具。既然这样也就只好顺从——每次代码变动后遗存一份项目的备忘录/方向标，帮助模型分析自己的代码，在后续的设计和改动中提高代码质量。至少模型搜的时候有方向。
@@ -48,7 +48,7 @@ Prompt 和 Skill 的核心价值不是什么精巧的措辞技巧，它的本质
 
 ### AskingUI（UI 规格对齐）
 
-`_source/prompts/asking-ui/SKILL.md` + `toPencil.md`，UI 相关的需求对齐，独立于四阶段流程之外。
+`.pi/skills/asking-ui/SKILL.md` + `toPencil.md`，UI 相关的需求对齐，独立于四阶段流程之外。
 
 核心观点：市面上大多数 UI 需求并不依靠 skill 完成。前端组件库多如牛毛——2D 有 shadcn/MUI/Ant Design/Element Plus 那一大堆，3D 有 three.js 生态，“前端已死”在 AI 出现之前就被喊了多年，因为拼页面的能力早已被库工具化；到了 AI 时代，连调用库的代码都不用写了。所以对模型来说 skill 反倒不是很重要，重点在于**知道去搜哪一些库**。
 
@@ -174,7 +174,7 @@ report 本质上是 execute 阶段的**输出文档**——它本不是独立存
 
 ```
 .intentflow/                     # 工作流产出（需求/设计/报告/意图包）
-_source/                  # Skill 定义
+.pi/skills/             # Skill 定义
 src/
   data/                   # 实体 + 接口 + 实现
   application/            # 用例编排
@@ -188,7 +188,7 @@ another_extension_pi/     # Pi 扩展插件
 
 ## Skill 质量标准参考
 
-详见 `_source/skill-standards-ref.md`，核心七条：前置默认、去人称化、过程式声明、极简无歧义、不角色扮演、不冗余、不兜底。
+详见 `.pi/skill-standards-ref.md`，核心九条：前置默认、去人称化、过程式声明、极简无歧义、不角色扮演、不冗余、不兜底、流程描述衔接、不用表格。
 
 这些标准同样遵循上面的思路——随着模型越来越强，它们可能被替代，但"与人对齐"这个目标不变。
 
