@@ -1491,17 +1491,17 @@ class FileContentCache {
         const stats2 = await fs__namespace.promises.stat(filePath);
         const fileModifiedTime = stats2.mtimeMs;
         if (fileModifiedTime <= cached.timestamp) {
-          console.log(`[FileContentCache] 缓存命中: ${filePath}`);
+          console.error(`[FileContentCache] 缓存命中: ${filePath}`);
           return cached.content;
         } else {
-          console.log(`[FileContentCache] 文件已修改，更新缓存: ${filePath}`);
+          console.error(`[FileContentCache] 文件已修改，更新缓存: ${filePath}`);
           this.delete(filePath);
         }
       } catch (error) {
         this.delete(filePath);
       }
     }
-    console.log(`[FileContentCache] 缓存未命中，读取文件: ${filePath}`);
+    console.error(`[FileContentCache] 缓存未命中，读取文件: ${filePath}`);
     const content = await fs__namespace.promises.readFile(filePath, "utf-8");
     const stats = await fs__namespace.promises.stat(filePath);
     this.set(filePath, content, stats.mtimeMs);
@@ -1535,7 +1535,7 @@ class FileContentCache {
     if (cached) {
       this.cache.delete(filePath);
       this.currentSize -= cached.size;
-      console.log(`[FileContentCache] 删除缓存: ${filePath}`);
+      console.error(`[FileContentCache] 删除缓存: ${filePath}`);
     }
   }
   // @end
@@ -1545,7 +1545,7 @@ class FileContentCache {
   clear() {
     this.cache.clear();
     this.currentSize = 0;
-    console.log(`[FileContentCache] 清空所有缓存`);
+    console.error(`[FileContentCache] 清空所有缓存`);
   }
   // @end
   // @contract: evictOldest() => void
@@ -1562,7 +1562,7 @@ class FileContentCache {
     }
     if (oldestKey) {
       this.delete(oldestKey);
-      console.log(`[FileContentCache] LRU 淘汰: ${oldestKey}`);
+      console.error(`[FileContentCache] LRU 淘汰: ${oldestKey}`);
     }
   }
   // @end
@@ -5701,10 +5701,10 @@ class ASTCache {
     const cacheKey = this.getCacheKey(filePath, language);
     const cached = this.cache.get(cacheKey);
     if (cached) {
-      console.log(`[ASTCache] 缓存命中: ${cacheKey}`);
+      console.error(`[ASTCache] 缓存命中: ${cacheKey}`);
       return cached.ast;
     }
-    console.log(`[ASTCache] 缓存未命中，解析 AST: ${cacheKey}`);
+    console.error(`[ASTCache] 缓存未命中，解析 AST: ${cacheKey}`);
     const ast = await this.parseAST(content, language);
     if (ast) {
       this.set(cacheKey, ast);
@@ -5762,7 +5762,7 @@ class ASTCache {
     }
     for (const key of keysToDelete) {
       this.cache.delete(key);
-      console.log(`[ASTCache] 删除缓存: ${key}`);
+      console.error(`[ASTCache] 删除缓存: ${key}`);
     }
   }
   // @end
@@ -5770,7 +5770,7 @@ class ASTCache {
   // @step: [清空缓存] 清空所有缓存
   clear() {
     this.cache.clear();
-    console.log(`[ASTCache] 清空所有缓存`);
+    console.error(`[ASTCache] 清空所有缓存`);
   }
   // @end
   // @contract: getCacheKey(filePath: string, language: string) => string
@@ -5793,7 +5793,7 @@ class ASTCache {
     }
     if (oldestKey) {
       this.cache.delete(oldestKey);
-      console.log(`[ASTCache] LRU 淘汰: ${oldestKey}`);
+      console.error(`[ASTCache] LRU 淘汰: ${oldestKey}`);
     }
   }
   // @end
@@ -5846,7 +5846,7 @@ class DefinitionCache {
     const cacheKey = this.getCacheKey(functionName, filePath);
     const cached = this.functionCache.get(cacheKey);
     if (cached) {
-      console.log(`[DefinitionCache] 函数缓存命中: ${cacheKey}`);
+      console.error(`[DefinitionCache] 函数缓存命中: ${cacheKey}`);
       return cached.definition;
     }
     return null;
@@ -5866,7 +5866,7 @@ class DefinitionCache {
       timestamp: Date.now(),
       filePath
     });
-    console.log(`[DefinitionCache] 缓存函数定义: ${cacheKey}`);
+    console.error(`[DefinitionCache] 缓存函数定义: ${cacheKey}`);
   }
   // @end
   // @contract: getType(typeName: string, filePath: string) => any | null
@@ -5877,7 +5877,7 @@ class DefinitionCache {
     const cacheKey = this.getCacheKey(typeName, filePath);
     const cached = this.typeCache.get(cacheKey);
     if (cached) {
-      console.log(`[DefinitionCache] 类型缓存命中: ${cacheKey}`);
+      console.error(`[DefinitionCache] 类型缓存命中: ${cacheKey}`);
       return cached.definition;
     }
     return null;
@@ -5897,7 +5897,7 @@ class DefinitionCache {
       timestamp: Date.now(),
       filePath
     });
-    console.log(`[DefinitionCache] 缓存类型定义: ${cacheKey}`);
+    console.error(`[DefinitionCache] 缓存类型定义: ${cacheKey}`);
   }
   // @end
   // @contract: deleteByFile(filePath: string) => void
@@ -5922,11 +5922,11 @@ class DefinitionCache {
     }
     for (const key of functionKeysToDelete) {
       this.functionCache.delete(key);
-      console.log(`[DefinitionCache] 删除函数缓存: ${key}`);
+      console.error(`[DefinitionCache] 删除函数缓存: ${key}`);
     }
     for (const key of typeKeysToDelete) {
       this.typeCache.delete(key);
-      console.log(`[DefinitionCache] 删除类型缓存: ${key}`);
+      console.error(`[DefinitionCache] 删除类型缓存: ${key}`);
     }
   }
   // @end
@@ -5936,7 +5936,7 @@ class DefinitionCache {
   clear() {
     this.functionCache.clear();
     this.typeCache.clear();
-    console.log(`[DefinitionCache] 清空所有缓存`);
+    console.error(`[DefinitionCache] 清空所有缓存`);
   }
   // @end
   // @contract: getCacheKey(name: string, filePath: string) => string
@@ -5959,7 +5959,7 @@ class DefinitionCache {
     }
     if (oldestKey) {
       this.functionCache.delete(oldestKey);
-      console.log(`[DefinitionCache] LRU 淘汰函数: ${oldestKey}`);
+      console.error(`[DefinitionCache] LRU 淘汰函数: ${oldestKey}`);
     }
   }
   // @end
@@ -5977,7 +5977,7 @@ class DefinitionCache {
     }
     if (oldestKey) {
       this.typeCache.delete(oldestKey);
-      console.log(`[DefinitionCache] LRU 淘汰类型: ${oldestKey}`);
+      console.error(`[DefinitionCache] LRU 淘汰类型: ${oldestKey}`);
     }
   }
   // @end
@@ -6179,7 +6179,7 @@ class FunctionDefinitionSearcher {
       if (cached) {
         return cached;
       }
-      console.log(`[FunctionDefinitionSearcher] 搜索函数定义: ${functionName} 在文件: ${filePath}`);
+      console.error(`[FunctionDefinitionSearcher] 搜索函数定义: ${functionName} 在文件: ${filePath}`);
       const content = await cache.getFileContent(filePath);
       let result = null;
       if (language) {
@@ -6223,10 +6223,10 @@ class FunctionDefinitionSearcher {
       }
       const result = this.findFunctionNode(tree.rootNode, functionName, language, content);
       if (result) {
-        console.log(`[FunctionDefinitionSearcher] 找到函数定义: ${functionName}`);
+        console.error(`[FunctionDefinitionSearcher] 找到函数定义: ${functionName}`);
         return result;
       }
-      console.log(`[FunctionDefinitionSearcher] 未找到函数定义: ${functionName}`);
+      console.error(`[FunctionDefinitionSearcher] 未找到函数定义: ${functionName}`);
       return null;
     } catch (error) {
       console.warn("[FunctionDefinitionSearcher] Tree-sitter 提取失败，回退到正则方案:", error);
@@ -6403,9 +6403,9 @@ class TypeDefinitionSearcher {
       if (cached) {
         return cached;
       }
-      console.log(`[TypeDefinitionSearcher] 搜索类型定义: ${typeName} 在文件: ${filePath}`);
+      console.error(`[TypeDefinitionSearcher] 搜索类型定义: ${typeName} 在文件: ${filePath}`);
       const content = await cache.getFileContent(filePath);
-      console.log(`[TypeDefinitionSearcher] 文件内容长度: ${content.length}`);
+      console.error(`[TypeDefinitionSearcher] 文件内容长度: ${content.length}`);
       let result = null;
       if (language) {
         result = await this.searchWithTreeSitter(typeName, content, language);
@@ -6447,10 +6447,10 @@ class TypeDefinitionSearcher {
       }
       const result = this.findTypeDefinitionNode(tree.rootNode, typeName, language);
       if (result) {
-        console.log(`[TypeDefinitionSearcher] 找到类型定义: ${typeName}`);
+        console.error(`[TypeDefinitionSearcher] 找到类型定义: ${typeName}`);
         return result.text;
       }
-      console.log(`[TypeDefinitionSearcher] 未找到类型定义: ${typeName}`);
+      console.error(`[TypeDefinitionSearcher] 未找到类型定义: ${typeName}`);
       return null;
     } catch (error) {
       console.warn("[TypeDefinitionSearcher] Tree-sitter 提取失败，回退到正则方案:", error);
@@ -6519,10 +6519,10 @@ class TypeDefinitionSearcher {
     const typeDefRegex = new RegExp(`^\\s*(export\\s+)?(interface|type|class|enum)\\s+${typeName}\\b`, "m");
     const match = typeDefRegex.exec(content);
     if (!match) {
-      console.log(`[TypeDefinitionSearcher] 未找到类型定义: ${typeName}`);
+      console.error(`[TypeDefinitionSearcher] 未找到类型定义: ${typeName}`);
       return null;
     }
-    console.log(`[TypeDefinitionSearcher] 找到类型定义: ${typeName} at index ${match.index}`);
+    console.error(`[TypeDefinitionSearcher] 找到类型定义: ${typeName} at index ${match.index}`);
     const startIndex = match.index;
     const lines = content.split("\n");
     let currentIndex = 0;
@@ -8362,7 +8362,7 @@ function parseFrontmatter(content) {
   }
   return { fields, body: match[2].trim() };
 }
-async function parseAgentFile(filePath, skillName, source) {
+async function parseAgentFile(filePath, skillName, source, origin) {
   let content;
   try {
     content = await promises.readFile(filePath, "utf-8");
@@ -8380,12 +8380,13 @@ async function parseAgentFile(filePath, skillName, source) {
     model: parsed.fields["model"] || void 0,
     systemPrompt: parsed.body,
     source,
+    origin,
     skillName,
     filePath
   };
   return agent;
 }
-async function scanSubSkillDir(dir, skillName) {
+async function scanSubSkillDir(dir, skillName, origin) {
   const agents = [];
   let entries;
   try {
@@ -8402,10 +8403,10 @@ async function scanSubSkillDir(dir, skillName) {
       continue;
     }
     if (entryStat.isFile() && entry.toLowerCase() === "sub-skill.md") {
-      const agent = await parseAgentFile(fullPath, skillName, "sub_skill");
+      const agent = await parseAgentFile(fullPath, skillName, "sub_skill", origin);
       if (agent) agents.push(agent);
     } else if (entryStat.isDirectory()) {
-      const subAgents = await scanSubSkillDir(fullPath, skillName);
+      const subAgents = await scanSubSkillDir(fullPath, skillName, origin);
       agents.push(...subAgents);
     }
   }
@@ -8427,7 +8428,7 @@ async function scanUserAgentDir(agentsDir) {
   }
   return agents;
 }
-async function scanAllSubSkills(skillsDir) {
+async function scanAllSubSkills(skillsDir, origin) {
   const agents = [];
   const errors = [];
   let skillDirs;
@@ -8440,15 +8441,46 @@ async function scanAllSubSkills(skillsDir) {
   }
   for (const skillName of skillDirs) {
     const subDir = node_path.join(skillsDir, skillName, "sub-skill");
-    const discovered = await scanSubSkillDir(subDir, skillName);
+    const discovered = await scanSubSkillDir(subDir, skillName, origin);
     agents.push(...discovered);
   }
   return { agents, errors };
 }
+async function scanSubSkillsRoots(roots) {
+  const agents = [];
+  const errors = [];
+  for (const { dir, origin } of roots) {
+    const { agents: discovered, errors: rootErrors } = await scanAllSubSkills(dir, origin);
+    agents.push(...discovered);
+    errors.push(...rootErrors);
+  }
+  return { agents, errors };
+}
+async function resolveProjectSkillsDirs(cwd) {
+  const dirs = [];
+  let current = cwd;
+  while (true) {
+    try {
+      const candidate = node_path.join(current, ".pi", "skills");
+      const candidateStat = await promises.stat(candidate);
+      if (candidateStat.isDirectory()) dirs.push(candidate);
+    } catch {
+    }
+    const parent = node_path.dirname(current);
+    if (parent === current) break;
+    try {
+      const gitStat = await promises.stat(node_path.join(current, ".git"));
+      if (gitStat.isDirectory() || gitStat.isFile()) break;
+    } catch {
+    }
+    current = parent;
+  }
+  return dirs;
+}
 function deduplicate(agents) {
   const seen = /* @__PURE__ */ new Map();
   for (const agent of agents) {
-    seen.set(agent.name, agent);
+    seen.set(`${agent.skillName ?? ""}::${agent.name}`, agent);
   }
   return Array.from(seen.values());
 }
@@ -8456,12 +8488,23 @@ class AgentRepositoryImpl {
   constructor(options) {
     this.skillsDir = (options == null ? void 0 : options.skillsDir) ?? DEFAULT_SKILLS_DIR;
     this.agentsDir = (options == null ? void 0 : options.agentsDir) ?? DEFAULT_USER_AGENTS_DIR;
+    this.projectSkillsDirs = options == null ? void 0 : options.projectSkillsDirs;
+    this.cwd = (options == null ? void 0 : options.cwd) ?? process.cwd();
+  }
+  /** 项目级 skills 目录：显式注入优先，否则 cwd 向上查找 */
+  getProjectSkillsDirs() {
+    if (this.projectSkillsDirs) return Promise.resolve(this.projectSkillsDirs);
+    return resolveProjectSkillsDirs(this.cwd);
   }
   async discoverAll(scope) {
     const allErrors = [];
     let agents = [];
     if (scope === "sub_skill" || scope === "both") {
-      const { agents: subSkillAgents, errors } = await scanAllSubSkills(this.skillsDir);
+      const roots = [{ dir: this.skillsDir, origin: "global" }];
+      for (const dir of await this.getProjectSkillsDirs()) {
+        roots.push({ dir, origin: "project" });
+      }
+      const { agents: subSkillAgents, errors } = await scanSubSkillsRoots(roots);
       agents.push(...subSkillAgents);
       allErrors.push(...errors);
     }
@@ -8476,7 +8519,11 @@ class AgentRepositoryImpl {
   }
   async findByName(name2, scope) {
     const { agents } = await this.discoverAll(scope);
-    return agents.find((a) => a.name === name2) ?? null;
+    const exact = agents.filter((a) => a.name === name2);
+    if (exact.length > 0) {
+      return exact.find((a) => a.origin === "project") ?? exact[0];
+    }
+    return agents.find((a) => a.skillName && `${a.skillName}/${a.name}` === name2) ?? null;
   }
 }
 class GuardToggleStore {

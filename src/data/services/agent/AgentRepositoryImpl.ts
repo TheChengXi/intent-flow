@@ -1,23 +1,23 @@
 /**
  * @intent
- * IAgentRepository 的 data 层实现。按 sub-skill 优先（skills/<skill>/sub-skill/ 下递归查找 SUB-SKILL.md）→ ~/.pi/agent/agents/*.md 回退的优先级发现 agent。
- * 支持 frontmatter 解析、同名去重（后覆盖前）。
- * 原名 SubSkillRepository：随 pi-adapter-layer-reorg 下沉 data 层时保留旧名，
- * 后因与 data/services 下实现类惯例（CacheRepositoryImpl 等“接口名+Impl”）不一致而更名为 AgentRepositoryImpl。
- * 构造函数接受可选的 paths 参数，方便测试注入临时目录。
- * 边界：目录不存在或文件不可读时静默跳过并计入 errors，不向上抛异常；无 frontmatter 或无 name 字段的文件忽略。
+ * IAgentRepository 的 data 层实现。sub-skill 发现范围 = 全局 ~/.pi/agent/skills + 项目级 .pi/skills（cwd 向上查找至 git root，收集所有存在的），再回退 ~/.pi/agent/agents/*.md（user scope）。优先级：项目级 sub-skill > 全局 sub-skill > user agent（扫描顺序 + last-wins 去重实现）。
+ * 
+ * 边界：目录不存在或不可读时静默跳过并计入 errors，不向上抛异常；无 frontmatter 或无 name 字段的文件忽略；deduplicate 按 (skillName, name) 键去重（跨 skill 同名可共存，同键后覆盖前）；findByName 先按 name 精确匹配（多命中时 project 优先、同级取发现列表第一个），失败后回退 skillName/name 拼接匹配；agent 名含 '/' 时不做特殊处理。options 注入 projectSkillsDirs 时跳过向上查找；cwd 选项为向上查找起点（测试用），生产默认 process.cwd()。
+ * 
  * 验收条件：
- * - discoverAll 按 scope（sub_skill/user/both）返回去重后的 agent 列表，both 模式下 sub-skill 覆盖同名 user agent
+ * - discoverAll('sub_skill') 能发现项目级 .pi/skills 下的 sub-agent（origin='project'），与全局目录合并、同名项目级覆盖全局
+ * - findByName('test-writer') 与 findByName('tdd/test-writer') 均能解析到 tdd skill 下的 test-writer（多命中时 project 优先）
  * - 所有 I/O 错误被捕获为 errors 数组返回，不抛异常
  */
 
 
 
+
 import { readFile, readdir, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import type { IAgentRepository } from '../../repositories/IAgentRepository';
-import type { AgentDefinition, AgentDiscoveryResult, AgentScope } from '../../entities/AgentDefinition';
+import type { AgentDefinition, AgentDiscoveryResult, AgentOrigin, AgentScope } from '../../entities/AgentDefinition';
 
 // ==================== 默认路径 ====================
 
@@ -31,6 +31,10 @@ export interface AgentRepositoryImplOptions {
   skillsDir?: string;
   /** user agents 目录（默认 ~/.pi/agent/agents） */
   agentsDir?: string;
+  /** 项目级 skills 目录（显式注入；注入时跳过 cwd 向上查找，测试用） */
+  projectSkillsDirs?: string[];
+  /** 向上查找项目级目录的起点（默认 process.cwd()，测试用） */
+  cwd?: string;
 }
 
 // ==================== Frontmatter 解析 ====================
@@ -61,6 +65,7 @@ async function parseAgentFile(
   filePath: string,
   skillName: string | undefined,
   source: AgentDefinition['source'],
+  origin?: AgentOrigin,
 ): Promise<AgentDefinition | null> {
   let content: string;
   try {
@@ -84,6 +89,7 @@ async function parseAgentFile(
     model: parsed.fields['model'] || undefined,
     systemPrompt: parsed.body,
     source,
+    origin,
     skillName,
     filePath,
   };
@@ -96,6 +102,7 @@ async function parseAgentFile(
 async function scanSubSkillDir(
   dir: string,
   skillName: string,
+  origin: AgentOrigin,
 ): Promise<AgentDefinition[]> {
   const agents: AgentDefinition[] = [];
 
@@ -118,11 +125,11 @@ async function scanSubSkillDir(
 
     if (entryStat.isFile() && entry.toLowerCase() === 'sub-skill.md') {
       // 直接是 SUB-SKILL.md 文件
-      const agent = await parseAgentFile(fullPath, skillName, 'sub_skill');
+      const agent = await parseAgentFile(fullPath, skillName, 'sub_skill', origin);
       if (agent) agents.push(agent);
     } else if (entryStat.isDirectory()) {
       // 递归子目录
-      const subAgents = await scanSubSkillDir(fullPath, skillName);
+      const subAgents = await scanSubSkillDir(fullPath, skillName, origin);
       agents.push(...subAgents);
     }
   }
@@ -154,7 +161,10 @@ async function scanUserAgentDir(agentsDir: string): Promise<AgentDefinition[]> {
 
 // ==================== 扫描所有 skill 的 sub-skill 目录 ====================
 
-async function scanAllSubSkills(skillsDir: string): Promise<{ agents: AgentDefinition[]; errors: string[] }> {
+async function scanAllSubSkills(
+  skillsDir: string,
+  origin: AgentOrigin,
+): Promise<{ agents: AgentDefinition[]; errors: string[] }> {
   const agents: AgentDefinition[] = [];
   const errors: string[] = [];
 
@@ -169,19 +179,70 @@ async function scanAllSubSkills(skillsDir: string): Promise<{ agents: AgentDefin
 
   for (const skillName of skillDirs) {
     const subDir = join(skillsDir, skillName, 'sub-skill');
-    const discovered = await scanSubSkillDir(subDir, skillName);
+    const discovered = await scanSubSkillDir(subDir, skillName, origin);
     agents.push(...discovered);
   }
 
   return { agents, errors };
 }
 
-// ==================== 去重（后覆盖前） ====================
+/** 依次扫描多个 skills 根（全局先入 → 项目级后入，last-wins 去重实现项目级覆盖全局） */
+async function scanSubSkillsRoots(
+  roots: Array<{ dir: string; origin: AgentOrigin }>,
+): Promise<{ agents: AgentDefinition[]; errors: string[] }> {
+  const agents: AgentDefinition[] = [];
+  const errors: string[] = [];
+
+  for (const { dir, origin } of roots) {
+    const { agents: discovered, errors: rootErrors } = await scanAllSubSkills(dir, origin);
+    agents.push(...discovered);
+    errors.push(...rootErrors);
+  }
+
+  return { agents, errors };
+}
+
+// ==================== 项目级 skills 目录解析 ====================
+
+/**
+ * 从 cwd 向上查找所有存在的 .pi/skills 目录，直到 git root（.git 文件/目录）
+ * 或文件系统根；不存在时返回空数组（不抛异常）。
+ */
+async function resolveProjectSkillsDirs(cwd: string): Promise<string[]> {
+  const dirs: string[] = [];
+  let current = cwd;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    try {
+      const candidate = join(current, '.pi', 'skills');
+      const candidateStat = await stat(candidate);
+      if (candidateStat.isDirectory()) dirs.push(candidate);
+    } catch {
+      // 目录不存在或不可读，静默跳过
+    }
+
+    // 终止条件：当前目录是 git root，或已到文件系统根
+    const parent = dirname(current);
+    if (parent === current) break;
+    try {
+      const gitStat = await stat(join(current, '.git'));
+      if (gitStat.isDirectory() || gitStat.isFile()) break;
+    } catch {
+      // 非 git root，继续向上
+    }
+    current = parent;
+  }
+
+  return dirs;
+}
+
+// ==================== 去重（(skillName, name) 键，后覆盖前） ====================
 
 function deduplicate(agents: AgentDefinition[]): AgentDefinition[] {
   const seen = new Map<string, AgentDefinition>();
   for (const agent of agents) {
-    seen.set(agent.name, agent);
+    seen.set(`${agent.skillName ?? ''}::${agent.name}`, agent);
   }
   return Array.from(seen.values());
 }
@@ -191,10 +252,20 @@ function deduplicate(agents: AgentDefinition[]): AgentDefinition[] {
 export class AgentRepositoryImpl implements IAgentRepository {
   private skillsDir: string;
   private agentsDir: string;
+  private projectSkillsDirs?: string[];
+  private cwd: string;
 
   constructor(options?: AgentRepositoryImplOptions) {
     this.skillsDir = options?.skillsDir ?? DEFAULT_SKILLS_DIR;
     this.agentsDir = options?.agentsDir ?? DEFAULT_USER_AGENTS_DIR;
+    this.projectSkillsDirs = options?.projectSkillsDirs;
+    this.cwd = options?.cwd ?? process.cwd();
+  }
+
+  /** 项目级 skills 目录：显式注入优先，否则 cwd 向上查找 */
+  private getProjectSkillsDirs(): Promise<string[]> {
+    if (this.projectSkillsDirs) return Promise.resolve(this.projectSkillsDirs);
+    return resolveProjectSkillsDirs(this.cwd);
   }
 
   async discoverAll(scope: AgentScope): Promise<AgentDiscoveryResult> {
@@ -202,7 +273,12 @@ export class AgentRepositoryImpl implements IAgentRepository {
     let agents: AgentDefinition[] = [];
 
     if (scope === 'sub_skill' || scope === 'both') {
-      const { agents: subSkillAgents, errors } = await scanAllSubSkills(this.skillsDir);
+      // 全局先入 → 项目级后入（last-wins：项目级覆盖全局）
+      const roots: Array<{ dir: string; origin: AgentOrigin }> = [{ dir: this.skillsDir, origin: 'global' }];
+      for (const dir of await this.getProjectSkillsDirs()) {
+        roots.push({ dir, origin: 'project' });
+      }
+      const { agents: subSkillAgents, errors } = await scanSubSkillsRoots(roots);
       agents.push(...subSkillAgents);
       allErrors.push(...errors);
     }
@@ -222,6 +298,14 @@ export class AgentRepositoryImpl implements IAgentRepository {
 
   async findByName(name: string, scope: AgentScope): Promise<AgentDefinition | null> {
     const { agents } = await this.discoverAll(scope);
-    return agents.find((a) => a.name === name) ?? null;
+
+    // 1) name 精确匹配；多命中时 project 优先，同级取发现列表第一个
+    const exact = agents.filter((a) => a.name === name);
+    if (exact.length > 0) {
+      return exact.find((a) => a.origin === 'project') ?? exact[0];
+    }
+
+    // 2) skill/name 拼接回退（去重键 (skillName, name) 保证唯一）
+    return agents.find((a) => a.skillName && `${a.skillName}/${a.name}` === name) ?? null;
   }
 }

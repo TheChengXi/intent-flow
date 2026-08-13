@@ -1,0 +1,52 @@
+packageName: subagent-discovery
+summary: |
+  修复 sub-agent 发现链路：AgentRepositoryImpl 从仅扫描全局 ~/.pi/agent/skills
+  扩展为全局 + 项目级 .pi/skills（cwd 向上查找至 git root）合并扫描，
+  支持 (skillName, name) 去重与 name / skill/name 两种名称解析。
+  依赖：IAgentRepository 契约、AgentDefinition 实体；被 DiscoverAgentsUseCase /
+  AgentRequestUseCase / RpcProcessPool 消费。入口建议：无独立入口，
+  data 层仓库实现，经 CoreDIContainer 无参组装（cwd 向上查找项目级目录）。
+  当前状态：已部署（.pi/extensions/intent-flow/extension.js），待重启 pi 会话端到端确认。
+
+groups:
+  - name: sub-agent 发现与解析
+    summary: 实体提供 origin（目录层级）标识，仓库实现多目录扫描、
+      (skillName, name) 去重与两级名称解析（name 精确 → skill/name 回退），
+      共同构成「从全局 + 项目级 skills 目录发现并解析 sub-agent」的能力。
+    files:
+      - src/data/entities/AgentDefinition.ts
+      - src/data/services/agent/AgentRepositoryImpl.ts
+
+  - name: 仓库层单测
+    summary: 用 mkdtemp 真实临时目录注入构造器 options，覆盖多目录发现、
+      优先级与去重、名称解析、cwd 向上查找与 git root 截断（8 项），
+      不 mock 文件系统（仓库即 IO 边界）。
+    files:
+      - src/data/services/agent/AgentRepositoryImpl.test.ts
+
+  - name: 部署产物
+    summary: pi 扩展编译产物（compile:pi + deploy:pi 生成），
+      包含本次修复的 dist bundle，供 pi 会话加载。
+    files:
+      - .pi/extensions/intent-flow/extension.js
+
+files:
+  - path: src/data/entities/AgentDefinition.ts
+    change: 新增 AgentOrigin 类型（'global' | 'project'）与 AgentDefinition.origin 可选字段，
+      标识 sub-skill 发现的目录层级（user agents 无层级概念不设置，undefined 视为全局优先级）；
+      source 的 project_agent 枚举保持不动。
+
+  - path: src/data/services/agent/AgentRepositoryImpl.ts
+    change: 多目录发现（全局先入 + 项目级后入，scanSubSkillsRoots 聚合，last-wins 实现项目级覆盖）；
+      新增 resolveProjectSkillsDirs（cwd 向上查找 .pi/skills 至 git root，.git 文件/目录双形态）；
+      deduplicate 键改为 (skillName, name)（跨 skill 同名共存）；
+      findByName 两级解析（name 精确多命中 project 优先 → skill/name 拼接回退）；
+      options 扩展 projectSkillsDirs / cwd 供测试注入。
+
+  - path: src/data/services/agent/AgentRepositoryImpl.test.ts
+    change: 新增仓库层单测 8 项：仅项目级发现（origin=project）、全局+项目级同名项目级覆盖、
+      跨 skill 同名共存、裸名多命中 project 优先、skill/name 别名命中、不存在返回 null、
+      目录缺失静默跳过、cwd 向上查找与 git root 截断。
+
+  - path: .pi/extensions/intent-flow/extension.js
+    change: 重新编译部署的 pi 扩展 bundle，包含本次 AgentDefinition / AgentRepositoryImpl 修复。
