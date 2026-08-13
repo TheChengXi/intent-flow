@@ -12,6 +12,8 @@
  * 边界：同一 agent 并发消息按 FIFO 串行（单会话模型，修复 pending 覆盖丢消息 bug）；
  * 等待超时只解除等待者（任务继续，结果可被后续 await 获取）；进程 exit 时该 agent
  * 全部等待者 resolve error 并 resetChannel；无等待者的结果投递被丢弃（会话历史保留）。
+ * spawn 子进程带 -ne（禁用扩展自动发现）：避免项目内 .pi/extensions 自动加载与
+ * 显式 --extension 重复注册（工具冲突导致启动即崩 code=1）。
  *
  * 验收条件：
  * - 并发 send 同一 agent：消息不丢失，按序执行，各自 await 拿到对应结果
@@ -283,8 +285,10 @@ export class RpcProcessPool {
       args.push('--tools', agentDef.tools.join(','));
     }
     // 子进程轻量通道：加载同一扩展 bundle，IFLOW_CHILD 分支只注册 ask_parent
+    // -ne：禁用扩展自动发现（显式 --extension 仍加载）——避免项目内 .pi/extensions
+    // 自动发现与显式 --extension 重复注册同一 bundle（工具冲突 → 启动即崩 code=1）
     if (typeof __filename === 'string' && existsSync(__filename)) {
-      args.push('--extension', __filename);
+      args.push('-ne', '--extension', __filename);
     }
 
     // Windows 上 pi 是 .cmd，必须 shell: true

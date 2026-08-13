@@ -453,7 +453,7 @@ ${errors.join("\n")}`);
       args2.push("--tools", agentDef.tools.join(","));
     }
     if (typeof __filename === "string" && node_fs.existsSync(__filename)) {
-      args2.push("--extension", __filename);
+      args2.push("-ne", "--extension", __filename);
     }
     const isWindows = node_os.platform() === "win32";
     const pi = this.piInvocation(args2);
