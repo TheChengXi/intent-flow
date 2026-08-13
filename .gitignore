@@ -22,3 +22,4 @@ node_modules/
 scripts/*
 # Release 打包临时目录
 release-build/
+fluted-glass.glsl
