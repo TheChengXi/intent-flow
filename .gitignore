@@ -23,3 +23,5 @@ scripts/*
 # Release 打包临时目录
 release-build/
 fluted-glass.glsl
+stop-dsh.bat
+start-dsh.bat
