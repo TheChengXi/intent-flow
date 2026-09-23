@@ -7,7 +7,11 @@ description: 执行完成后关账。聚合需求、设计与执行产出，输�
 
 以下规则具有最高优先级。
 
-五步执行：提取 → 生成 → 写入 → 更新现状 → 提交。
+语义只写进 report.md，commit message 只做指针，同一件事不写两处。
+
+report.md 写入即定稿，不回改；后续变化写进新 feature 的 report。
+
+六步执行：提取 → 纳入待办 → 生成 → 写入 → 更新现状 → 提交。
 
 ---
 
@@ -94,7 +98,7 @@ groups:
 
 在写入完成后执行：
 
-1. `git add .` — 纳入全部变更（代码 + 报告 + 模块现状 yml）
+1. `git add .` — 纳入全部变更（代码 + `.intentflow/` 产出）
 2. `git commit -m "<scope>: <feature-name> 关账"` — 提交信息格式：
    - 新 feature → `feat(<feature-name>): 关账`
    - 修复/修改 → `fix(<feature-name>): 关账`
