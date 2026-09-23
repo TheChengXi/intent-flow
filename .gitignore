@@ -26,5 +26,6 @@ fluted-glass.glsl
 stop-dsh.bat
 start-dsh.bat
 
-# DSH 运行时 pid（不入仓库）
+# DSH 运行时产物（不入仓库）
 .dsh/opendsh.pid
+.dsh/opendsh.token
